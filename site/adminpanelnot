@@ -1,0 +1,281 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Güncelleme Notları | Admin Paneli</title>
+    <link rel="stylesheet" href="admin.css">
+    <style>
+        /* Özel stil eklemeleri */
+        .update-container {
+            max-width: 800px;
+            margin: 2rem auto;
+            padding: 0 1rem;
+        }
+        
+        .update-card {
+            background: white;
+            border-radius: var(--border-radius);
+            box-shadow: var(--box-shadow);
+            padding: 1.5rem;
+            margin-bottom: 1.5rem;
+            transition: var(--transition);
+        }
+        
+        .update-card:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+        }
+        
+        .update-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 1rem;
+            padding-bottom: 0.5rem;
+            border-bottom: 1px solid #eee;
+        }
+        
+        .update-title {
+            font-size: 1.2rem;
+            color: var(--primary);
+        }
+        
+        .update-date {
+            font-size: 0.85rem;
+            color: var(--gray);
+        }
+        
+        .update-content {
+            margin-bottom: 1rem;
+        }
+        
+        .update-footer {
+            font-size: 0.85rem;
+            color: var(--gray);
+            display: flex;
+            justify-content: space-between;
+        }
+        
+        .add-update-btn {
+            display: block;
+            width: 100%;
+            margin: 2rem 0;
+            text-align: center;
+        }
+        
+        .update-form {
+            display: none;
+            background: white;
+            padding: 1.5rem;
+            border-radius: var(--border-radius);
+            box-shadow: var(--box-shadow);
+            margin-bottom: 2rem;
+        }
+        
+        .form-group {
+            margin-bottom: 1rem;
+        }
+        
+        .form-group label {
+            display: block;
+            margin-bottom: 0.5rem;
+            font-weight: 500;
+        }
+        
+        .form-control {
+            width: 100%;
+            padding: 0.75rem;
+            border: 1px solid #ddd;
+            border-radius: var(--border-radius);
+            font-family: inherit;
+        }
+        
+        textarea.form-control {
+            min-height: 150px;
+            resize: vertical;
+        }
+    </style>
+</head>
+<body>
+    <div id="passwordModal" class="password-modal">
+        <!-- Şifre giriş modalı buraya gelecek -->
+    </div>
+
+    <div id="adminContent">
+        <nav class="navbar">
+            <div class="logo">Admin Paneli</div>
+            <ul class="nav-links">
+                <li><a href="admin.html"><i class="fas fa-tachometer-alt"></i> Dashboard</a></li>
+                <li><a href="updates.html" class="active"><i class="fas fa-clipboard-list"></i> Güncellemeler</a></li>
+                <li><a href="index.html"><i class="fas fa-home"></i> Siteye Dön</a></li>
+                <li><a href="#" onclick="logout()"><i class="fas fa-sign-out-alt"></i> Çıkış</a></li>
+            </ul>
+        </nav>
+
+        <div class="update-container">
+            <h1><i class="fas fa-clipboard-list"></i> Güncelleme Notları</h1>
+            
+            <button class="btn btn-primary add-update-btn" onclick="toggleUpdateForm()">
+                <i class="fas fa-plus"></i> Yeni Güncelleme Ekle
+            </button>
+            
+            <div id="updateForm" class="update-form">
+                <div class="form-group">
+                    <label for="updateTitle">Başlık</label>
+                    <input type="text" id="updateTitle" class="form-control" placeholder="Güncelleme başlığı">
+                </div>
+                <div class="form-group">
+                    <label for="updateContent">İçerik</label>
+                    <textarea id="updateContent" class="form-control" placeholder="Güncelleme detayları"></textarea>
+                </div>
+                <div class="button-group">
+                    <button class="btn btn-primary" onclick="saveUpdate()">
+                        <i class="fas fa-save"></i> Kaydet
+                    </button>
+                    <button class="btn btn-danger" onclick="toggleUpdateForm()">
+                        <i class="fas fa-times"></i> İptal
+                    </button>
+                </div>
+            </div>
+            
+            <!-- Güncelleme kartları burada listelenecek -->
+            <div id="updatesList">
+                <div class="update-card">
+                    <div class="update-header">
+                        <h3 class="update-title">Yeni Özellik Eklendi</h3>
+                        <span class="update-date">15.06.2023</span>
+                    </div>
+                    <div class="update-content">
+                        <p>Kullanıcı panelinde yeni istatistik grafikleri eklendi. Artık aylık ziyaretçi verilerini grafik üzerinden takip edebilirsiniz.</p>
+                    </div>
+                    <div class="update-footer">
+                        <span><i class="fas fa-user"></i> Admin</span>
+                        <button class="btn btn-danger btn-sm" onclick="deleteUpdate(this)">
+                            <i class="fas fa-trash"></i> Sil
+                        </button>
+                    </div>
+                </div>
+                
+                <div class="update-card">
+                    <div class="update-header">
+                        <h3 class="update-title">Hata Düzeltmeleri</h3>
+                        <span class="update-date">10.06.2023</span>
+                    </div>
+                    <div class="update-content">
+                        <ul>
+                            <li>Mobil görünümdeki menü sorunu düzeltildi</li>
+                            <li>Form validasyon hataları giderildi</li>
+                            <li>Performans iyileştirmeleri yapıldı</li>
+                        </ul>
+                    </div>
+                    <div class="update-footer">
+                        <span><i class="fas fa-user"></i> Admin</span>
+                        <button class="btn btn-danger btn-sm" onclick="deleteUpdate(this)">
+                            <i class="fas fa-trash"></i> Sil
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // LocalStorage'dan güncellemeleri yükle
+        function loadUpdates() {
+            const updates = JSON.parse(localStorage.getItem('guncellemeNotlari') || '[]');
+            const updatesList = document.getElementById('updatesList');
+            updatesList.innerHTML = '';
+            
+            if (updates.length === 0) {
+                updatesList.innerHTML = '<p class="text-center">Henüz güncelleme notu eklenmemiş.</p>';
+                return;
+            }
+            
+            updates.forEach(update => {
+                const updateCard = document.createElement('div');
+                updateCard.className = 'update-card';
+                updateCard.innerHTML = `
+                    <div class="update-header">
+                        <h3 class="update-title">${update.title}</h3>
+                        <span class="update-date">${update.date}</span>
+                    </div>
+                    <div class="update-content">
+                        ${update.content.replace(/\n/g, '<br>')}
+                    </div>
+                    <div class="update-footer">
+                        <span><i class="fas fa-user"></i> ${update.author || 'Admin'}</span>
+                        <button class="btn btn-danger btn-sm" onclick="deleteUpdate(this, '${update.id}')">
+                            <i class="fas fa-trash"></i> Sil
+                        </button>
+                    </div>
+                `;
+                updatesList.appendChild(updateCard);
+            });
+        }
+        
+        // Güncelleme formunu göster/gizle
+        function toggleUpdateForm() {
+            const form = document.getElementById('updateForm');
+            form.style.display = form.style.display === 'none' ? 'block' : 'none';
+        }
+        
+        // Yeni güncelleme kaydet
+        function saveUpdate() {
+            const title = document.getElementById('updateTitle').value.trim();
+            const content = document.getElementById('updateContent').value.trim();
+            
+            if (!title || !content) {
+                alert('Lütfen başlık ve içerik giriniz!');
+                return;
+            }
+            
+            const updates = JSON.parse(localStorage.getItem('guncellemeNotlari') || '[]');
+            
+            const newUpdate = {
+                id: Date.now().toString(),
+                title: title,
+                content: content,
+                date: new Date().toLocaleDateString('tr-TR'),
+                author: 'Admin'
+            };
+            
+            updates.unshift(newUpdate); // En üste ekle
+            localStorage.setItem('guncellemeNotlari', JSON.stringify(updates));
+            
+            // Formu temizle ve gizle
+            document.getElementById('updateTitle').value = '';
+            document.getElementById('updateContent').value = '';
+            toggleUpdateForm();
+            
+            // Listeyi yenile
+            loadUpdates();
+        }
+        
+        // Güncelleme sil
+        function deleteUpdate(button, id) {
+            if (!confirm('Bu güncelleme notunu silmek istediğinize emin misiniz?')) {
+                return;
+            }
+            
+            const updates = JSON.parse(localStorage.getItem('guncellemeNotlari') || '[]');
+            const filteredUpdates = updates.filter(update => update.id !== id);
+            
+            localStorage.setItem('guncellemeNotlari', JSON.stringify(filteredUpdates));
+            button.closest('.update-card').remove();
+        }
+        
+        // Sayfa yüklendiğinde güncellemeleri yükle
+        document.addEventListener('DOMContentLoaded', function() {
+            // Şifre kontrolü burada olacak
+            loadUpdates();
+        });
+        
+        // Çıkış fonksiyonu
+        function logout() {
+            localStorage.removeItem('adminToken');
+            window.location.href = 'login.html';
+        }
+    </script>
+</body>
+</html>

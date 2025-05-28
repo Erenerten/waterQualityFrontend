@@ -1,0 +1,56 @@
+<!-- frontend/login.html -->
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>Login – Water Quality App</title>
+  <style>
+    body { font-family: sans-serif; display:flex; flex-direction:column; align-items:center; }
+    .login-box {
+      margin-top: 6em;
+      padding: 2em;
+      border: 1px solid #ddd;
+      border-radius: 8px;
+      background: #fafafa;
+      min-width: 280px;
+      box-shadow: 0 2px 8px #eee;
+    }
+    .login-box input { margin: 0.6em 0; width: 100%; padding: 0.5em; }
+    .login-box button { width: 100%; background: #0077cc; color: white; padding: 0.7em; border: none; border-radius: 6px; font-size: 1em; cursor: pointer; }
+  </style>
+</head>
+<body>
+  <div class="login-box">
+    <h2>Login</h2>
+    <form id="login-form">
+      <input name="username" placeholder="Username" required /><br/>
+      <input type="password" name="password" placeholder="Password" required /><br/>
+      <button type="submit">Sign In</button>
+    </form>
+  </div>
+
+  <script>
+    document
+      .getElementById('login-form')
+      .addEventListener('submit', async e => {
+        e.preventDefault();
+        const u = e.target.username.value;
+        const p = e.target.password.value;
+        try {
+          const res = await fetch('/api/auth/login', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ username: u, password: p })
+          });
+          if (!res.ok) throw new Error('Login failed');
+          const { jwt } = await res.json();
+          localStorage.setItem('token', jwt);
+          location.href = '/dashboard.html';
+        } catch (err) {
+          alert('Login failed: ' + err.message);
+        }
+      });
+  </script>
+</body>
+</html>
+

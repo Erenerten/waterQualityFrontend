@@ -1,0 +1,249 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+    <!-- Google tag (gtag.js) -->
+<script async src="https://www.googletagmanager.com/gtag/js?id=G-BB2JMZPGZE"></script>
+<script>
+  window.dataLayer = window.dataLayer || [];
+  function gtag(){dataLayer.push(arguments);}
+  gtag('js', new Date());
+
+  gtag('config', 'G-BB2JMZPGZE');
+</script>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AEA - Akıllı Su Kalitesi İzleme Sistemi</title>
+    <link rel="stylesheet" href="style.css">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+</head>
+<body>
+    <div id="warningModal" class="modal">
+        <div class="modal-content">
+            <p>Bu site akademik amaçlara hizmet etmektedir.</p>
+            <button id="acceptButton">Tamam</button>
+        </div>
+    </div>
+
+    <div id="reportModal" class="modal">
+        <div class="modal-content">
+            <h2>Kalite Raporu Talebi</h2>
+            <form id="reportForm">
+                <input type="text" id="reportName" placeholder="Adınız Soyadınız" required>
+                <input type="email" id="reportEmail" placeholder="E-posta Adresiniz" required>
+                <input type="tel" id="reportPhone" placeholder="Telefon Numaranız" required>
+                <input type="text" id="reportCompany" placeholder="Kurum/Firma Adı" required>
+                <select id="reportType" required>
+                    <option value="">Rapor Türü Seçiniz</option>
+                    <option value="günlük">Günlük Rapor</option>
+                    <option value="haftalık">Haftalık Rapor</option>
+                    <option value="aylık">Aylık Rapor</option>
+                </select>
+                <button type="submit">Rapor Talebi Oluştur</button>
+            </form>
+            <button class="close-button" onclick="closeReportModal()">Kapat</button>
+        </div>
+    </div>
+    <nav class="navbar">
+        <div class="logo">Bitirme Projesi</div>
+        <ul class="nav-links">
+            <li><a href="#anasayfa">Anasayfa</a></li>
+            <li><a href="#ozellikler">Özellikler</a></li>
+            <li><a href="#sensordata">Canlı Veriler</a></li>
+            <li><a href="#cozumler">Çözümler</a></li>
+            <li><a href="#iletisim">İletişim</a></li>
+            <li><a href="blog.html">Blog</a></li>
+        </ul>
+        <div class="burger">
+            <div class="line1"></div>
+            <div class="line2"></div>
+            <div class="line3"></div>
+        </div>
+    </nav>
+
+    <section id="anasayfa" class="hero">
+        <h1>SU KALİTESİ İZLEME SİSTEMİ</h1>
+        <p>7/24 gerçek zamanlı su kalitesi izleme ve erken uyarı sistemi</p>
+        <button class="cta-button">Kalite Raporu Al</button>
+        
+    </section>
+
+    <section id="ozellikler" class="about">
+        <h2>Neden Biz?</h2>
+        <div class="about-content">
+            <div class="feature-grid">
+                <div class="feature-item">
+                    <h3>7/24 İzleme</h3>
+                    <p>Kesintisiz veri akışı ve anlık bildirimlerle su kalitenizi sürekli kontrol altında tutun.</p>
+                </div>
+                <div class="feature-item">
+                    <h3>Erken Uyarı</h3>
+                    <p>Kritik değişimlerde anında SMS ve e-posta bildirimleriyle önlem alın.</p>
+                </div>
+                <div class="feature-item">
+                    <h3>Kolay Entegrasyon</h3>
+                    <p>Mevcut sistemlerinize hızlı ve sorunsuz entegrasyon imkanı.</p>
+                </div>
+                <div class="feature-item">
+                    <h3>Detaylı Raporlama</h3>
+                    <p>Günlük, haftalık ve aylık detaylı analiz raporları.</p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <section id="sensordata" class="sensor-data">
+        <h2>Canlı Su Kalitesi Verileri</h2>
+        <div class="sensor-grid">
+            <div class="sensor-card">
+                <h3>Sıcaklık</h3>
+                <div class="sensor-value" id="temperature">--°C</div>
+                <canvas id="temperatureChart"></canvas>
+                <p class="sensor-info">Optimum aralık: 20-25°C</p>
+            </div>
+            <div class="sensor-card">
+                <h3>TDS (Toplam Çözünmüş Katı)</h3>
+                <div class="sensor-value" id="tds">-- ppm</div>
+                <canvas id="tdsChart"></canvas>
+                <p class="sensor-info">Standart değer: <500 ppm</p>
+            </div>
+            <div class="sensor-card">
+                <h3>Bulanıklık</h3>
+                <div class="sensor-value" id="turbidity">-- NTU</div>
+                <canvas id="turbidityChart"></canvas>
+                <p class="sensor-info">Ideal değer: <1 NTU</p>
+            </div>
+            <div class="sensor-card">
+                <h3>İletkenlik</h3>
+                <div class="sensor-value" id="conductivity">-- µS/cm</div>
+                <canvas id="conductivityChart"></canvas>
+                <p class="sensor-info">Normal aralık: 500-800 µS/cm</p>
+            </div>
+        </div>
+        <div class="sensor-info">
+            <p>Son Güncelleme: <span id="lastUpdate">--</span></p>
+            <p>Ölçüm Noktası: <span id="location">Demo İstasyonu</span></p>
+        </div>
+    </section>
+
+    <section id="cozumler" class="services">
+        <h2>Sektörel Çözümler</h2>
+        <div class="services-grid">
+            <div class="service-card">
+                <h3>Belediyeler</h3>
+                <p>Şehir şebekesi su kalitesi takibi ve yönetimi</p>
+                <ul>
+                    <li>24/7 izleme</li>
+                    <li>Otomatik raporlama</li>
+                    <li>Mobil uygulama</li>
+                </ul>
+            </div>
+            
+            <div class="service-card">
+                <h3>Endüstriyel Tesisler</h3>
+                <p>Endüstriyel su kalitesi kontrolü ve atık su yönetimi</p>
+                <ul>
+                    <li>Özel sensör çözümleri</li>
+                    <li>Proses optimizasyonu</li>
+                    <li>Uyumluluk raporları</li>
+                </ul>
+            </div>
+            <div class="service-card">
+                <h3>Tarım İşletmeleri</h3>
+                <p>Sulama suyu kalitesi ve verimlilik takibi</p>
+                <ul>
+                    <li>Toprak-su analizi</li>
+                    <li>Sulama optimizasyonu</li>
+                    <li>Verim artırma</li>
+                </ul>
+            </div>
+            <div class="service-card">
+                <h3>Bireysel Kullanım</h3>
+                <p>Ev ve küçük işletmeler için akıllı su kalitesi takibi</p>
+                <ul>
+                    <li>Kolay kurulum</li>
+                    <li>Mobil uygulama desteği</li>
+                    <li>Uygun fiyatlı çözümler</li>
+                </ul>
+            </div>
+        </div>
+    </section>
+
+    <section id="iletisim" class="contact">
+        <h2>Ekibimizle İletişime Geçin</h2>
+        <form id="contact-form">
+            <input type="text" placeholder="Adınız Soyadınız" required>
+            <input type="email" placeholder="E-posta" required>
+            <input type="tel" placeholder="Telefon Numarası" required>
+            <input type="text" placeholder="Kurum/Firma Adı" required>
+            <select required>
+                <option value="bos">Seçiniz</option>
+                <option value="öneri">Öneri</option>
+                <option value="teknik">Teknik Destek</option>
+                <option value="görüşme">Görüşme Talebi</option>
+                <option value="bilgi">Bilgi</option>
+                <option value="diger">Diğer</option>
+            </select>
+            <textarea placeholder="Mesajınız (Opsiyonel)"></textarea>
+            <button type="submit">GÖNDER</button>
+        </form>
+    </section>
+
+    <footer>
+        <div class="footer-content">
+            <div class="footer-section">
+                <h4>İletişim</h4>
+                <p>E-posta: erteneren073@gmail.com</p>
+                <p>Tel: +90 (536) 262 77 90</p>
+
+            </div>
+            <div class="footer-section">
+    <h4>Adres</h4>
+    <a href="https://maps.app.goo.gl/HYDvYHGxGRGPFgqb7" target="_blank" style="text-decoration: none; color: inherit;">
+        <p>Yıldız Teknik Üniversitesi, Davutpaşa Kampüsü Elektronik Haberleşme Bölümü</p>
+        <p>34000 İstanbul, Türkiye</p>
+    </a>
+</div>
+            <div class="footer-section">
+                <h4>Sosyal Medya</h4>
+                <div class="social-links">
+                    <a href="#">LinkedIn</a>
+                    <a href="#">Twitter</a>
+                    <a href="#">Instagram</a>
+                </div>
+            </div>
+        </div>
+        <div class="footer-bottom">
+            <p>&copy; 2024 AEA- Tüm hakları saklıdır.</p>
+            <p><a href="admin.html" style="color: inherit; text-decoration: underline;">Admin Paneli</a></p>
+        </div>
+    </footer>
+
+    <script src="script.js"></script>
+    <script>
+    // Rapor talep formu işleme
+    document.getElementById('reportForm').addEventListener('submit', function(e) {
+        e.preventDefault();
+        
+        const reportData = {
+            id: Date.now().toString(),
+            name: document.getElementById('reportName').value,
+            email: document.getElementById('reportEmail').value,
+            phone: document.getElementById('reportPhone').value,
+            company: document.getElementById('reportCompany').value,
+            reportType: document.getElementById('reportType').value,
+            date: new Date().toISOString()
+        };
+
+        // Rapor taleplerini localStorage'a kaydet
+        let reports = JSON.parse(localStorage.getItem('reportRequests') || '[]');
+        reports.push(reportData);
+        localStorage.setItem('reportRequests', JSON.stringify(reports));
+
+        // Formu temizle ve modalı kapat
+        this.reset();
+        closeReportModal();
+        alert('Rapor talebiniz başarıyla alındı!');
+    });
+    </script>
+</body>
+</html>
