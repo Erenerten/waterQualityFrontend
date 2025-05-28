@@ -4,18 +4,18 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Blog Detay - AEA Su Kalitesi İzleme Sistemi</title>
-    <link rel="stylesheet" href="style.css">
+    <link rel="stylesheet" href="public/style.css">
 </head>
 <body>
     <nav class="navbar">
         <div class="logo">Bitirme Projesi</div>
         <ul class="nav-links">
-            <li><a href="index.html">Anasayfa</a></li>
-            <li><a href="index.html#ozellikler">Özellikler</a></li>
-            <li><a href="index.html#sensordata">Canlı Veriler</a></li>
-            <li><a href="index.html#cozumler">Çözümler</a></li>
-            <li><a href="index.html#iletisim">İletişim</a></li>
-            <li><a href="blog.html">Blog</a></li>
+            <li><a href="public/index.html">Anasayfa</a></li>
+            <li><a href="public/index.html#ozellikler">Özellikler</a></li>
+            <li><a href="public/index.html#sensordata">Canlı Veriler</a></li>
+            <li><a href="public/index.html#cozumler">Çözümler</a></li>
+            <li><a href="public/index.html#iletisim">İletişim</a></li>
+            <li><a href="public/blog.html">Blog</a></li>
         </ul>
         <div class="burger">
             <div class="line1"></div>
@@ -29,7 +29,7 @@
             <h1 id="blogTitle"></h1>
             <p class="blog-detail-date" id="blogDate"></p>
             <div class="blog-content" id="blogContent"></div>
-            <a href="blog.html" class="back-to-blog">← Blog Sayfasına Dön</a>
+            <a href="public/blog.html" class="back-to-blog">← Blog Sayfasına Dön</a>
         </div>
     </section>
 
@@ -58,7 +58,7 @@
         </div>
         <div class="footer-bottom">
             <p>&copy; 2024 AEA- Tüm hakları saklıdır.</p>
-            <p><a href="admin.html" style="color: inherit; text-decoration: underline;">Admin Paneli</a></p>
+            <p><a href="public/admin.html" style="color: inherit; text-decoration: underline;">Admin Paneli</a></p>
         </div>
     </footer>
 
@@ -80,7 +80,7 @@
                 document.querySelector('.blog-detail-container').innerHTML = `
                     <h1>Blog Yazısı Bulunamadı</h1>
                     <p>İstediğiniz blog yazısı bulunamadı.</p>
-                    <a href="blog.html" class="back-to-blog">← Blog Sayfasına Dön</a>
+                    <a href="public/blog.html" class="back-to-blog">← Blog Sayfasına Dön</a>
                 `;
             }
         }
@@ -88,6 +88,6 @@
         // Sayfa yüklendiğinde blog detaylarını yükle
         document.addEventListener('DOMContentLoaded', loadBlogDetail);
     </script>
-    <script src="script.js"></script>
+    <script src="public/script.js"></script>
 </body>
 </html>
