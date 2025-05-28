@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Güncelleme Notları | Admin Paneli</title>
-    <link rel="stylesheet" href="public/admin.css">
+    <link rel="stylesheet" href="admin.css">
     <style>
         /* Özel stil eklemeleri */
         .update-container {
@@ -106,9 +106,9 @@
         <nav class="navbar">
             <div class="logo">Admin Paneli</div>
             <ul class="nav-links">
-                <li><a href="public/admin.html"><i class="fas fa-tachometer-alt"></i> Dashboard</a></li>
-                <li><a href="public/updates.html" class="active"><i class="fas fa-clipboard-list"></i> Güncellemeler</a></li>
-                <li><a href="public/index.html"><i class="fas fa-home"></i> Siteye Dön</a></li>
+                <li><a href="admin.html"><i class="fas fa-tachometer-alt"></i> Dashboard</a></li>
+                <li><a href="updates.html" class="active"><i class="fas fa-clipboard-list"></i> Güncellemeler</a></li>
+                <li><a href="index.html"><i class="fas fa-home"></i> Siteye Dön</a></li>
                 <li><a href="#" onclick="logout()"><i class="fas fa-sign-out-alt"></i> Çıkış</a></li>
             </ul>
         </nav>

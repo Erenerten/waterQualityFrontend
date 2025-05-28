@@ -45,7 +45,7 @@
           if (!res.ok) throw new Error('Login failed');
           const { jwt } = await res.json();
           localStorage.setItem('token', jwt);
-          location.href = 'dashboard/dashboard.html';
+          location.href = '/dashboard/dashboard.html';
         } catch (err) {
           alert('Login failed: ' + err.message);
         }

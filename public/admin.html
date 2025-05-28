@@ -13,7 +13,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Admin Paneli - AEA</title>
-    <link rel="stylesheet" href="public/admin-style.css">
+    <link rel="stylesheet" href="admin-style.css">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.28/jspdf.plugin.autotable.min.js"></script>
@@ -235,7 +235,7 @@
         <nav class="navbar">
             <div class="logo">Admin Paneli</div>
             <ul class="nav-links">
-                <li><a href="public/index.html"><i class="fas fa-home"></i> Siteye Dön</a></li>
+                <li><a href="index.html"><i class="fas fa-home"></i> Siteye Dön</a></li>
                 <li><a href="#" onclick="logout()"><i class="fas fa-sign-out-alt"></i> Çıkış</a></li>
             </ul>
         </nav>
@@ -250,7 +250,7 @@
                     <button class="btn btn-success" onclick="exportToPDF()">
                         <i class="fas fa-file-pdf"></i> PDF
                     </button>
-                    <a href="public/blog-management.html" class="btn btn-primary" onclick="localStorage.setItem('fromAdmin', 'true')">
+                    <a href="blog-management.html" class="btn btn-primary" onclick="localStorage.setItem('fromAdmin', 'true')">
                         <i class="fas fa-blog"></i> Blog Yönetimi
                     </a>
                 </div>
