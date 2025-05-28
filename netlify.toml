@@ -1,6 +1,5 @@
 [build]
-  publish = "public"
-
+  publish = "."
 [[redirects]]
   from = "/api/*"
   to = "https://11a3-85-96-3-80.ngrok-free.app/api/:splat"
