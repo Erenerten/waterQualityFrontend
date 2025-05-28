@@ -3,7 +3,7 @@
 
 [[redirects]]
   from = "/api/*"
-  to = "https://2ef0-85-96-3-80.ngrok-free.app/:splat"
+  to = "https://d910-85-96-3-80.ngrok-free.app/:splat"
   status = 200
   force = true
 
