@@ -1,0 +1,98 @@
+<!-- frontend/dashboard.html -->
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Dashboard — Water Quality App</title>
+  <style>
+    body { font-family: sans-serif; padding: 2em; }
+    .logout-btn {
+      float: right;
+      background: #cc0033;
+      color: white;
+      border: none;
+      border-radius: 6px;
+      padding: 0.6em 1.2em;
+      font-size: 1em;
+      cursor: pointer;
+    }
+    .chart-container {
+      position: relative;
+      margin-top: 2em;
+      width: 100%;
+      max-width: 800px;
+    }
+    h1, h2 {
+      margin: 0;
+    }
+  </style>
+  <!-- Chart.js CDN -->
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+</head>
+<body>
+  <button class="logout-btn" id="logout">Logout</button>
+  <h1>Dashboard</h1>
+  <p>Sensor data will appear below:</p>
+
+  <div class="chart-container">
+    <h2>Temperature Over Time</h2>
+    <canvas id="tempChart"></canvas>
+  </div>
+
+  <script>
+    // redirect to login if no token
+    const token = localStorage.getItem('token');
+    if (!token) location.href = '/login.html';
+
+    document.getElementById('logout').addEventListener('click', () => {
+      localStorage.removeItem('token');
+      location.href = '/login.html';
+    });
+
+    // fetch and render sensor data as chart
+    (async function(){
+      try {
+        const res = await fetch('/api/sensor-data', {
+          headers: { 'Authorization': 'Bearer ' + token }
+        });
+        if (!res.ok) throw new Error('Unauthorized or network error');
+        const data = await res.json();
+
+        // extract timestamps and temperatures
+        const labels = data.map(d => new Date(d.timestamp).toLocaleString());
+        const temps  = data.map(d => d.temperature);
+
+        // create Chart.js line chart
+        const ctx = document.getElementById('tempChart').getContext('2d');
+        new Chart(ctx, {
+          type: 'line',
+          data: {
+            labels: labels,
+            datasets: [{
+              label: 'Temperature (°C)',
+              data: temps,
+              fill: false,
+              tension: 0.1
+            }]
+          },
+          options: {
+            scales: {
+              x: { display: true, title: { display: true, text: 'Timestamp' } },
+              y: { display: true, title: { display: true, text: 'Temperature (°C)' } }
+            }
+          }
+        });
+
+      } catch (err) {
+        alert('Failed to load data: ' + err.message);
+        if (err.message.includes('Unauthorized')) {
+          localStorage.removeItem('token');
+          location.href = '/login.html';
+        }
+      }
+    })();
+  </script>
+</body>
+</html>
+
+
