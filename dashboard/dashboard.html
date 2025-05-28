@@ -42,11 +42,11 @@
   <script>
     // redirect to login if no token
     const token = localStorage.getItem('token');
-    if (!token) location.href = '/login.html';
+    if (!token) location.href = 'dashboard/login.html';
 
     document.getElementById('logout').addEventListener('click', () => {
       localStorage.removeItem('token');
-      location.href = '/login.html';
+      location.href = 'dashboard/login.html';
     });
 
     // fetch and render sensor data as chart
@@ -87,7 +87,7 @@
         alert('Failed to load data: ' + err.message);
         if (err.message.includes('Unauthorized')) {
           localStorage.removeItem('token');
-          location.href = '/login.html';
+          location.href = 'dashboard/login.html';
         }
       }
     })();
