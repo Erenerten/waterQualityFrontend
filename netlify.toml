@@ -3,12 +3,12 @@
 
 [[redirects]]
   from = "/api/*"
+  # bu asagidaki adres backend her calistiginda resetleniyor, dikkat etmek lazim
   to = "https://11a3-85-96-3-80.ngrok-free.app/api/:splat"
   status = 200
   force = true
 
 [[redirects]]
-  # route login/dashboard requests into the dashboard folder
   from = "/login.html"
   to = "/dashboard/login.html"
   status = 200
