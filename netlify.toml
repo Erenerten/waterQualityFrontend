@@ -3,7 +3,7 @@
 
 [[redirects]]
   from = "/api/*"
-  to = "https://bass-inspired-rightly.ngrok-free.app/api/:splat"
+  to = "https://154.53.180.35/api/:splat"
   status = 200
   force = true
 
