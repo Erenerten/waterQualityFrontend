@@ -4,7 +4,7 @@
 [[redirects]]
   from = "/api/*"
   # bu asagidaki adres backend her calistiginda resetleniyor, dikkat etmek lazim
-  to = "https://11a3-85-96-3-80.ngrok-free.app/api/:splat"
+  to = "https://bass-inspired-rightly.ngrok-free.app/api/:splat"
   status = 200
   force = true
 
