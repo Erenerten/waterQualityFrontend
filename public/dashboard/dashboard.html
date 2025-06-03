@@ -46,8 +46,9 @@
     .main {
       display: flex;
       padding: 24px;
-      height: calc(100vh -  fiftypx);
       box-sizing: border-box;
+      height: calc(100vh - 50px);
+      overflow: hidden; /* prevent page from scrolling itself */
     }
 
     /* Chart on the left */
@@ -133,19 +134,19 @@
 
     // Slider labels
     const timeLabels = [
-      'Last 10 minutes',
-      'Last 30 minutes',
-      'Last 2 hours',
-      'Last 1 day',
-      'Last 1 week'
+      'Son 10 dakika',
+      'Son 30 dakika',
+      'Son 2 saat',
+      'Son 1 gün',
+      'Son 1 hafta'
     ];
     const timeSlider = document.getElementById('timeSlider');
     const timeLabelDiv = document.getElementById('timeLabel');
 
     timeSlider.addEventListener('input', () => {
       timeLabelDiv.textContent = timeLabels[timeSlider.value];
-      // You can hook this event to update the chart’s data range.
-      updateChartRange();
+      // Re-draw chart whenever slider moves
+      drawChart();
     });
 
     // Logout button
@@ -159,7 +160,7 @@
     const tempChart = new Chart(ctx, {
       type: 'line',
       data: {
-        labels: [], // will be populated
+        labels: [],
         datasets: [{
           label: 'Temperature (°C)',
           data: [],
@@ -201,7 +202,7 @@
           .filter(pt => pt.type === 'temperature')
           .sort((a, b) => new Date(a.timestamp) - new Date(b.timestamp));
 
-        // Initial chart draw
+        // Draw chart initially (and on each fetch)
         drawChart();
       } catch (err) {
         console.error('Error fetching data:', err);
@@ -219,16 +220,15 @@
       const minutesLookup = [10, 30, 120, 1440, 10080];
       const cutoff = now - minutesLookup[idx] * 60 * 1000;
 
-      const filtered = fullData.filter(pt => new Date(pt.timestamp).getTime() >= cutoff);
+      const filtered = fullData.filter(
+        pt => new Date(pt.timestamp).getTime() >= cutoff
+      );
 
-      tempChart.data.labels = filtered.map(pt => new Date(pt.timestamp).toLocaleTimeString());
+      tempChart.data.labels = filtered.map(pt =>
+        new Date(pt.timestamp).toLocaleTimeString()
+      );
       tempChart.data.datasets[0].data = filtered.map(pt => pt.temperature);
       tempChart.update();
-    }
-
-    // Called whenever the slider moves
-    function updateChartRange() {
-      drawChart();
     }
 
     // Initial data load & polling
