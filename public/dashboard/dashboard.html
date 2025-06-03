@@ -2,166 +2,238 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
+  <meta charset="UTF-8" />
   <title>Dashboard — Water Quality App</title>
-  <style>
-    body { font-family: sans-serif; padding: 2em; }
-    .logout-btn {
-      float: right;
-      background: #cc0033;
-      color: white;
-      border: none;
-      border-radius: 6px;
-      padding: 0.6em 1.2em;
-      font-size: 1em;
-      cursor: pointer;
-    }
-    .chart-container {
-      position: relative;
-      margin-top: 2em;
-      width: 100%;
-      max-width: 800px;
-    }
-    h1, h2 {
-      margin: 0;
-    }
-    #timeSlider {
-      margin: 0.5em 0;
-      width: 100%;
-      max-width: 400px;
-    }
-    #timeLabel {
-      display: inline-block;
-      margin-left: 0.5em;
-      font-weight: bold;
-    }
-    .controls {
-      margin-top: 1.5em;
-      margin-bottom: 1em;
-    }
-  </style>
   <!-- Chart.js CDN -->
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <style>
+    /* Page background */
+    body {
+      margin: 0;
+      background-color: #e6f7ff; /* light blue */
+      font-family: Arial, sans-serif;
+    }
+
+    /* Top bar */
+    .header {
+      background-color: #f0f0f0; /* light gray */
+      padding: 12px 24px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      box-shadow: 0 1px 4px rgba(0,0,0,0.1);
+    }
+    .header .title {
+      font-size: 1.2rem;
+      font-weight: bold;
+      color: #333;
+    }
+    .header .buttons button {
+      margin-left: 12px;
+      padding: 6px 12px;
+      border: none;
+      border-radius: 4px;
+      background-color: #1890ff;
+      color: white;
+      cursor: pointer;
+      font-size: 0.9rem;
+    }
+    .header .buttons button:hover {
+      background-color: #1073c7;
+    }
+
+    /* Main content area */
+    .main {
+      display: flex;
+      padding: 24px;
+      height: calc(100vh -  fiftypx);
+      box-sizing: border-box;
+    }
+
+    /* Chart on the left */
+    .chart-container {
+      flex: 3;
+      background: white;
+      border-radius: 6px;
+      box-shadow: 0 1px 4px rgba(0,0,0,0.1);
+      padding: 16px;
+      margin-right: 16px;
+      display: flex;
+      flex-direction: column;
+    }
+    .chart-container h2 {
+      margin: 0 0 8px 0;
+      font-size: 1rem;
+      color: #333;
+    }
+    .chart-container canvas {
+      flex: 1;
+    }
+
+    /* Slider on the right */
+    .slider-container {
+      flex: 1;
+      background: white;
+      border-radius: 6px;
+      box-shadow: 0 1px 4px rgba(0,0,0,0.1);
+      padding: 16px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+    }
+    .slider-container h3 {
+      margin-bottom: 12px;
+      font-size: 1rem;
+      color: #333;
+      text-align: center;
+    }
+    .slider-container input[type=range] {
+      width: 100%;
+    }
+    .slider-container #timeLabel {
+      margin-top: 8px;
+      font-size: 0.9rem;
+      color: #555;
+    }
+  </style>
 </head>
 <body>
-  <div style="width:100%; text-align:right; padding:1em;">
-    <a href="/index.html" class="home-btn">Home</a>
-  </div>
-  <button id="logout" class="logout-btn">Logout</button>
-  <h1>Dashboard</h1>
-
-  <div class="controls">
-    <label for="timeSlider">Show data from:</label><br>
-    <input type="range" id="timeSlider" min="0" max="4" value="0">
-    <span id="timeLabel">Last 10 minutes</span>
+  <!-- Top bar -->
+  <div class="header">
+    <div class="title">Dashboard</div>
+    <div class="buttons">
+      <button onclick="location.href='index.html'">Home</button>
+      <button id="logoutBtn">Logout</button>
+    </div>
   </div>
 
-  <div class="chart-container">
-    <h2>Temperature Over Time</h2>
-    <canvas id="tempChart"></canvas>
+  <!-- Main content -->
+  <div class="main">
+    <!-- Left: Chart -->
+    <div class="chart-container">
+      <h2>Temperature Over Time</h2>
+      <canvas id="tempChart"></canvas>
+    </div>
+
+    <!-- Right: Slider -->
+    <div class="slider-container">
+      <h3>Filter by Time Frame</h3>
+      <input type="range" id="timeSlider" min="0" max="4" value="0" />
+      <div id="timeLabel">Last 10 minutes</div>
+    </div>
   </div>
 
   <script>
-    document.addEventListener('DOMContentLoaded', () => {
-      // 1) Redirect to login if no token
-      const token = localStorage.getItem('token');
-      if (!token) location.href = 'dashboard/login.html';
+    // Redirect to login if no token
+    const token = localStorage.getItem('token');
+    if (!token) {
+      window.location.href = 'dashboard/login.html';
+    }
 
-      // 2) Map slider positions → time windows (in minutes) and labels
-      const timeOptions = [10, 30, 120, 1440, 10080]; 
-      const timeLabels  = [
-        'Last 10 minutes', 
-        'Last 30 minutes', 
-        'Last 2 hours', 
-        'Last 1 day', 
-        'Last 1 week'
-      ];
+    // Slider labels
+    const timeLabels = [
+      'Last 10 minutes',
+      'Last 30 minutes',
+      'Last 2 hours',
+      'Last 1 day',
+      'Last 1 week'
+    ];
+    const timeSlider = document.getElementById('timeSlider');
+    const timeLabelDiv = document.getElementById('timeLabel');
 
-      const slider = document.getElementById('timeSlider');
-      const label  = document.getElementById('timeLabel');
-
-      // 3) Prepare an empty Chart.js instance
-      const ctx = document.getElementById('tempChart').getContext('2d');
-      const tempChart = new Chart(ctx, {
-        type: 'line',
-        data: {
-          labels: [], 
-          datasets: [{
-            label: 'Temperature (°C)',
-            data: [],
-            fill: false,
-            tension: 0.1
-          }]
-        },
-        options: {
-          scales: {
-            x: {
-              display: true,
-              title: { display: true, text: 'Timestamp' }
-            },
-            y: {
-              display: true,
-              title: { display: true, text: 'Temperature (°C)' }
-            }
-          }
-        }
-      });
-
-      let fullData = []; // will hold the fetched history
-
-      // 4) Fetch the entire history from /api/sensor-data, filter to temperature only
-      async function fetchData() {
-        try {
-          const res = await fetch('/api/sensor-data', {
-            headers: { 'Authorization': 'Bearer ' + token }
-          });
-          if (!res.ok) throw new Error('Unauthorized or network error');
-          const data = await res.json();
-          // Keep only temperature readings
-          fullData = data.filter(pt => pt.type === 'temperature');
-          updateChart();
-        } catch (err) {
-          console.error('Failed to fetch sensor-data:', err);
-          if (err.message.includes('Unauthorized')) {
-            localStorage.removeItem('token');
-            location.href = '/dashboard/login.html';
-          }
-        }
-      }
-
-      // 5) Given the current slider position, filter fullData and redraw the chart
-      function updateChart() {
-        const idx = parseInt(slider.value, 10);
-        label.textContent = timeLabels[idx];
-
-        const now    = Date.now();
-        const cutoff = now - timeOptions[idx] * 60 * 1000;
-
-        // Filter out any points older than cutoff
-        const filtered = fullData.filter(pt => new Date(pt.timestamp).getTime() >= cutoff);
-
-        // Sort ascending by timestamp
-        filtered.sort((a, b) => new Date(a.timestamp) - new Date(b.timestamp));
-
-        // Map to labels + dataset
-        tempChart.data.labels = filtered.map(pt => new Date(pt.timestamp).toLocaleString());
-        tempChart.data.datasets[0].data = filtered.map(pt => pt.temperature);
-        tempChart.update();
-      }
-
-      // 6) Re‐draw whenever the slider moves
-      slider.addEventListener('input', updateChart);
-
-      // 7) Logout button
-      document.getElementById('logout').addEventListener('click', () => {
-        localStorage.removeItem('token');
-        location.href = '/dashboard/login.html';
-      });
-
-      // 8) Initial fetch + refresh every 5 seconds
-      fetchData();
-      setInterval(fetchData, 5000);
+    timeSlider.addEventListener('input', () => {
+      timeLabelDiv.textContent = timeLabels[timeSlider.value];
+      // You can hook this event to update the chart’s data range.
+      updateChartRange();
     });
+
+    // Logout button
+    document.getElementById('logoutBtn').addEventListener('click', () => {
+      localStorage.removeItem('token');
+      window.location.href = 'dashboard/login.html';
+    });
+
+    // Create Chart.js instance
+    const ctx = document.getElementById('tempChart').getContext('2d');
+    const tempChart = new Chart(ctx, {
+      type: 'line',
+      data: {
+        labels: [], // will be populated
+        datasets: [{
+          label: 'Temperature (°C)',
+          data: [],
+          borderColor: '#FF6B6B',
+          fill: false,
+          tension: 0.1
+        }]
+      },
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        scales: {
+          x: {
+            display: true,
+            title: { display: true, text: 'Time' }
+          },
+          y: {
+            display: true,
+            title: { display: true, text: '°C' },
+            beginAtZero: true
+          }
+        }
+      }
+    });
+
+    let fullData = [];
+
+    // Fetch full sensor history
+    async function fetchData() {
+      try {
+        const res = await fetch('/api/sensor-data', {
+          headers: { 'Authorization': 'Bearer ' + token }
+        });
+        if (!res.ok) throw new Error('Fetch error');
+        const data = await res.json();
+
+        // Filter to temperature readings and sort by timestamp
+        fullData = data
+          .filter(pt => pt.type === 'temperature')
+          .sort((a, b) => new Date(a.timestamp) - new Date(b.timestamp));
+
+        // Initial chart draw
+        drawChart();
+      } catch (err) {
+        console.error('Error fetching data:', err);
+        if (err.message.includes('Unauthorized')) {
+          localStorage.removeItem('token');
+          window.location.href = 'dashboard/login.html';
+        }
+      }
+    }
+
+    // Draw chart based on current slider position
+    function drawChart() {
+      const idx = parseInt(timeSlider.value, 10);
+      const now = Date.now();
+      const minutesLookup = [10, 30, 120, 1440, 10080];
+      const cutoff = now - minutesLookup[idx] * 60 * 1000;
+
+      const filtered = fullData.filter(pt => new Date(pt.timestamp).getTime() >= cutoff);
+
+      tempChart.data.labels = filtered.map(pt => new Date(pt.timestamp).toLocaleTimeString());
+      tempChart.data.datasets[0].data = filtered.map(pt => pt.temperature);
+      tempChart.update();
+    }
+
+    // Called whenever the slider moves
+    function updateChartRange() {
+      drawChart();
+    }
+
+    // Initial data load & polling
+    fetchData();
+    setInterval(fetchData, 5000);
   </script>
 </body>
 </html>
