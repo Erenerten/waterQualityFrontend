@@ -28,8 +28,7 @@
       font-weight: bold;
       color: #333;
     }
-
-    }.header .buttons button {
+    .header .buttons button {
       margin-left: 12px;
       padding: 6px 12px;
       border: none;
@@ -57,7 +56,7 @@
       padding: 24px;
       box-sizing: border-box;
       height: calc(100vh - 50px);
-      overflow: hidden; /* prevent page from scrolling itself */
+      overflow: hidden; /* prevent page from scrolling */
     }
 
     /* Chart on the left */
@@ -110,10 +109,10 @@
 </head>
 <body>
   <!-- Top bar -->
-  </div><div class="header">
+  <div class="header">
     <div class="title">Dashboard</div>
     <div class="buttons">
-      <button class="home-btn" onclick="location.href='dashboard/index.html'">Home</button>
+      <button class="home-btn" onclick="window.location.href='https://ehmsukalitesi.online'">Home</button>
       <button class="logout-btn" id="logoutBtn">Logout</button>
     </div>
   </div>
@@ -122,13 +121,13 @@
   <div class="main">
     <!-- Left: Chart -->
     <div class="chart-container">
-      <h2>Sıcaklık Grafiği</h2>
+      <h2>Temperature Over Time</h2>
       <canvas id="tempChart"></canvas>
     </div>
 
     <!-- Right: Slider -->
     <div class="slider-container">
-      <h3>Zaman Aralığı Seçimi</h3>
+      <h3>Filter by Time Frame</h3>
       <input type="range" id="timeSlider" min="0" max="4" value="0" />
       <div id="timeLabel">Last 10 minutes</div>
     </div>
@@ -138,30 +137,29 @@
     // Redirect to login if no token
     const token = localStorage.getItem('token');
     if (!token) {
-      window.location.href = 'dashboard/login.html';
+      window.location.href = '/dashboard/login.html';
     }
 
     // Slider labels
     const timeLabels = [
-      'Son 10 dakika',
-      'Son 30 dakika',
-      'Son 2 saat',
-      'Son 1 gün',
-      'Son 1 hafta'
+      'Last 10 minutes',
+      'Last 30 minutes',
+      'Last 2 hours',
+      'Last 1 day',
+      'Last 1 week'
     ];
     const timeSlider = document.getElementById('timeSlider');
     const timeLabelDiv = document.getElementById('timeLabel');
 
     timeSlider.addEventListener('input', () => {
       timeLabelDiv.textContent = timeLabels[timeSlider.value];
-      // Re-draw chart whenever slider moves
       drawChart();
     });
 
     // Logout button
     document.getElementById('logoutBtn').addEventListener('click', () => {
       localStorage.removeItem('token');
-      window.location.href = 'dashboard/login.html';
+      window.location.href = '/dashboard/login.html';
     });
 
     // Create Chart.js instance
@@ -184,6 +182,7 @@
         scales: {
           x: {
             display: true,
+            title: { display: true, text: 'Time' }
           },
           y: {
             display: true,
@@ -205,18 +204,16 @@
         if (!res.ok) throw new Error('Fetch error');
         const data = await res.json();
 
-        // Filter to temperature readings and sort by timestamp
         fullData = data
           .filter(pt => pt.type === 'temperature')
           .sort((a, b) => new Date(a.timestamp) - new Date(b.timestamp));
 
-        // Draw chart initially (and on each fetch)
         drawChart();
       } catch (err) {
         console.error('Error fetching data:', err);
         if (err.message.includes('Unauthorized')) {
           localStorage.removeItem('token');
-          window.location.href = 'dashboard/login.html';
+          window.location.href = '/dashboard/login.html';
         }
       }
     }
