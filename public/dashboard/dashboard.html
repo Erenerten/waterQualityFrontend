@@ -2,7 +2,7 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
+  <meta charset="UTF-8" />
   <title>Dashboard — Water Quality App</title>
   <style>
     body { font-family: sans-serif; padding: 2em; }
@@ -26,34 +26,42 @@
       margin: 0;
     }
   </style>
+  <!-- Chart.js CDN -->
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 </head>
 <body>
+  <!-- Logout button -->
   <button class="logout-btn" id="logout">Logout</button>
+  <!-- Link back to home -->
+  <a href="/index.html" style="text-decoration:none; padding:0.6em 1.2em; background:#0066cc; color:white; border-radius:6px;">Home</a>
+
   <h1>Dashboard</h1>
-  <p>Sensor data will appear below:</p>
+  <p>Sensor data collected so far:</p>
 
   <div class="chart-container">
     <h2>Temperature Over Time</h2>
+    <!-- Canvas for the Chart.js line chart -->
     <canvas id="tempChart"></canvas>
   </div>
 
   <script>
-    document.addEventListener('DOMContentLoaded', () => {
+    document.addEventListener('DOMContentLoaded', async function() {
+      // 1) Redirect to login if no token
       const token = localStorage.getItem('token');
       if (!token) {
         location.href = 'dashboard/login.html';
         return;
       }
 
+      // 2) Grab the canvas and create a Chart.js instance with empty arrays
       const ctx = document.getElementById('tempChart').getContext('2d');
       const tempChart = new Chart(ctx, {
         type: 'line',
         data: {
-          labels: [],
+          labels: [],      // x-axis timestamps
           datasets: [{
             label: 'Temperature (°C)',
-            data: [],
+            data: [],      // y-axis values
             fill: false,
             tension: 0.1
           }]
@@ -72,40 +80,46 @@
         }
       });
 
-      async function fetchAndAppendTemperature() {
+      // 3) Function to fetch *all* sensor-data and redraw the chart
+      async function fetchAndDrawAll() {
         try {
           const res = await fetch('/api/sensor-data', {
             headers: { 'Authorization': 'Bearer ' + token }
           });
           if (!res.ok) throw new Error('Unauthorized or network error');
           const data = await res.json();
-          if (Array.isArray(data) && data.length > 0) {
+
+          // Expecting an array: [{ timestamp: "...", temperature: 22.5 }, ...]
+          if (Array.isArray(data)) {
+            // Sort by timestamp ascending
             data.sort((a, b) => new Date(a.timestamp) - new Date(b.timestamp));
-            const latest = data[data.length - 1];
-            const timeLabel = new Date(latest.timestamp).toLocaleString();
-            tempChart.data.labels.push(timeLabel);
-            tempChart.data.datasets[0].data.push(latest.temperature);
-            if (tempChart.data.labels.length > 40) {
-              tempChart.data.labels.shift();
-              tempChart.data.datasets[0].data.shift();
-            }
+
+            // Map to labels and values
+            const labels = data.map(pt => new Date(pt.timestamp).toLocaleString());
+            const values = data.map(pt => pt.temperature);
+
+            // Replace the chart's data entirely
+            tempChart.data.labels = labels;
+            tempChart.data.datasets[0].data = values;
             tempChart.update();
           }
         } catch (err) {
           console.error('Failed to fetch sensor-data:', err);
           if (err.message.includes('Unauthorized')) {
             localStorage.removeItem('token');
-            location.href = '/dashboard/login.html';
+            location.href = 'dashboard/login.html';
           }
         }
       }
 
-      fetchAndAppendTemperature();
-      setInterval(fetchAndAppendTemperature, 5000);
+      // 4) Fetch once now, then every 5 seconds to refresh
+      await fetchAndDrawAll();
+      setInterval(fetchAndDrawAll, 5000);
 
+      // 5) Logout handler
       document.getElementById('logout').addEventListener('click', () => {
         localStorage.removeItem('token');
-        location.href = '/dashboard/login.html';
+        location.href = 'dashboard/login.html';
       });
     });
   </script>
