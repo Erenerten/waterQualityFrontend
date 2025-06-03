@@ -2,7 +2,7 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8" />
+  <meta charset="UTF-8">
   <title>Dashboard — Water Quality App</title>
   <style>
     body { font-family: sans-serif; padding: 2em; }
@@ -25,43 +25,70 @@
     h1, h2 {
       margin: 0;
     }
+    #timeSlider {
+      margin: 0.5em 0;
+      width: 100%;
+      max-width: 400px;
+    }
+    #timeLabel {
+      display: inline-block;
+      margin-left: 0.5em;
+      font-weight: bold;
+    }
+    .controls {
+      margin-top: 1.5em;
+      margin-bottom: 1em;
+    }
   </style>
   <!-- Chart.js CDN -->
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 </head>
 <body>
-  <!-- Logout button -->
-  <button class="logout-btn" id="logout">Logout</button>
-  <!-- Link back to home -->
-  <a href="/index.html" style="text-decoration:none; padding:0.6em 1.2em; background:#0066cc; color:white; border-radius:6px;">Home</a>
-
+  <div style="width:100%; text-align:right; padding:1em;">
+    <a href="/index.html" class="home-btn">Home</a>
+  </div>
+  <button id="logout" class="logout-btn">Logout</button>
   <h1>Dashboard</h1>
-  <p>Sensor data collected so far:</p>
+
+  <div class="controls">
+    <label for="timeSlider">Show data from:</label><br>
+    <input type="range" id="timeSlider" min="0" max="4" value="0">
+    <span id="timeLabel">Last 10 minutes</span>
+  </div>
 
   <div class="chart-container">
     <h2>Temperature Over Time</h2>
-    <!-- Canvas for the Chart.js line chart -->
     <canvas id="tempChart"></canvas>
   </div>
 
   <script>
-    document.addEventListener('DOMContentLoaded', async function() {
+    document.addEventListener('DOMContentLoaded', () => {
       // 1) Redirect to login if no token
       const token = localStorage.getItem('token');
-      if (!token) {
-        location.href = 'dashboard/login.html';
-        return;
-      }
+      if (!token) location.href = 'dashboard/login.html';
 
-      // 2) Grab the canvas and create a Chart.js instance with empty arrays
+      // 2) Map slider positions → time windows (in minutes) and labels
+      const timeOptions = [10, 30, 120, 1440, 10080]; 
+      const timeLabels  = [
+        'Last 10 minutes', 
+        'Last 30 minutes', 
+        'Last 2 hours', 
+        'Last 1 day', 
+        'Last 1 week'
+      ];
+
+      const slider = document.getElementById('timeSlider');
+      const label  = document.getElementById('timeLabel');
+
+      // 3) Prepare an empty Chart.js instance
       const ctx = document.getElementById('tempChart').getContext('2d');
       const tempChart = new Chart(ctx, {
         type: 'line',
         data: {
-          labels: [],      // x-axis timestamps
+          labels: [], 
           datasets: [{
             label: 'Temperature (°C)',
-            data: [],      // y-axis values
+            data: [],
             fill: false,
             tension: 0.1
           }]
@@ -80,47 +107,60 @@
         }
       });
 
-      // 3) Function to fetch *all* sensor-data and redraw the chart
-      async function fetchAndDrawAll() {
+      let fullData = []; // will hold the fetched history
+
+      // 4) Fetch the entire history from /api/sensor-data, filter to temperature only
+      async function fetchData() {
         try {
           const res = await fetch('/api/sensor-data', {
             headers: { 'Authorization': 'Bearer ' + token }
           });
           if (!res.ok) throw new Error('Unauthorized or network error');
           const data = await res.json();
-
-          // Expecting an array: [{ timestamp: "...", temperature: 22.5 }, ...]
-          if (Array.isArray(data)) {
-            // Sort by timestamp ascending
-            data.sort((a, b) => new Date(a.timestamp) - new Date(b.timestamp));
-
-            // Map to labels and values
-            const labels = data.map(pt => new Date(pt.timestamp).toLocaleString());
-            const values = data.map(pt => pt.temperature);
-
-            // Replace the chart's data entirely
-            tempChart.data.labels = labels;
-            tempChart.data.datasets[0].data = values;
-            tempChart.update();
-          }
+          // Keep only temperature readings
+          fullData = data.filter(pt => pt.type === 'temperature');
+          updateChart();
         } catch (err) {
           console.error('Failed to fetch sensor-data:', err);
           if (err.message.includes('Unauthorized')) {
             localStorage.removeItem('token');
-            location.href = 'dashboard/login.html';
+            location.href = '/dashboard/login.html';
           }
         }
       }
 
-      // 4) Fetch once now, then every 5 seconds to refresh
-      await fetchAndDrawAll();
-      setInterval(fetchAndDrawAll, 5000);
+      // 5) Given the current slider position, filter fullData and redraw the chart
+      function updateChart() {
+        const idx = parseInt(slider.value, 10);
+        label.textContent = timeLabels[idx];
 
-      // 5) Logout handler
+        const now    = Date.now();
+        const cutoff = now - timeOptions[idx] * 60 * 1000;
+
+        // Filter out any points older than cutoff
+        const filtered = fullData.filter(pt => new Date(pt.timestamp).getTime() >= cutoff);
+
+        // Sort ascending by timestamp
+        filtered.sort((a, b) => new Date(a.timestamp) - new Date(b.timestamp));
+
+        // Map to labels + dataset
+        tempChart.data.labels = filtered.map(pt => new Date(pt.timestamp).toLocaleString());
+        tempChart.data.datasets[0].data = filtered.map(pt => pt.temperature);
+        tempChart.update();
+      }
+
+      // 6) Re‐draw whenever the slider moves
+      slider.addEventListener('input', updateChart);
+
+      // 7) Logout button
       document.getElementById('logout').addEventListener('click', () => {
         localStorage.removeItem('token');
-        location.href = 'dashboard/login.html';
+        location.href = '/dashboard/login.html';
       });
+
+      // 8) Initial fetch + refresh every 5 seconds
+      fetchData();
+      setInterval(fetchData, 5000);
     });
   </script>
 </body>
