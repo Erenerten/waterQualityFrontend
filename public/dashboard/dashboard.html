@@ -27,73 +27,90 @@
     }
   </style>
   <!-- Chart.js CDN -->
-  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-<link rel="stylesheet" href="../style.css">
-</head>
-<body>
-  <button class="logout-btn" id="logout">Logout</button>
-    <a href="/index.html" class="home-btn">Home</a>
-  <h1>Dashboard</h1>
-  <p>Sensor data will appear below:</p>
-
-  <div class="chart-container">
-    <h2>Temperature Over Time</h2>
-    <canvas id="tempChart"></canvas>
-  </div>
-
   <script>
-    // redirect to login if no token
-    const token = localStorage.getItem('token');
-    if (!token) location.href = 'dashboard/login.html';
+  // 1) Redirect to login if no token
+  const token = localStorage.getItem('token');
+  if (!token) location.href = 'dashboard/login.html';
 
-    document.getElementById('logout').addEventListener('click', () => {
-      localStorage.removeItem('token');
-      location.href = '/dashboard/login.html';
-    });
-
-    // fetch and render sensor data as chart
-    (async function(){
-      try {
-        const res = await fetch('/api/sensor-data', {
-          headers: { 'Authorization': 'Bearer ' + token }
-        });
-        if (!res.ok) throw new Error('Unauthorized or network error');
-        const data = await res.json();
-
-        // extract timestamps and temperatures
-        const labels = data.map(d => new Date(d.timestamp).toLocaleString());
-        const temps  = data.map(d => d.temperature);
-
-        // create Chart.js line chart
-        const ctx = document.getElementById('tempChart').getContext('2d');
-        new Chart(ctx, {
-          type: 'line',
-          data: {
-            labels: labels,
-            datasets: [{
-              label: 'Temperature (°C)',
-              data: temps,
-              fill: false,
-              tension: 0.1
-            }]
-          },
-          options: {
-            scales: {
-              x: { display: true, title: { display: true, text: 'Timestamp' } },
-              y: { display: true, title: { display: true, text: 'Temperature (°C)' } }
-            }
-          }
-        });
-
-      } catch (err) {
-        alert('Failed to load data: ' + err.message);
-        if (err.message.includes('Unauthorized')) {
-          localStorage.removeItem('token');
-          location.href = '/dashboard/login.html';
+  // 2) Prepare a Chart.js instance with initially empty data
+  const ctx = document.getElementById('tempChart').getContext('2d');
+  const tempChart = new Chart(ctx, {
+    type: 'line',
+    data: {
+      labels: [],      // x-axis timestamps
+      datasets: [{
+        label: 'Temperature (°C)',
+        data: [],      // y-axis values
+        fill: false,
+        tension: 0.1
+      }]
+    },
+    options: {
+      scales: {
+        x: {
+          display: true,
+          title: { display: true, text: 'Timestamp' }
+        },
+        y: {
+          display: true,
+          title: { display: true, text: 'Temperature (°C)' }
         }
       }
-    })();
-  </script>
+    }
+  });
+
+  // 3) Define a function to fetch the latest data and update the chart
+  async function fetchAndAppendTemperature() {
+    try {
+      const res = await fetch('/api/sensor-data', {
+        headers: { 'Authorization': 'Bearer ' + token }
+      });
+      if (!res.ok) throw new Error('Unauthorized or network error');
+      const data = await res.json();
+
+      // Assume "data" is an array of objects like:
+      // [{ timestamp: "2025-06-03T12:00:00Z", temperature: 22.5 }, ...]
+      // We’ll take only the newest point:
+      if (Array.isArray(data) && data.length > 0) {
+        // Sort by timestamp ascending, just in case:
+        data.sort((a, b) => new Date(a.timestamp) - new Date(b.timestamp));
+        const latest = data[data.length - 1];
+
+        // Convert timestamp to a human‐readable string
+        const timeLabel = new Date(latest.timestamp).toLocaleString();
+
+        // Push into chart data:
+        tempChart.data.labels.push(timeLabel);
+        tempChart.data.datasets[0].data.push(latest.temperature);
+
+        // If you only want to keep the last N points (e.g. 20), shift off older
+        if (tempChart.data.labels.length > 40) {
+          tempChart.data.labels.shift();
+          tempChart.data.datasets[0].data.shift();
+        }
+
+        // Finally, tell Chart.js to redraw
+        tempChart.update();
+      }
+    } catch (err) {
+      console.error('Failed to fetch sensor-data:', err);
+      if (err.message.includes('Unauthorized')) {
+        localStorage.removeItem('token');
+        location.href = '/dashboard/login.html';
+      }
+    }
+  }
+
+  // 4) Call it once immediately, then every 5 seconds
+  fetchAndAppendTemperature();
+  setInterval(fetchAndAppendTemperature, 5000);
+
+  // 5) Logout handler
+  document.getElementById('logout').addEventListener('click', () => {
+    localStorage.removeItem('token');
+    location.href = '/dashboard/login.html';
+  });
+</script>
 </body>
 </html>
 
