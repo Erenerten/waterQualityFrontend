@@ -184,27 +184,34 @@ async function poll () {
     });
     if (!r.ok) throw new Error('HTTP ' + r.status);
 
-    /*  rows: [{type:'temperature', value:27.07, timestamp:…}, …]    */
-    const rows = await r.json();
+    const rows = await r.json();          // whatever the backend ships
 
-    /* newest temperature packet */
-    const tRow = [...rows].reverse().find(row => row.type === 'temperature');
-    if (!tRow) return;                       // nothing yet
+    /* 1) find the latest object that LOOKS like temperature  -------- */
+    const tRow = [...rows].reverse().find(row => {
+      /* possibility A: explicit type field */
+      if (row.type && String(row.type).toLowerCase().includes('temp')) return true;
+      /* possibility B: the row *itself* is { temperature: … }        */
+      return Object.keys(row).some(k => k.toLowerCase().includes('temp'));
+    });
+    if (!tRow) return;                    // nothing to do yet
 
-    /* extract a number from ANY shape the backend sends */
-    let raw = (typeof tRow.value === 'number')      ? tRow.value
-            : (typeof tRow.value === 'string')      ? tRow.value
-            : (typeof tRow.temperature === 'number')? tRow.temperature
-            : (typeof tRow.temperature === 'string')? tRow.temperature
-            : 0;
+    /* 2) pull out the number  -------------------------------------- */
+    let raw =
+      /* value or temperature field (number) */
+      tRow.value ?? tRow.temperature ??
+      /* string versions */
+      (typeof tRow.value === 'string'       ? tRow.value       : null) ??
+      (typeof tRow.temperature === 'string' ? tRow.temperature : null) ??
+      /* nested { temperature: n } */
+      Object.values(tRow).find(v => typeof v === 'number') ??
+      Object.values(tRow).find(v => typeof v === 'string');
 
-    /* strip units if needed  e.g. "27.1 °C" → "27.1" */
-    if (typeof raw === 'string') raw = raw.replace(/[^\d.+-]/g,'');
+    if (typeof raw === 'string') raw = raw.replace(/[^\d.+-]/g, '');
     const val = parseFloat(raw);
 
-    console.log('[TEMP]', val);              // <── watch the console
+    console.log('[TEMP parsed]', val);     // open DevTools → Console
 
-    if (!Number.isFinite(val)) return;       // skip junk
+    if (!Number.isFinite(val)) return;     // drop bogus/broken rows
     pushTemp(val);
     updateTempTile(val);
 
