@@ -14,7 +14,7 @@
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/leaflet.heat@0.2.0/dist/leaflet-heat.min.js"></script>
 
-<!-- Styles -->
+<!-- Styles (unchanged layout, min-height keeps canvas visible) -->
 <style>
   :root{--primary:#0066cc;--primary-dark:#0052a3;--primary-light:#e6f2ff;--accent:#00b4d8;--accent-dark:#0093b8;--light:#ffffff;--dark:#0a2342;--gray:#f8fafc;--gray-dark:#e9ecef;--text:#2d3748;--text-light:#6c757d;--success:#2ecc71;--warning:#f39c12;--danger:#e74c3c}
   *{margin:0;padding:0;box-sizing:border-box}
@@ -53,7 +53,7 @@
   #map{height:100%;width:100%;background:#0a2342}
   .graph-container{width:40%;padding:20px;background:#fff;display:flex;flex-direction:column}
   .graph-title{font-size:1.2rem;margin-bottom:15px;color:var(--dark);font-weight:600;display:flex;justify-content:space-between;align-items:center}
-  .chart-wrapper{flex-grow:1;position:relative;min-height:260px}  /* new line */
+  .chart-wrapper{flex-grow:1;position:relative;min-height:260px}  /* keeps canvas visible */
   .chart-container{position:absolute;width:100%;height:100%}
   .sensor-info{margin-top:20px;display:grid;grid-template-columns:repeat(2,1fr);gap:15px}
   .info-card{background:var(--gray);padding:12px;border-radius:8px;transition:.3s}
@@ -72,20 +72,20 @@
 <div class="sidebar">
   <div class="toggle-sidebar" onclick="toggleSidebar()"><i class="fas fa-chevron-left"></i></div>
   <div class="logo" onclick="toggleSidebar()">
-    <img src="images/logo.png" alt="SuKaliteX Logo" style="height:60px;margin-right:10px" />
+    <img src="/images/logo.png" alt="SuKaliteX Logo" style="height:60px;margin-right:10px" />
     <span>SuKaliteX</span>
   </div>
 
   <div class="sensor-container">
-    <div class="sensor-box active" data-type="temperature" onclick="showSensorDetails('temperature', event)">
+    <div class="sensor-box active" data-type="temperature" onclick="showSensorDetails('temperature',event)">
       <div class="sensor-header"><h3><i class="fas fa-thermometer-half"></i> Su Sıcaklığı</h3><span class="sensor-status status-normal">Normal</span></div>
       <div class="sensor-value">-- <span class="sensor-unit">°C</span></div>
     </div>
-    <div class="sensor-box" data-type="turbidity" onclick="showSensorDetails('turbidity', event)">
+    <div class="sensor-box" data-type="turbidity" onclick="showSensorDetails('turbidity',event)">
       <div class="sensor-header"><h3><i class="fas fa-water"></i> Bulanıklık</h3><span class="sensor-status status-normal">Normal</span></div>
       <div class="sensor-value">-- <span class="sensor-unit">NTU</span></div>
     </div>
-    <div class="sensor-box" data-type="conductivity" onclick="showSensorDetails('conductivity', event)">
+    <div class="sensor-box" data-type="conductivity" onclick="showSensorDetails('conductivity',event)">
       <div class="sensor-header"><h3><i class="fas fa-bolt"></i> TDS / İletkenlik</h3><span class="sensor-status status-normal">Normal</span></div>
       <div class="sensor-value">-- <span class="sensor-unit">ppm</span></div>
     </div>
@@ -100,20 +100,16 @@
   </div>
 
   <div class="content-area">
-    <!-- Map -->
     <div class="map-container"><div id="map"></div></div>
 
-    <!-- Chart & details -->
     <div class="graph-container">
       <h3 class="graph-title">
         <span id="graph-title">Su Sıcaklığı Verileri</span>
-        <span>
-          <select id="time-range" onchange="updateChartRange()">
-            <option value="24">Son 24 Saat</option>
-            <option value="168">Son 7 Gün</option>
-            <option value="720">Son 30 Gün</option>
-          </select>
-        </span>
+        <select id="time-range" onchange="updateChartRange()">
+          <option value="24">Son 24 Saat</option>
+          <option value="168">Son 7 Gün</option>
+          <option value="720">Son 30 Gün</option>
+        </select>
       </h3>
 
       <div class="chart-wrapper"><div class="chart-container"><canvas id="sensorChart"></canvas></div></div>
@@ -128,7 +124,6 @@
   </div>
 </div>
 
-<!-- Floating toast -->
 <div class="notification" id="notification"><div id="notification-message">---</div></div>
 
 <!-- ================== Scripts ======================================== -->
@@ -137,174 +132,162 @@
  *  AUTH & BASIC UTILITIES
  *------------------------------------------------------------------*/
 const token = localStorage.getItem('token');
-if (!token) location.href = '/dashboard/login.html';
+if(!token) location.href='/dashboard/login.html';
 
-const notify = msg => {
-  const n = document.getElementById('notification');
-  document.getElementById('notification-message').textContent = msg;
+const notify = msg=>{
+  const n=document.getElementById('notification');
+  document.getElementById('notification-message').textContent=msg;
   n.classList.add('show');
-  setTimeout(() => n.classList.remove('show'), 3000);
+  setTimeout(()=>n.classList.remove('show'),3000);
 };
 
 /*--------------------------------------------------------------------
  *  MAP INITIALISATION
  *------------------------------------------------------------------*/
-let map, heatmapLayer, isHeatmapVisible = false;
-const sensorMarkers = [];
+let map,heatmapLayer,isHeatmapVisible=false;
+const sensorMarkers=[];
 
-function initMap() {
-  const center = [41.0288603, 28.8877531];
-  map = L.map('map').setView(center, 15);
-  L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-    attribution: '&copy; OpenStreetMap contributors', maxZoom: 18
-  }).addTo(map);
-
-  L.circleMarker(center, {
-    radius: 12, fillColor: '#0066cc', color: '#fff', weight: 3, fillOpacity: 1
-  }).addTo(map).bindPopup('<b>ÖLÇÜM PROBU-1</b><br>Ana İzleme Noktası');
-
-  heatmapLayer = L.heatLayer([], { radius: 25, blur: 15, maxZoom: 17,
-    gradient: { .4: 'blue', .6: 'lime', .8: 'yellow', 1: 'red' } });
+function initMap(){
+  const center=[41.0288603,28.8877531];
+  map=L.map('map').setView(center,15);
+  L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',
+    {attribution:'&copy; OpenStreetMap contributors',maxZoom:18}).addTo(map);
+  L.circleMarker(center,{radius:12,fillColor:'#0066cc',color:'#fff',weight:3,fillOpacity:1})
+   .addTo(map).bindPopup('<b>ÖLÇÜM PROBU-1</b><br>Ana İzleme Noktası');
+  heatmapLayer=L.heatLayer([],{
+    radius:25,blur:15,maxZoom:17,gradient:{.4:'blue',.6:'lime',.8:'yellow',1:'red'}
+  });
 }
 
 /*--------------------------------------------------------------------
- *  SIDEBAR / UI HELPERS
+ *  SIDEBAR HELPERS
  *------------------------------------------------------------------*/
-let sidebarCollapsed = false;
-function toggleSidebar() {
-  const sb = document.querySelector('.sidebar');
+let sidebarCollapsed=false;
+function toggleSidebar(){
+  const sb=document.querySelector('.sidebar');
   sb.classList.toggle('collapsed');
-  sidebarCollapsed = !sidebarCollapsed;
-  const icon = document.querySelector('.toggle-sidebar i');
-  icon.classList.toggle('fa-chevron-left', !sidebarCollapsed);
-  icon.classList.toggle('fa-chevron-right', sidebarCollapsed);
+  sidebarCollapsed=!sidebarCollapsed;
+  const icon=document.querySelector('.toggle-sidebar i');
+  icon.classList.toggle('fa-chevron-left',!sidebarCollapsed);
+  icon.classList.toggle('fa-chevron-right',sidebarCollapsed);
 }
 
-function updateSidebar(sensorType, value) {
-  if (value == null) return;
-  const box = document.querySelector(`.sensor-box[data-type="${sensorType}"]`);
-  if (!box) return;
-  const unit = box.querySelector('.sensor-unit').textContent.trim();
-  box.querySelector('.sensor-value').innerHTML =
-    `${Number(value).toFixed(1)} ${unit}`;
-  const statusEl = box.querySelector('.sensor-status');
-  if (sensorType === 'temperature') {
-    if (value > 26)      { statusEl.textContent='Tehlikeli'; statusEl.className='sensor-status status-danger'; }
-    else if (value > 24) { statusEl.textContent='Yüksek';    statusEl.className='sensor-status status-warning'; }
-    else                 { statusEl.textContent='Normal';    statusEl.className='sensor-status status-normal'; }
-  } else if (sensorType === 'conductivity') {
-    if (value > 1000)    { statusEl.textContent='Yüksek';    statusEl.className='sensor-status status-warning'; }
-    else                 { statusEl.textContent='Normal';    statusEl.className='sensor-status status-normal'; }
+function updateSidebar(sensorType,value){
+  const box=document.querySelector(`.sensor-box[data-type="${sensorType}"]`);
+  if(!box||value==null) return;                                    /* graceful skip */
+  const unit=box.querySelector('.sensor-unit').textContent.trim();
+  box.querySelector('.sensor-value').innerHTML=`${Number(value).toFixed(1)} ${unit}`;
+  const st=box.querySelector('.sensor-status');
+  if(sensorType==='temperature'){
+    if(value>26){st.textContent='Tehlikeli';st.className='sensor-status status-danger';}
+    else if(value>24){st.textContent='Yüksek';st.className='sensor-status status-warning';}
+    else{st.textContent='Normal';st.className='sensor-status status-normal';}
+  }else if(sensorType==='conductivity'){
+    if(value>1000){st.textContent='Yüksek';st.className='sensor-status status-warning';}
+    else{st.textContent='Normal';st.className='sensor-status status-normal';}
   }
 }
 
 /*--------------------------------------------------------------------
  *  CHART / HISTORY BUFFER
  *------------------------------------------------------------------*/
-const chartBuffer = { temperature:[], turbidity:[], conductivity:[] };
-let activeSensor   = 'temperature';
+const chartBuffer={temperature:[],turbidity:[],conductivity:[]};
+let activeSensor='temperature';
 
-const sensorCtx = document.getElementById('sensorChart').getContext('2d');
-const sensorChart = new Chart(sensorCtx, {
+const sensorCtx=document.getElementById('sensorChart').getContext('2d');
+const sensorChart=new Chart(sensorCtx,{
   type:'line',
-  data:{ labels:[], datasets:[{
-    data:[], borderColor:'#0066cc', borderWidth:2, tension:.4,
-    fill:false, pointRadius:3, pointHoverRadius:5
+  data:{labels:[],datasets:[{
+    data:[],borderColor:'#0066cc',borderWidth:2,tension:.4,
+    fill:false,pointRadius:3,pointHoverRadius:5
   }]},
   options:{
-    responsive:true, maintainAspectRatio:false,
-    plugins:{ legend:{ display:false } },
+    responsive:true,maintainAspectRatio:false,
+    plugins:{legend:{display:false}},
     scales:{
-      y:{ title:{ display:true, text:'Sıcaklık (°C)' } },
-      x:{ title:{ display:true, text:'Zaman' }, grid:{ display:false } }
+      y:{title:{display:true,text:'Sıcaklık (°C)'}},
+      x:{title:{display:true,text:'Zaman'},grid:{display:false}}
     }
   }
 });
 
-function recordValue(type, val){
+function recordValue(type,val){
   if(!chartBuffer[type]) chartBuffer[type]=[];
-  chartBuffer[type].push([new Date().toLocaleTimeString('tr-TR'), val]);
+  chartBuffer[type].push([new Date().toLocaleTimeString('tr-TR'),val]);
   if(chartBuffer[type].length>60) chartBuffer[type].shift();
   if(type===activeSensor) redrawChart();
 }
 
 function redrawChart(){
-  const buf = chartBuffer[activeSensor];
-  sensorChart.data.labels = buf.map(p=>p[0]);
-  sensorChart.data.datasets[0].data = buf.map(p=>p[1]);
-  sensorChart.options.scales.y.title.text =
-    activeSensor==='temperature'  ? 'Sıcaklık (°C)'     :
-    activeSensor==='turbidity'    ? 'Bulanıklık (NTU)'  :
-                                    'TDS / İletkenlik';
+  const buf=chartBuffer[activeSensor];
+  sensorChart.data.labels=buf.map(p=>p[0]);
+  sensorChart.data.datasets[0].data=buf.map(p=>p[1]);
+  sensorChart.options.scales.y.title.text=
+    activeSensor==='temperature' ? 'Sıcaklık (°C)' :
+    activeSensor==='turbidity'   ? 'Bulanıklık (NTU)' :
+                                   'TDS / İletkenlik';
   sensorChart.update();
 }
 
 /*--------------------------------------------------------------------
  *  DATA FETCH (poll every 10 s)
  *------------------------------------------------------------------*/
-async function fetchLiveData() {
-  try {
-    const res = await fetch('/api/sensor-data', {
-      headers:{ Authorization:'Bearer '+token }
-    });
-    if (!res.ok) throw new Error('fetch error ' + res.status);
-    const data = await res.json();          // [{type,value,timestamp}, ...]
+const ALIAS={tds:'conductivity'};             /* backend → frontend mapping */
+
+async function fetchLiveData(){
+  try{
+    const res=await fetch('/api/sensor-data',{headers:{Authorization:'Bearer '+token}});
+    if(!res.ok) throw new Error('fetch '+res.status);
+    const data=await res.json();              // [{type,value,...}, ...]
     applySensorUpdate(data);
-  } catch (e) {
-    console.error('Fetch failed:', e.message);
+  }catch(e){
+    console.error(e.message);
     notify('Veri alınamadı');
   }
 }
 
-function applySensorUpdate(arr) {
-  if (!Array.isArray(arr) || arr.length===0) return;
-  arr.forEach(d => {
-    updateSidebar(d.type, d.value);
-    recordValue(d.type, d.value);           // <-- new
+function applySensorUpdate(arr){
+  if(!Array.isArray(arr)||arr.length===0) return;
+  arr.forEach(d=>{
+    const type=ALIAS[d.type]||d.type;         // canonicalise
+    updateSidebar(type,d.value);
+    recordValue(type,d.value);
   });
   updateHeatmap();
 }
 
 /*--------------------------------------------------------------------
- *  HEATMAP HELPERS
+ *  HEATMAP STUBS
  *------------------------------------------------------------------*/
-function updateHeatmap() {
-  const pts = sensorMarkers.map(s=>[s.lat, s.lng, (s.value||22)/10]);
+function updateHeatmap(){
+  const pts=sensorMarkers.map(s=>[s.lat,s.lng,(s.value||22)/10]);
   heatmapLayer.setLatLngs(pts);
 }
-function toggleHeatmap()       { isHeatmapVisible ? map.removeLayer(heatmapLayer) : map.addLayer(heatmapLayer); isHeatmapVisible=!isHeatmapVisible; }
-const centerMap   = () => map.setView(map.getCenter(),15);
-const showAllSensors = () => {
-  if(sensorMarkers.length===0) return;
-  map.fitBounds(L.featureGroup(sensorMarkers.map(s=>s.marker)).getBounds().pad(.2));
-};
+function toggleHeatmap(){isHeatmapVisible?map.removeLayer(heatmapLayer):map.addLayer(heatmapLayer);isHeatmapVisible=!isHeatmapVisible;}
+const centerMap=()=>map.setView(map.getCenter(),15);
+const showAllSensors=()=>{if(sensorMarkers.length===0) return;map.fitBounds(L.featureGroup(sensorMarkers.map(s=>s.marker)).getBounds().pad(.2));};
 
 /*--------------------------------------------------------------------
  *  OTHER UI
  *------------------------------------------------------------------*/
-function updateTime(){ document.getElementById('current-time').textContent =
-  new Date().toLocaleTimeString('tr-TR',{hour:'2-digit',minute:'2-digit'}); }
+function updateTime(){document.getElementById('current-time').textContent=new Date().toLocaleTimeString('tr-TR',{hour:'2-digit',minute:'2-digit'});}
 setInterval(updateTime,1000);
 
 function showSensorDetails(type,evt){
   document.querySelectorAll('.sensor-box').forEach(b=>b.classList.remove('active'));
   evt.currentTarget.classList.add('active');
-  activeSensor = type;
-  redrawChart();
-  document.getElementById('graph-title').textContent =
-    {temperature:'Su Sıcaklığı Verileri', turbidity:'Bulanıklık Verileri',
-     conductivity:'TDS / İletkenlik Verileri'}[type];
+  activeSensor=type; redrawChart();
+  document.getElementById('graph-title').textContent=
+    {temperature:'Su Sıcaklığı Verileri',turbidity:'Bulanıklık Verileri',conductivity:'TDS / İletkenlik Verileri'}[type];
 }
 
-const updateChartRange = () => {};   /* placeholder – future work */
+const updateChartRange=()=>{}; /* future work */
 
 /*--------------------------------------------------------------------
  *  BOOTSTRAP
  *------------------------------------------------------------------*/
-document.addEventListener('DOMContentLoaded', () => {
-  initMap();
-  updateTime();
-  fetchLiveData();
+document.addEventListener('DOMContentLoaded',()=>{
+  initMap(); updateTime(); fetchLiveData();
   setInterval(fetchLiveData,10000);
   notify('Sistem başlatıldı – REST polling aktif');
 });
