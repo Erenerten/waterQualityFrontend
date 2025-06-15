@@ -232,7 +232,7 @@
       tempChart.data.labels = filtered.map(pt =>
         new Date(pt.timestamp).toLocaleTimeString()
       );
-      tempChart.data.datasets[0].data = filtered.map(pt => pt.temperature);
+      tempChart.data.datasets[0].data = filtered.map(pt => pt.value);
       tempChart.update();
     }
 
