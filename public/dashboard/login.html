@@ -144,8 +144,30 @@
       </div>
     </div>
   </div>
-
+  
   <script>
+    document
+      .getElementById('login-form')
+      .addEventListener('submit', async e => {
+        e.preventDefault();
+        const u = e.target.username.value;
+        const p = e.target.password.value;
+        try {
+          const res = await fetch('/api/auth/login', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ username: u, password: p })
+          });
+          if (!res.ok) throw new Error('Login failed');
+          const { jwt } = await res.json();
+          localStorage.setItem('token', jwt);
+          location.href = '/dashboard/dashboard.html';
+        } catch (err) {
+          alert('Login failed: ' + err.message);
+        }
+      });
+  </script>
+  <!-- <script>
     function loginUser(event) {
       event.preventDefault();
       const email = document.getElementById('email').value;
@@ -155,6 +177,6 @@
       localStorage.setItem('token', (await res.json()).jwt);
       location.href = '/dashboard/dashboard.html';
     }
-  </script>
+  </script> -->
 </body>
 </html>
