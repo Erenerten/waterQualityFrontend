@@ -1,5 +1,3 @@
-<script src="https://cdn.jsdelivr.net/npm/sockjs-client@1/dist/sockjs.min.js"></script>
-<script src="https://cdn.jsdelivr.net/npm/stompjs@2/dist/stomp.min.js"></script>
 <script src="script.js"></script>
 
 // Mobile Menu Toggle
@@ -311,34 +309,6 @@ function raporTalepleriniGoster() {
         });
     }
 }
-
-/*****************************************************************
- *  REAL-TIME FEED VIA STOMP
- *****************************************************************/
-
-let stompClient = null;
-
-function connectWebSocket() {
-  const socket   = new SockJS('/ws');        // Netlify proxy will forward
-  stompClient    = Stomp.over(socket);
-
-  // optional: mute debug logs
-  stompClient.debug = () => {};
-
-  stompClient.connect({}, () => {
-    console.log('✔ connected to /topic/sensor');
-    stompClient.subscribe('/topic/sensor', message => {
-      const data = JSON.parse(message.body);
-      applySensorUpdate(data);
-    });
-  }, err => {
-    console.error('WebSocket error', err);
-    // simple retry logic
-    setTimeout(connectWebSocket, 5000);
-  });
-}
-
-connectWebSocket();
 
 function applySensorUpdate(d) {
   /* d = {

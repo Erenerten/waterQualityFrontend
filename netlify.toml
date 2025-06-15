@@ -18,9 +18,3 @@
   to = "/dashboard/dashboard.html"
   status = 200
   force = true
-
-[[redirects]]
-  from = "/ws"
-  to   = "ws://154.53.180.35/ws"
-  status = 200
-  force  = true
