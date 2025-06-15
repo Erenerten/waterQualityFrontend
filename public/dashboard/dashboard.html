@@ -1,154 +1,196 @@
 <!-- public/dashboard/dashboard.html -->
 <!DOCTYPE html>
-<html lang="en">
+<html lang="tr">
 <head>
-  <meta charset="UTF-8" />
-  <title>Dashboard — Water Quality App</title>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1.0" />
+<title>SuKaliteX | Canlı Su Kalitesi Paneli</title>
+<meta http-equiv="Cache-Control" content="no-store" />
 
-  <!-- Chart.js CDN -->
-  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<!-- libs -->
+<link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;500;600&display=swap" rel="stylesheet" />
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css" />
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 
-  <style>
-    body{margin:0;background:#e6f7ff;font-family:Arial,Helvetica,sans-serif}
-    /* top bar */
-    .header{background:#f0f0f0;padding:12px 24px;display:flex;
-            justify-content:space-between;align-items:center;
-            box-shadow:0 1px 4px rgba(0,0,0,.1)}
-    .title{font-size:1.2rem;font-weight:600;color:#333}
-    .header button{margin-left:12px;padding:6px 12px;border:0;border-radius:4px;
-                   color:#fff;font-size:.9rem;cursor:pointer}
-    .home-btn{background:#1890ff}.home-btn:hover{background:#1073c7}
-    .logout-btn{background:#cc0033}.logout-btn:hover{background:#a00028}
-
-    /* layout */
-    .main{display:flex;padding:24px;height:calc(100vh - 50px);box-sizing:border-box}
-    .chart-container{flex:3;background:#fff;border-radius:6px;box-shadow:0 1px 4px rgba(0,0,0,.1);
-                     padding:16px;margin-right:16px;display:flex;flex-direction:column}
-    .chart-container h2{margin:0 0 8px;font-size:1rem;color:#333}
-    .chart-container canvas{flex:1}
-    .slider-container{flex:1;background:#fff;border-radius:6px;box-shadow:0 1px 4px rgba(0,0,0,.1);
-                      padding:16px;display:flex;flex-direction:column;align-items:center;justify-content:center}
-    .slider-container h3{margin-bottom:12px;font-size:1rem;color:#333;text-align:center}
-    .slider-container input{width:100%}
-    #timeLabel{margin-top:8px;font-size:.9rem;color:#555}
-  </style>
+<style>
+  :root{--dark:#0a2342;--gray:#f8fafc;--text:#223;--accent:#00b4d8;
+        --success:#2ecc71;--warning:#f39c12;--danger:#e74c3c}
+  *{margin:0;padding:0;box-sizing:border-box}
+  body{font-family:Poppins,sans-serif;background:var(--gray);color:var(--text);
+       display:flex;height:100vh;overflow:hidden}
+  /* sidebar */
+  .sidebar{width:250px;background:var(--dark);color:#fff;padding:20px 16px;
+           display:flex;flex-direction:column;gap:18px}
+  .logo{display:flex;align-items:center;font-weight:600;font-size:1.3rem}
+  .logo img{height:52px;margin-right:10px}
+  .sensor-container{flex:1;overflow-y:auto;display:flex;flex-direction:column;gap:12px}
+  .sensor-box{background:rgba(255,255,255,.08);padding:14px;border-radius:10px;
+              cursor:pointer;border-left:3px solid var(--accent);transition:.25s}
+  .sensor-box.active{border-left-color:var(--success);background:rgba(0,180,216,.18)}
+  .sensor-header{display:flex;justify-content:space-between;align-items:center}
+  .sensor-value{font-size:1.3rem;font-weight:600;margin:4px 0}
+  .sensor-unit{font-size:.75rem;opacity:.8}
+  .sensor-status{font-size:.65rem;padding:2px 6px;border-radius:14px}
+  .status-normal{background:var(--success)}
+  /* layout */
+  .main{flex:1;display:flex;flex-direction:column}
+  .top-bar{padding:10px 20px;background:#fff;box-shadow:0 2px 5px rgba(0,0,0,.05);
+           display:flex;justify-content:space-between;align-items:center}
+  .content{flex:1;display:flex;overflow:hidden}
+  .map-wrap{flex:1.1;min-width:360px}
+  #map{width:100%;height:100%}
+  .chart-wrap{flex:1;padding:18px 20px;background:#fff;display:flex;flex-direction:column}
+  #sensorChart{flex:1}
+  .chart-title{font-size:1.1rem;margin-bottom:10px}
+  .chart-box{flex:1;position:relative;min-height:240px}
+  .sensor-info{margin-top:16px;display:grid;gap:12px;grid-template-columns:repeat(2,1fr)}
+  .info-card{background:var(--gray);padding:10px;border-radius:8px;font-size:.82rem}
+  .toast{position:fixed;bottom:20px;right:20px;background:var(--dark);color:#fff;
+         padding:14px 18px;border-radius:6px;transform:translateX(120%);
+         transition:.35s;z-index:1000}
+  .toast.show{transform:translateX(0)}
+</style>
 </head>
 
 <body>
-  <!-- top bar -->
-  <div class="header">
-    <div class="title">Dashboard</div>
-    <div>
-      <button class="home-btn" onclick="location.href='https://ehmsukalitesi.online'">Home</button>
-      <button class="logout-btn" id="logoutBtn">Logout</button>
+<!-- sidebar ---------------------------------------------------- -->
+<aside class="sidebar">
+  <div class="logo"><img src="/images/logo.png" alt="logo"><span>SuKaliteX</span></div>
+
+  <div class="sensor-container">
+    <div class="sensor-box active" data-type="temperature" onclick="select('temperature',event)">
+      <div class="sensor-header"><h4>Sıcaklık</h4><span class="sensor-status status-normal">—</span></div>
+      <div class="sensor-value">-- <span class="sensor-unit">°C</span></div>
+    </div>
+
+    <div class="sensor-box" data-type="tds" onclick="select('tds',event)">
+      <div class="sensor-header"><h4>TDS</h4><span class="sensor-status status-normal">—</span></div>
+      <div class="sensor-value">-- <span class="sensor-unit">ppm</span></div>
+    </div>
+
+    <div class="sensor-box" data-type="turbidity" onclick="select('turbidity',event)">
+      <div class="sensor-header"><h4>Bulanıklık</h4><span class="sensor-status status-normal">—</span></div>
+      <div class="sensor-value">-- <span class="sensor-unit">NTU</span></div>
+    </div>
+
+    <div class="sensor-box" data-type="battery" onclick="select('battery',event)">
+      <div class="sensor-header"><h4>Batarya</h4><span class="sensor-status status-normal">—</span></div>
+      <div class="sensor-value">-- <span class="sensor-unit">%</span></div>
     </div>
   </div>
+</aside>
 
-  <!-- main -->
-  <div class="main">
-    <!-- chart -->
-    <div class="chart-container">
-      <h2>Temperature Over Time</h2>
-      <canvas id="tempChart"></canvas>
-    </div>
+<!-- main -------------------------------------------------------- -->
+<section class="main">
+  <div class="top-bar"><span id="clock">--:--</span></div>
 
-    <!-- slider -->
-    <div class="slider-container">
-      <h3>Filter by Time Frame</h3>
-      <input type="range" id="timeSlider" min="0" max="4" value="0" />
-      <div id="timeLabel">Last 10 minutes</div>
+  <div class="content">
+    <div class="map-wrap"><div id="map"></div></div>
+
+    <div class="chart-wrap">
+      <div class="chart-title" id="chartTitle">Sıcaklık Verileri</div>
+      <div class="chart-box"><canvas id="sensorChart"></canvas></div>
+
+      <div class="sensor-info">
+        <div class="info-card">Son Ölçüm: <span id="lastVal">--</span></div>
+        <div class="info-card">Ortalama: <span id="avgVal">--</span></div>
+        <div class="info-card">Min: <span id="minVal">--</span></div>
+        <div class="info-card">Maks: <span id="maxVal">--</span></div>
+      </div>
     </div>
   </div>
+</section>
 
-  <script>
-    /* ----------------------------------------------------------- *
-     *  GUARD: redirect to login if token missing
-     * ----------------------------------------------------------- */
-    const token = localStorage.getItem('token');
-    if (!token) location.href = '/dashboard/login.html';
+<div class="toast" id="toast"><span id="toastMsg"></span></div>
 
-    /* ----------------------------------------------------------- *
-     *  LOGOUT
-     * ----------------------------------------------------------- */
-    document.getElementById('logoutBtn').addEventListener('click', () => {
-      localStorage.removeItem('token');
-      location.href = '/dashboard/login.html';
-    });
+<!-- script ------------------------------------------------------ -->
+<script>
+/* token guard */
+const TOKEN = localStorage.getItem('token');
+if(!TOKEN) location.href='/dashboard/login.html';
 
-    /* ----------------------------------------------------------- *
-     *  CHART
-     * ----------------------------------------------------------- */
-    const ctx = document.getElementById('tempChart').getContext('2d');
-    const tempChart = new Chart(ctx, {
-      type: 'line',
-      data: { labels: [], datasets: [{
-        label: 'Temperature (°C)',
-        data: [],
-        borderColor: '#FF6B6B',
-        tension: .15, fill:false, pointRadius:3
-      }]},
-      options: { responsive:true, maintainAspectRatio:false,
-        scales:{ x:{ title:{display:true,text:'Time'}},
-                 y:{ title:{display:true,text:'°C'}}}}
-    });
+/* helper: toast */
+const toast = m => {const t=document.getElementById('toast');
+  document.getElementById('toastMsg').textContent=m;
+  t.classList.add('show');setTimeout(()=>t.classList.remove('show'),3000);};
 
-    /* ----------------------------------------------------------- *
-     *  TIME-RANGE SLIDER
-     * ----------------------------------------------------------- */
-    const timeSlider = document.getElementById('timeSlider');
-    const timeLabel  = document.getElementById('timeLabel');
-    const timeTexts  = ['Last 10 minutes','Last 30 minutes','Last 2 hours',
-                        'Last 1 day','Last 1 week'];
-    const minutesWin = [10, 30, 120, 1440, 10080]; // same indexes
+/* clock */
+setInterval(()=>document.getElementById('clock').textContent=
+  new Date().toLocaleTimeString('tr-TR',{hour:'2-digit',minute:'2-digit'}),1000);
 
-    timeSlider.addEventListener('input', () => {
-      timeLabel.textContent = timeTexts[timeSlider.value];
-      drawChart();                                      // re-filter
-    });
+/* map (static marker) */
+const map=L.map('map').setView([41.03,28.89],15);
+L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',
+ {attribution:'© OpenStreetMap'}).addTo(map);
+L.marker([41.03,28.89]).addTo(map).bindPopup('Ölçüm Noktası');
 
-    /* ----------------------------------------------------------- *
-     *  DATA HANDLING
-     * ----------------------------------------------------------- */
-    let fullData = [];                                  // [{ts, val}, …]
+/* chart (temperature only) */
+const ctx=document.getElementById('sensorChart').getContext('2d');
+const chart=new Chart(ctx,{type:'line',
+  data:{labels:[],datasets:[{data:[],borderColor:'#0066cc',borderWidth:2,
+    tension:.38,fill:false,pointRadius:3}]},
+  options:{plugins:{legend:{display:false}},scales:{x:{grid:{display:false}}}}});
+const MAX=120;const dataArr=[];
 
-    async function fetchData() {
-      try {
-        const res = await fetch('/api/sensor-data',
-          { headers: { 'Authorization': 'Bearer ' + token } });
-        if (!res.ok) throw new Error('HTTP ' + res.status);
-        const rows = await res.json();                  // [{type,timestamp,value} …]
+function redraw(){
+  chart.data.labels=dataArr.map(p=>p.t);
+  chart.data.datasets[0].data=dataArr.map(p=>p.v);
+  chart.update();
 
-        fullData = rows
-          .filter(r => r.type === 'temperature')
-          .map(r => ({ ts:new Date(r.timestamp), val:Number(r.value) }))
-          .sort((a,b)=>a.ts-b.ts);                      // oldest → newest
+  const vals=dataArr.map(p=>p.v);
+  const fmt=n=>Number.isFinite(n)?n.toFixed(1):'--';
+  document.getElementById('lastVal').textContent=fmt(vals.at(-1));
+  document.getElementById('avgVal').textContent =
+    fmt(vals.reduce((a,b)=>a+b,0)/vals.length);
+  document.getElementById('minVal').textContent=fmt(Math.min(...vals));
+  document.getElementById('maxVal').textContent=fmt(Math.max(...vals));
+}
 
-        drawChart();
-      } catch (err) {
-        console.error('fetch error', err);
-        if (err.message.includes('401')) {
-          localStorage.removeItem('token');
-          location.href = '/dashboard/login.html';
-        }
-      }
-    }
+function pushTemp(val){
+  dataArr.push({t:new Date().toLocaleTimeString('tr-TR'),v:val});
+  if(dataArr.length>MAX) dataArr.shift();
+  redraw();
+}
 
-    function drawChart() {
-      const idx    = Number(timeSlider.value);
-      const cutoff = Date.now() - minutesWin[idx] * 60_000;
+/* sidebar helper: only temp implemented */
+function updateTempTile(val){
+  const box=document.querySelector('.sensor-box[data-type="temperature"]');
+  box.querySelector('.sensor-value').innerHTML = `${val.toFixed(1)} <span class="sensor-unit">°C</span>`;
+  const st=box.querySelector('.sensor-status');
+  let txt='Normal',cls='status-normal';
+  if(val>26){txt='Tehlikeli';cls='status-danger';}
+  else if(val>24){txt='Yüksek';cls='status-warning';}
+  st.textContent=txt;st.className=`sensor-status ${cls}`;
+}
 
-      const dataWin = fullData.filter(p => p.ts.getTime() >= cutoff);
+/* sensor tile click */
+function select(type,ev){
+  document.querySelectorAll('.sensor-box').forEach(b=>b.classList.remove('active'));
+  ev.currentTarget.classList.add('active');
+  if(type!=='temperature'){
+    toast('Bu sensör henüz aktif değil');
+    return;
+  }
+  document.getElementById('chartTitle').textContent='Sıcaklık Verileri';
+  redraw();
+}
 
-      tempChart.data.labels = dataWin.map(p =>
-        p.ts.toLocaleTimeString('tr-TR', { hour:'2-digit', minute:'2-digit', second:'2-digit' })
-      );
-      tempChart.data.datasets[0].data = dataWin.map(p => p.val);
-      tempChart.update();
-    }
-
-    /* initial + polling every 5 s */
-    fetchData();
-    setInterval(fetchData, 5000);
-  </script>
+/* fetch loop (temperature only) */
+async function poll(){
+  try{
+    const r=await fetch('/api/sensor-data',{headers:{Authorization:'Bearer '+TOKEN}});
+    if(!r.ok) throw new Error('HTTP '+r.status);
+    const rows=await r.json();                  // [{type,value,timestamp},…]
+    const latest=rows.findLast(r=>r.type==='temperature');
+    if(!latest) return;
+    const val=Number(latest.value);
+    if(!Number.isFinite(val)) return;
+    pushTemp(val); updateTempTile(val);
+  }catch(e){console.error(e);toast('Veri alınamadı');}
+}
+setInterval(poll,5000);poll();
+</script>
 </body>
 </html>
