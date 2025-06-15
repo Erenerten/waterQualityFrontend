@@ -2,10 +2,10 @@
 <!DOCTYPE html>
 <html lang="tr">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width,initial-scale=1.0" />
-  <title>SuKaliteX | Sıcaklık Paneli</title>
-  <meta http-equiv="Cache-Control" content="no-store" />
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1.0">
+  <title>SuKaliteX | Canlı Sensör Paneli</title>
+  <meta http-equiv="Cache-Control" content="no-store">
 
   <!-- libs -->
   <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;600&display=swap" rel="stylesheet">
@@ -27,12 +27,13 @@
     .logo{display:flex;align-items:center;font-weight:600;font-size:1.3rem}
     .logo img{height:52px;margin-right:10px}
     .sensor-box{background:rgba(255,255,255,.08);padding:14px;border-radius:10px;
-                border-left:3px solid var(--accent)}
-    .sensor-value{font-size:1.3rem;font-weight:600;margin:4px 0}
+                border-left:3px solid var(--accent);cursor:pointer;transition:.2s}
+    .sensor-box.active{border-left-color:#fff}
+    .sensor-value{font-size:1.25rem;font-weight:600;margin:4px 0}
     .sensor-unit{font-size:.75rem;opacity:.8}
     .sensor-status{font-size:.65rem;padding:2px 6px;border-radius:14px;background:var(--success)}
 
-    /* main layout */
+    /* main */
     .main{flex:1;display:flex;flex-direction:column}
     .top-bar{padding:10px 20px;background:#fff;box-shadow:0 2px 5px rgba(0,0,0,.05);
              display:flex;justify-content:space-between}
@@ -47,20 +48,36 @@
 </head>
 
 <body>
-  <!-- sidebar -->
+  <!-- ─── Sidebar ─────────────────────────────────────────── -->
   <aside class="sidebar">
     <div class="logo"><img src="/images/logo.png" alt="logo"><span>SuKaliteX</span></div>
 
-    <div class="sensor-box">
+    <div class="sensor-box active" data-sensor="temperature">
       <div class="sensor-header">
-        <h4>Sıcaklık</h4>
-        <span class="sensor-status" id="tempStatus">—</span>
+        <h4>Su&nbsp;Sıcaklığı</h4>
+        <span class="sensor-status" id="stat-temperature">—</span>
       </div>
-      <div class="sensor-value" id="tempVal">-- <span class="sensor-unit">°C</span></div>
+      <div class="sensor-value" id="val-temperature">-- <span class="sensor-unit">°C</span></div>
+    </div>
+
+    <div class="sensor-box" data-sensor="turbidity">
+      <div class="sensor-header">
+        <h4>Bulanıklık</h4>
+        <span class="sensor-status" id="stat-turbidity">—</span>
+      </div>
+      <div class="sensor-value" id="val-turbidity">-- <span class="sensor-unit">NTU</span></div>
+    </div>
+
+    <div class="sensor-box" data-sensor="tds">
+      <div class="sensor-header">
+        <h4>TDS / İletkenlik</h4>
+        <span class="sensor-status" id="stat-tds">—</span>
+      </div>
+      <div class="sensor-value" id="val-tds">-- <span class="sensor-unit">ppm</span></div>
     </div>
   </aside>
 
-  <!-- main -->
+  <!-- ─── Main layout ─────────────────────────────────────── -->
   <section class="main">
     <div class="top-bar"><span id="clock">--:--</span></div>
 
@@ -68,73 +85,93 @@
       <div class="map-wrap"><div id="map"></div></div>
 
       <div class="chart-wrap">
-        <div class="chart-title">Sıcaklık Verileri (son 120 okuma)</div>
+        <div class="chart-title" id="chartTitle">Su Sıcaklığı (son 120 okuma)</div>
         <div class="chart-box"><canvas id="sensorChart"></canvas></div>
       </div>
     </div>
   </section>
 
   <script>
-    /* ── auth guard ── */
+    /* ─────────── basic helpers ─────────── */
     const TOKEN = localStorage.getItem('token');
     if (!TOKEN) location.href = '/dashboard/login.html';
 
-    /* ── simple clock ── */
     setInterval(()=>{document.getElementById('clock').textContent =
       new Date().toLocaleTimeString('tr-TR',{hour:'2-digit',minute:'2-digit'});},1000);
 
-    /* ── map (pure decoration) ── */
+    const toNum = x => typeof x==='number' ? x :
+      parseFloat(String(x).replace(',','.'));
+
+    /* ─────────── map ─────────── */
     const map = L.map('map').setView([41.03,28.89],15);
     L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',
       {attribution:'© OpenStreetMap'}).addTo(map);
     L.marker([41.03,28.89]).addTo(map).bindPopup('Ölçüm Noktası');
 
-    /* ── chart ── */
+    /* ─────────── chart ─────────── */
     const ctx = document.getElementById('sensorChart').getContext('2d');
     const chart = new Chart(ctx,{
       type:'line',
-      data:{labels:[],datasets:[{data:[],borderColor:'#0066cc',borderWidth:2,
-                                tension:.25,fill:false,pointRadius:2}]},
+      data:{labels:[],datasets:[{data:[],borderColor:'#0066cc',borderWidth:2,tension:.25,
+                                fill:false,pointRadius:2}]},
       options:{plugins:{legend:{display:false}},scales:{x:{grid:{display:false}}}}
     });
+    const MAX = 120;
 
-    /* ── helpers ── */
-    const MAX_POINTS = 120;                        // keep last 120 samples
-    const toNum = raw => typeof raw==='number' ? raw :
-      parseFloat(String(raw).replace(',','.'));
+    /* ─────────── sensor meta ─────────── */
+    const META = {
+      temperature:{unit:'°C', title:'Su Sıcaklığı', status:(v)=>
+        v>26 ? ['Tehlikeli','danger'] : v>24 ? ['Yüksek','warning'] : ['Normal','success'] },
+      turbidity  :{unit:'NTU',title:'Bulanıklık',status:(v)=>
+        v>5  ? ['Yüksek','warning'] : ['Normal','success'] },
+      tds        :{unit:'ppm',title:'TDS / İletkenlik',status:(v)=>
+        v>1000? ['Yüksek','warning'] : ['Normal','success'] }
+    };
 
-    function updateSidebar(v){
-      document.getElementById('tempVal').innerHTML =
-        `${v.toFixed(1)} <span class="sensor-unit">°C</span>`;
-      const st = document.getElementById('tempStatus');
-      if (v>26){st.textContent='Tehlikeli'; st.style.background='var(--danger)';}
-      else if (v>24){st.textContent='Yüksek'; st.style.background='var(--warning)';}
-      else {st.textContent='Normal'; st.style.background='var(--success)';}
-    }
+    /* ─────────── active sensor ────────── */
+    let active = 'temperature';
+    document.querySelectorAll('.sensor-box').forEach(box=>{
+      box.addEventListener('click',()=>{
+        document.querySelectorAll('.sensor-box').forEach(b=>b.classList.remove('active'));
+        box.classList.add('active');
+        active = box.dataset.sensor;
+        document.getElementById('chartTitle').textContent =
+          META[active].title + ' (son 120 okuma)';
+        refresh();                          // redraw immediately
+      });
+    });
 
-    /* ── core: fetch all, rebuild chart ── */
+    /* ─────────── fetch & redraw ───────── */
     async function refresh(){
       try{
         const res = await fetch('/api/sensor-data',
           {headers:{Authorization:'Bearer '+TOKEN}});
         if(!res.ok) throw new Error('HTTP '+res.status);
-        const arr = await res.json();
+        const rows = await res.json();
 
-        /* keep only rows with type === "temperature" and numeric value */
-        const temps = arr.filter(r=>r.type==='temperature' && r.value!=null)
+        /* update all sidebar tiles */
+        ['temperature','turbidity','tds'].forEach(key=>{
+          const latest = rows.findLast(r=>r.type===key && r.value!=null);
+          if(!latest) return;
+          const v=toNum(latest.value); if(!Number.isFinite(v)) return;
+          document.getElementById('val-'+key).innerHTML =
+            `${v.toFixed(1)} <span class="sensor-unit">${META[key].unit}</span>`;
+          const [txt,cls] = META[key].status(v);
+          const st = document.getElementById('stat-'+key);
+          st.textContent = txt;
+          st.style.background = `var(--${cls})`;
+        });
+
+        /* rebuild chart for active sensor */
+        const data = rows.filter(r=>r.type===active && r.value!=null)
                          .sort((a,b)=>new Date(a.timestamp)-new Date(b.timestamp))
-                         .slice(-MAX_POINTS);
-
-        const labels = temps.map(r=>new Date(r.timestamp)
-                              .toLocaleTimeString('tr-TR',{hour12:false}));
-        const values = temps.map(r=>toNum(r.value));
-
-        chart.data.labels = labels;
-        chart.data.datasets[0].data = values;
+                         .slice(-MAX);
+        chart.data.labels = data.map(r=>
+          new Date(r.timestamp).toLocaleTimeString('tr-TR',{hour12:false}));
+        chart.data.datasets[0].data = data.map(r=>toNum(r.value));
         chart.update();
 
-        if(values.length) updateSidebar(values.at(-1));
-      }catch(e){console.error('fetch error',e);}
+      }catch(e){console.error(e);}
     }
     refresh(); setInterval(refresh,5000);
   </script>
