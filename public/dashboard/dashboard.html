@@ -4,13 +4,13 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width,initial-scale=1.0" />
-  <title>SuKaliteX | Sıcaklık Paneli (DEBUG)</title>
+  <title>SuKaliteX | Sıcaklık Paneli</title>
   <meta http-equiv="Cache-Control" content="no-store" />
 
   <!-- libs -->
-  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;600&display=swap" rel="stylesheet" />
-  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css" />
-  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;600&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css">
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
   <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 
@@ -51,7 +51,7 @@
   <aside class="sidebar">
     <div class="logo"><img src="/images/logo.png" alt="logo"><span>SuKaliteX</span></div>
 
-    <div class="sensor-box" id="tempBox">
+    <div class="sensor-box">
       <div class="sensor-header">
         <h4>Sıcaklık</h4>
         <span class="sensor-status" id="tempStatus">—</span>
@@ -68,122 +68,75 @@
       <div class="map-wrap"><div id="map"></div></div>
 
       <div class="chart-wrap">
-        <div class="chart-title">Sıcaklık Verileri</div>
+        <div class="chart-title">Sıcaklık Verileri (son 120 okuma)</div>
         <div class="chart-box"><canvas id="sensorChart"></canvas></div>
       </div>
     </div>
   </section>
 
   <script>
-    /* ─── auth guard ─── */
+    /* ── auth guard ── */
     const TOKEN = localStorage.getItem('token');
     if (!TOKEN) location.href = '/dashboard/login.html';
 
-    /* ─── clock ─── */
-    setInterval(()=>{
-      document.getElementById('clock').textContent =
-        new Date().toLocaleTimeString('tr-TR',{hour:'2-digit',minute:'2-digit'});
-    },1000);
+    /* ── simple clock ── */
+    setInterval(()=>{document.getElementById('clock').textContent =
+      new Date().toLocaleTimeString('tr-TR',{hour:'2-digit',minute:'2-digit'});},1000);
 
-    /* ─── map ─── */
-    const map=L.map('map').setView([41.03,28.89],15);
+    /* ── map (pure decoration) ── */
+    const map = L.map('map').setView([41.03,28.89],15);
     L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',
       {attribution:'© OpenStreetMap'}).addTo(map);
     L.marker([41.03,28.89]).addTo(map).bindPopup('Ölçüm Noktası');
 
-    /* ─── chart ─── */
-    const ctx=document.getElementById('sensorChart').getContext('2d');
-    const chart=new Chart(ctx,{type:'line',
+    /* ── chart ── */
+    const ctx = document.getElementById('sensorChart').getContext('2d');
+    const chart = new Chart(ctx,{
+      type:'line',
       data:{labels:[],datasets:[{data:[],borderColor:'#0066cc',borderWidth:2,
-                                tension:.3,fill:false,pointRadius:3}]},
-      options:{plugins:{legend:{display:false}},scales:{x:{grid:{display:false}}}}});
-    const MAX=120;
-    function pushTemp(ts,val){
-      chart.data.labels.push(ts);
-      chart.data.datasets[0].data.push(val);
-      if(chart.data.labels.length>MAX){
-        chart.data.labels.shift(); chart.data.datasets[0].data.shift();
-      }
-      chart.update();
-    }
+                                tension:.25,fill:false,pointRadius:2}]},
+      options:{plugins:{legend:{display:false}},scales:{x:{grid:{display:false}}}}
+    });
 
-    /* ─── sidebar ─── */
+    /* ── helpers ── */
+    const MAX_POINTS = 120;                        // keep last 120 samples
+    const toNum = raw => typeof raw==='number' ? raw :
+      parseFloat(String(raw).replace(',','.'));
+
     function updateSidebar(v){
       document.getElementById('tempVal').innerHTML =
         `${v.toFixed(1)} <span class="sensor-unit">°C</span>`;
-      const st=document.getElementById('tempStatus');
-      if(v>26){st.textContent='Tehlikeli';st.style.background='var(--danger)';}
-      else if(v>24){st.textContent='Yüksek';st.style.background='var(--warning)';}
-      else      {st.textContent='Normal';  st.style.background='var(--success)';}
+      const st = document.getElementById('tempStatus');
+      if (v>26){st.textContent='Tehlikeli'; st.style.background='var(--danger)';}
+      else if (v>24){st.textContent='Yüksek'; st.style.background='var(--warning)';}
+      else {st.textContent='Normal'; st.style.background='var(--success)';}
     }
 
-    /* ─── helper ─── */
-    const toNum = raw=>{
-      if(typeof raw==='number') return raw;
-      if(typeof raw==='string'){
-        const m=raw.replace(',','.').match(/[-+]?\d*\.?\d+/);
-        return m?parseFloat(m[0]):NaN;
-      }
-      return NaN;
-    };
-
-    /* ─── last timestamp we've displayed ─── */
-    let lastSeenIso = '';
-
-    /* ─── initial history + live polling ─── */
-    async function loadAndPoll(){
+    /* ── core: fetch all, rebuild chart ── */
+    async function refresh(){
       try{
         const res = await fetch('/api/sensor-data',
           {headers:{Authorization:'Bearer '+TOKEN}});
-        const rows = await res.json();
+        if(!res.ok) throw new Error('HTTP '+res.status);
+        const arr = await res.json();
 
-        /* -------- initial history (first run only) -------- */
-        if(chart.data.labels.length===0){
-          const past = rows
-            .filter(r=>String(r.type||'').toLowerCase().includes('temp'))
-            .map(r=>{
-              const v = toNum(r.value ?? r.temperature);
-              return Number.isFinite(v)? {iso:r.timestamp,val:v}:null;
-            })
-            .filter(Boolean)
-            .slice(-MAX);                 // last 120 readings
+        /* keep only rows with type === "temperature" and numeric value */
+        const temps = arr.filter(r=>r.type==='temperature' && r.value!=null)
+                         .sort((a,b)=>new Date(a.timestamp)-new Date(b.timestamp))
+                         .slice(-MAX_POINTS);
 
-          past.forEach(p=>{
-            const ts=new Date(p.iso).toLocaleTimeString('tr-TR');
-            pushTemp(ts,p.val);
-            lastSeenIso = p.iso;          // remember newest
-          });
+        const labels = temps.map(r=>new Date(r.timestamp)
+                              .toLocaleTimeString('tr-TR',{hour12:false}));
+        const values = temps.map(r=>toNum(r.value));
 
-          if(past.length) updateSidebar(past.at(-1).val);
-        }
+        chart.data.labels = labels;
+        chart.data.datasets[0].data = values;
+        chart.update();
 
-        /* -------- live append -------- */
-        const newest = [...rows].reverse()
-          .find(r=>String(r.type||'').toLowerCase().includes('temp'));
-
-        if(!newest || newest.timestamp===lastSeenIso) return; // nothing new
-
-        let val = toNum(newest.value ?? newest.temperature);
-        if(!Number.isFinite(val) || val<-50 || val>150) return;
-
-        lastSeenIso = newest.timestamp;
-        pushTemp(new Date(newest.timestamp).toLocaleTimeString('tr-TR'),val);
-        updateSidebar(val);
-
-      }catch(e){console.error('poll error',e);}
+        if(values.length) updateSidebar(values.at(-1));
+      }catch(e){console.error('fetch error',e);}
     }
-    loadAndPoll(); setInterval(loadAndPoll,5000);
-
-    /* ─── debug output every 10 s ─── */
-    async function debugSensorApi(){
-      try{
-        const r=await fetch('/api/sensor-data',{headers:{Authorization:'Bearer '+TOKEN}});
-        console.log('↩︎ status',r.status);
-        const t=await r.text();
-        console.log('↩︎ raw:',t.slice(0,300)+(t.length>300?' …':''));
-      }catch(e){console.error('debug',e);}
-    }
-    debugSensorApi(); setInterval(debugSensorApi,10000);
+    refresh(); setInterval(refresh,5000);
   </script>
 </body>
 </html>
