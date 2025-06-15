@@ -200,6 +200,31 @@
         chart.data.datasets[0].data = data.map(r=>toNum(r.value));
         chart.update();
 
+        const THIRTY_MIN = 30 * 60 * 1000;          // 30 minutes in ms
+        ['temperature', 'turbidity', 'tds'].forEach(key => {
+          const values = rows
+            .filter(r =>
+              r.type === key &&
+              r.value != null &&
+              Date.parse(r.timestamp) >= now - THIRTY_MIN)
+            .map(r => toNum(r.value))
+            .filter(Number.isFinite);
+
+          if (!values.length) return;               // nothing in the window
+
+          const avg = values.reduce((s, v) => s + v, 0) / values.length;
+
+          // number + unit
+          document.getElementById(`val-${key}`).innerHTML =
+            `${avg.toFixed(1)} <span class="sensor-unit">${META[key].unit}</span>`;
+
+          // status badge
+          const [txt, cls] = META[key].status(avg);
+          const st = document.getElementById(`stat-${key}`);
+          st.textContent = txt;
+          st.style.background = `var(--${cls})`;
+        });
+
       }catch(e){console.error(e);}
     }
     refresh(); setInterval(refresh,5000);
