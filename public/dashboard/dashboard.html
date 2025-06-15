@@ -98,13 +98,11 @@
                                 tension:.3,fill:false,pointRadius:3}]},
       options:{plugins:{legend:{display:false}},scales:{x:{grid:{display:false}}}}});
     const MAX=120;
-    function pushTemp(v){
-      const t=new Date().toLocaleTimeString('tr-TR');
-      chart.data.labels.push(t);
-      chart.data.datasets[0].data.push(v);
+    function pushTemp(ts,val){
+      chart.data.labels.push(ts);
+      chart.data.datasets[0].data.push(val);
       if(chart.data.labels.length>MAX){
-        chart.data.labels.shift();
-        chart.data.datasets[0].data.shift();
+        chart.data.labels.shift(); chart.data.datasets[0].data.shift();
       }
       chart.update();
     }
@@ -116,24 +114,10 @@
       const st=document.getElementById('tempStatus');
       if(v>26){st.textContent='Tehlikeli';st.style.background='var(--danger)';}
       else if(v>24){st.textContent='Yüksek';st.style.background='var(--warning)';}
-      else {st.textContent='Normal';st.style.background='var(--success)';}
+      else      {st.textContent='Normal';  st.style.background='var(--success)';}
     }
 
-    /* ─── debug logger ─── */
-    async function debugSensorApi(){
-      try{
-        const res = await fetch('/api/sensor-data',{headers:{Authorization:'Bearer '+TOKEN}});
-        console.log('↩︎ /api/sensor-data status',res.status);
-        const txt = await res.text();
-        console.log('↩︎ raw:', txt.slice(0,400)+(txt.length>400?' …':''));
-        let json; try{json=JSON.parse(txt);}catch(e){console.error('‼ not JSON');return;}
-        console.table(json.slice(-3));
-      }catch(e){console.error('debug fetch failed',e);}
-    }
-    debugSensorApi();
-    setInterval(debugSensorApi,10000);
-
-    /* ─── helper to parse number ─── */
+    /* ─── helper ─── */
     const toNum = raw=>{
       if(typeof raw==='number') return raw;
       if(typeof raw==='string'){
@@ -143,40 +127,63 @@
       return NaN;
     };
 
-    /* ─── robust poll ─── */
-    async function poll(){
+    /* ─── last timestamp we've displayed ─── */
+    let lastSeenIso = '';
+
+    /* ─── initial history + live polling ─── */
+    async function loadAndPoll(){
       try{
-        const res = await fetch('/api/sensor-data',{headers:{Authorization:'Bearer '+TOKEN}});
-        if(!res.ok) throw new Error('HTTP '+res.status);
+        const res = await fetch('/api/sensor-data',
+          {headers:{Authorization:'Bearer '+TOKEN}});
         const rows = await res.json();
 
-        /* newest temp row that contains a numeric value */
-        let val = NaN;
-        for(let i=rows.length-1;i>=0;i--){
-          const r = rows[i];
-          if(!String(r.type||'').toLowerCase().includes('temp')) continue;
+        /* -------- initial history (first run only) -------- */
+        if(chart.data.labels.length===0){
+          const past = rows
+            .filter(r=>String(r.type||'').toLowerCase().includes('temp'))
+            .map(r=>{
+              const v = toNum(r.value ?? r.temperature);
+              return Number.isFinite(v)? {iso:r.timestamp,val:v}:null;
+            })
+            .filter(Boolean)
+            .slice(-MAX);                 // last 120 readings
 
-          val = toNum(r.value);
-          if(!Number.isFinite(val)) val = toNum(r.temperature);
-          if(!Number.isFinite(val)){
-            for(const [k,v] of Object.entries(r)){
-              if(['id','type','timestamp'].includes(k)) continue;
-              val = toNum(v);
-              if(Number.isFinite(val)) break;
-            }
-          }
-          if(Number.isFinite(val)) break;   // found good one → stop
+          past.forEach(p=>{
+            const ts=new Date(p.iso).toLocaleTimeString('tr-TR');
+            pushTemp(ts,p.val);
+            lastSeenIso = p.iso;          // remember newest
+          });
+
+          if(past.length) updateSidebar(past.at(-1).val);
         }
 
-        if(!Number.isFinite(val)){ console.warn('no numeric temperature'); return; }
-        if(val<-50||val>150){ console.warn('out-of-range temperature',val); return; }
+        /* -------- live append -------- */
+        const newest = [...rows].reverse()
+          .find(r=>String(r.type||'').toLowerCase().includes('temp'));
 
-        pushTemp(val);
+        if(!newest || newest.timestamp===lastSeenIso) return; // nothing new
+
+        let val = toNum(newest.value ?? newest.temperature);
+        if(!Number.isFinite(val) || val<-50 || val>150) return;
+
+        lastSeenIso = newest.timestamp;
+        pushTemp(new Date(newest.timestamp).toLocaleTimeString('tr-TR'),val);
         updateSidebar(val);
-      }catch(e){console.error('poll failed',e);}
+
+      }catch(e){console.error('poll error',e);}
     }
-    poll();
-    setInterval(poll,5000);
+    loadAndPoll(); setInterval(loadAndPoll,5000);
+
+    /* ─── debug output every 10 s ─── */
+    async function debugSensorApi(){
+      try{
+        const r=await fetch('/api/sensor-data',{headers:{Authorization:'Bearer '+TOKEN}});
+        console.log('↩︎ status',r.status);
+        const t=await r.text();
+        console.log('↩︎ raw:',t.slice(0,300)+(t.length>300?' …':''));
+      }catch(e){console.error('debug',e);}
+    }
+    debugSensorApi(); setInterval(debugSensorApi,10000);
   </script>
 </body>
 </html>
