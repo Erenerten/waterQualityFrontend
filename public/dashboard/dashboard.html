@@ -105,57 +105,78 @@
     /* ─────────── auth guard & helpers ─────────── */
     const TOKEN = localStorage.getItem('token');
     if (!TOKEN) location.href = '/dashboard/login.html';
-
-    setInterval(()=>{document.getElementById('clock').textContent =
-      new Date().toLocaleTimeString('tr-TR',{hour:'2-digit',minute:'2-digit'});},1000);
-
-    const toNum = x => typeof x==='number' ? x :
-      parseFloat(String(x).replace(',','.'));
-
+  
+    setInterval(() => {
+      document.getElementById('clock').textContent =
+        new Date().toLocaleTimeString('tr-TR', { hour: '2-digit', minute: '2-digit' });
+    }, 1000);
+  
+    const toNum = x => typeof x === 'number' ? x :
+      parseFloat(String(x).replace(',', '.'));
+  
     /* ─────────── map ─────────── */
-    const map = L.map('map').setView([41.03,28.89],15);
+    const map = L.map('map').setView([41.03, 28.89], 15);
     L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',
-      {attribution:'© OpenStreetMap'}).addTo(map);
-    L.marker([41.03,28.89]).addTo(map).bindPopup('Ölçüm Noktası');
-
+      { attribution: '© OpenStreetMap' }).addTo(map);
+    L.marker([41.03, 28.89]).addTo(map).bindPopup('Ölçüm Noktası');
+  
     /* ─────────── chart ─────────── */
     const ctx = document.getElementById('sensorChart').getContext('2d');
-    const chart = new Chart(ctx,{type:'line',
-      data:{labels:[],datasets:[{data:[],borderColor:'#0066cc',borderWidth:2,tension:.25,
-                                fill:false,pointRadius:2}]},
-      options:{plugins:{legend:{display:false}},scales:{x:{grid:{display:false}}}}
+    const chart = new Chart(ctx, {
+      type: 'line',
+      data: {
+        labels: [],
+        datasets: [{
+          data: [],
+          borderColor: '#0066cc',
+          borderWidth: 2,
+          tension: .25,
+          fill: false,
+          pointRadius: 2
+        }]
+      },
+      options: { plugins: { legend: { display: false } }, scales: { x: { grid: { display: false } } } }
     });
-
+  
     /* ─────────── sensor meta ─────────── */
     const META = {
-      temperature:{unit:'°C', title:'Su Sıcaklığı', status:v=>
-        v>26?['Tehlikeli','danger']:v>24?['Yüksek','warning']:['Normal','success'] },
-      turbidity  :{unit:'NTU',title:'Bulanıklık',status:v=>
-        v>5?['Yüksek','warning']:['Normal','success'] },
-      tds        :{unit:'ppm',title:'TDS / İletkenlik',status:v=>
-        v>1000?['Yüksek','warning']:['Normal','success'] }
+      temperature: {
+        unit: '°C',
+        title: 'Su Sıcaklığı',
+        status: v => v > 26 ? ['Tehlikeli', 'danger'] : v > 24 ? ['Yüksek', 'warning'] : ['Normal', 'success']
+      },
+      turbidity: {
+        unit: 'NTU',
+        title: 'Bulanıklık',
+        status: v => v > 5 ? ['Yüksek', 'warning'] : ['Normal', 'success']
+      },
+      tds: {
+        unit: 'ppm',
+        title: 'TDS / İletkenlik',
+        status: v => v > 1000 ? ['Yüksek', 'warning'] : ['Normal', 'success']
+      }
     };
-
+  
     /* ─────────── time-range slider ─────────── */
     const slider = document.getElementById('timeSlider');
     const sliderLabel = document.getElementById('sliderLabel');
     const labels = [
-      'Son 10 dakika','Son 30 dakika','Son 1 saat','Son 4 saat',
-      'Son 1 gün','Son 3 gün','Son 1 hafta','Tüm veri'
+      'Son 10 dakika', 'Son 30 dakika', 'Son 1 saat', 'Son 4 saat',
+      'Son 1 gün', 'Son 3 gün', 'Son 1 hafta', 'Tüm veri'
     ];
-    const minutes = [10,30,60,240,1440,4320,10080,Infinity];
-    slider.addEventListener('input',()=>{
+    const minutes = [10, 30, 60, 240, 1440, 4320, 10080, Infinity];
+    slider.addEventListener('input', () => {
       sliderLabel.textContent = labels[slider.value];
       document.getElementById('chartTitle').textContent =
         `${META[active].title} (${labels[slider.value]})`;
       refresh();
     });
-
+  
     /* ─────────── active sensor ─────────── */
-    let active='temperature';
-    document.querySelectorAll('.sensor-box').forEach(box=>{
-      box.addEventListener('click',()=>{
-        document.querySelectorAll('.sensor-box').forEach(b=>b.classList.remove('active'));
+    let active = 'temperature';
+    document.querySelectorAll('.sensor-box').forEach(box => {
+      box.addEventListener('click', () => {
+        document.querySelectorAll('.sensor-box').forEach(b => b.classList.remove('active'));
         box.classList.add('active');
         active = box.dataset.sensor;
         document.getElementById('chartTitle').textContent =
@@ -163,71 +184,57 @@
         refresh();
       });
     });
-
+  
     /* ─────────── fetch & redraw ─────────── */
-    async function refresh(){
-      try{
-        const res = await fetch('/api/sensor-data',
-          {headers:{Authorization:'Bearer '+TOKEN}});
-        if(!res.ok) throw new Error('HTTP '+res.status);
+    async function refresh() {
+      try {
+        const res = await fetch('/api/sensor-data', { headers: { Authorization: 'Bearer ' + TOKEN } });
+        if (!res.ok) throw new Error('HTTP ' + res.status);
         const rows = await res.json();
-
-        /* update sidebar tiles (latest reading) */
-        ['temperature','turbidity','tds'].forEach(key=>{
-          const latest = rows.findLast(r=>r.type===key && r.value!=null);
-          if(!latest) return;
-          const v = toNum(latest.value); if(!Number.isFinite(v)) return;
-          document.getElementById('val-'+key).innerHTML =
-            `${v.toFixed(1)} <span class="sensor-unit">${META[key].unit}</span>`;
-          const [txt,cls] = META[key].status(v);
-          const st = document.getElementById('stat-'+key);
-          st.textContent = txt;
-          st.style.background = `var(--${cls})`;
-        });
-
-        /* chart data for ACTIVE sensor within slider window */
         const now = Date.now();
-        const winMin = minutes[slider.value];
-        const cutoff = winMin===Infinity ? 0 : now - winMin*60*1000;
-
-        const data = rows
-          .filter(r=>r.type===active && r.value!=null &&
-            new Date(r.timestamp).getTime() >= cutoff)
-          .sort((a,b)=>new Date(a.timestamp)-new Date(b.timestamp));
-
-        chart.data.labels = data.map(r=>
-          new Date(r.timestamp).toLocaleTimeString('tr-TR',{hour12:false}));
-        chart.data.datasets[0].data = data.map(r=>toNum(r.value));
-        chart.update();
-
-        const THIRTY_MIN = 30 * 60 * 1000;          // 30 minutes in ms
+  
+        /* ⇢ sidebar tiles – 30 min average */
+        const THIRTY_MIN = 30 * 60 * 1000;
         ['temperature', 'turbidity', 'tds'].forEach(key => {
           const values = rows
             .filter(r =>
               r.type === key &&
               r.value != null &&
-              Date.parse(r.timestamp) >= now - THIRTY_MIN)
+              new Date(r.timestamp).getTime() >= now - THIRTY_MIN)
             .map(r => toNum(r.value))
             .filter(Number.isFinite);
-
-          if (!values.length) return;               // nothing in the window
-
+  
+          if (!values.length) return;
+  
           const avg = values.reduce((s, v) => s + v, 0) / values.length;
-
-          // number + unit
+  
           document.getElementById(`val-${key}`).innerHTML =
             `${avg.toFixed(1)} <span class="sensor-unit">${META[key].unit}</span>`;
-
-          // status badge
+  
           const [txt, cls] = META[key].status(avg);
           const st = document.getElementById(`stat-${key}`);
           st.textContent = txt;
           st.style.background = `var(--${cls})`;
         });
-
-      }catch(e){console.error(e);}
+        /* ⇠ sidebar tiles – 30 min average */
+  
+        /* chart data for ACTIVE sensor within slider window */
+        const winMin = minutes[slider.value];
+        const cutoff = winMin === Infinity ? 0 : now - winMin * 60 * 1000;
+  
+        const data = rows
+          .filter(r => r.type === active && r.value != null &&
+            new Date(r.timestamp).getTime() >= cutoff)
+          .sort((a, b) => new Date(a.timestamp) - new Date(b.timestamp));
+  
+        chart.data.labels = data.map(r =>
+          new Date(r.timestamp).toLocaleTimeString('tr-TR', { hour12: false }));
+        chart.data.datasets[0].data = data.map(r => toNum(r.value));
+        chart.update();
+  
+      } catch (e) { console.error(e); }
     }
-    refresh(); setInterval(refresh,5000);
-  </script>
+    refresh(); setInterval(refresh, 5000);
+  </script>  
 </body>
 </html>
