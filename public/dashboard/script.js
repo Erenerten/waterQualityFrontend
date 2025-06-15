@@ -1,5 +1,3 @@
-<script src="script.js"></script>
-
 // Mobile Menu Toggle
 const burger = document.querySelector('.burger');
 const nav = document.querySelector('.nav-links');
@@ -308,26 +306,4 @@ function raporTalepleriniGoster() {
             tbody.appendChild(row);
         });
     }
-}
-
-function applySensorUpdate(d) {
-  /* d = {
-       timestamp : "2024-05-25T14:52:03Z",
-       temperature, tds, turbidity, conductivity
-     } */
-
-  // 1️⃣ update the live values
-  document.getElementById('temperature').textContent  = `${d.temperature.toFixed(1)}°C`;
-  document.getElementById('tds').textContent          = `${d.tds} ppm`;
-  document.getElementById('turbidity').textContent    = `${d.turbidity.toFixed(1)} NTU`;
-  document.getElementById('conductivity').textContent = `${d.conductivity} µS/cm`;
-  document.getElementById('lastUpdate').textContent   =
-      new Date(d.timestamp).toLocaleTimeString('tr-TR');
-
-  // 2️⃣ feed the charts
-  const t = new Date(d.timestamp).toLocaleTimeString();
-  updateChart(temperatureChart,  d.temperature,  t);
-  updateChart(tdsChart,          d.tds,          t);
-  updateChart(turbidityChart,    d.turbidity,    t);
-  updateChart(conductivityChart, d.conductivity, t);
 }
