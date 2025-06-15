@@ -1,258 +1,1672 @@
 <!DOCTYPE html>
-<html lang="tr">
+<html lang="en">
 <head>
-    <!-- Google tag (gtag.js) -->
-<script async src="https://www.googletagmanager.com/gtag/js?id=G-BB2JMZPGZE"></script>
-<script>
-  window.dataLayer = window.dataLayer || [];
-  function gtag(){dataLayer.push(arguments);}
-  gtag('js', new Date());
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>AEA | AKILLI SU KALİTESİ İZLEME ÇÖZÜMLERİ</title>
+  <meta name="description" content="AI-powered real-time water quality monitoring for industrial, municipal, and environmental applications">
+  <meta name="keywords" content="water quality, monitoring, IoT sensors, AI analytics, water safety">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&family=Playfair+Display:wght@400;500;600&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/swiper@9/swiper-bundle.min.css">
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/swiper@9/swiper-bundle.min.js"></script>
 
-  gtag('config', 'G-BB2JMZPGZE');
-</script>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>AEA - Akıllı Su Kalitesi İzleme Sistemi</title>
-    <link rel="stylesheet" href="style.css">
-    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<!-- Eğer favicon PNG formatında ve images klasöründeyse -->
+<link rel="icon" type="image/png" href="images/favico.png">
+
+  <style>
+   :root {
+      --primary: #0066cc;
+      --primary-dark: #0052a3;
+      --primary-light: #e6f2ff;
+      --accent: #00b4d8;
+      --accent-dark: #0093b8;
+      --light: #ffffff;
+      --dark: #0a2342;
+      --gray: #f8fafc;
+      --gray-dark: #e9ecef;
+      --text: #2d3748;
+      --text-light: #6c757d;
+      --success: #2ecc71;
+      --warning: #f39c12;
+      --danger: #e74c3c;
+    }
+
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    body {
+      font-family: 'Poppins', sans-serif;
+      background-color: var(--gray);
+      color: var(--text);
+      line-height: 1.7;
+      overflow-x: hidden;
+    }
+
+    h1, h2, h3, h4 {
+      font-family: 'Playfair Display', serif;
+      font-weight: 600;
+      line-height: 1.3;
+    }
+
+    .container {
+      width: 100%;
+      max-width: 1400px;
+      margin: 0 auto;
+      padding: 0 30px;
+    }
+
+    .container-narrow {
+      max-width: 1100px;
+    }
+
+    /* Header Styles */
+    header {
+      position: fixed;
+      width: 100%;
+      top: 0;
+      padding: 16px 0;
+      background-color: rgba(255, 255, 255, 0.98);
+      box-shadow: 0 2px 20px rgba(0, 0, 0, 0.08);
+      z-index: 1000;
+      transition: all 0.4s cubic-bezier(0.165, 0.84, 0.44, 1);
+    }
+
+    header.scrolled {
+      padding: 12px 0;
+      backdrop-filter: blur(10px);
+      background-color: rgba(255, 255, 255, 0.92);
+    }
+
+    .header-container {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    .logo {
+      font-size: 3rem;
+      font-weight: 700;
+      color: var(--primary);
+      display: flex;
+      align-items: center;
+      text-decoration: none;
+    }
+
+   .logo img {
+  height: 128px; /* Logonuzun boyutuna göre ayarlayın */
+  width: auto; /* Orantıyı korur */
+  margin-right: 12px;
+  vertical-align: middle;
+  transition: all 0.3s ease;
+}
+
+/* Header küçüldüğünde logo boyutu */
+header.scrolled .logo img {
+  height: 28px; /* Küçük boyut */
+}
+
+    .logo span {
+      position: relative;
+    }
+
+    .logo span::after {
+      content: '™';
+      font-size: 0.6rem;
+      vertical-align: super;
+      margin-left: 2px;
+    }
+
+    nav {
+      display: flex;
+      align-items: center;
+    }
+
+    .nav-links {
+      display: flex;
+      list-style: none;
+    }
+
+    .nav-links li {
+      margin-left: 32px;
+      position: relative;
+    }
+
+    .nav-links a {
+      color: var(--dark);
+      text-decoration: none;
+      font-weight: 500;
+      transition: all 0.3s ease;
+      font-size: 1.05rem;
+    }
+
+    .nav-links a:hover {
+      color: var(--accent);
+    }
+
+    .nav-links a::after {
+      content: '';
+      position: absolute;
+      width: 0;
+      height: 2px;
+      background: var(--accent);
+      bottom: -6px;
+      left: 0;
+      transition: width 0.3s ease;
+    }
+
+    .nav-links a:hover::after {
+      width: 100%;
+    }
+
+    .mobile-menu-btn {
+      display: none;
+      background: none;
+      border: none;
+      font-size: 1.6rem;
+      color: var(--primary);
+      cursor: pointer;
+      z-index: 1001;
+    }
+
+    /* Button Styles */
+    .btn {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      background: var(--accent);
+      color: white;
+      border: none;
+      padding: 16px 38px;
+      font-size: 1.05rem;
+      font-weight: 500;
+      border-radius: 50px;
+      cursor: pointer;
+      transition: all 0.4s cubic-bezier(0.165, 0.84, 0.44, 1);
+      text-decoration: none;
+      box-shadow: 0 4px 15px rgba(42, 157, 143, 0.3);
+      position: relative;
+      overflow: hidden;
+    }
+
+    .btn:hover {
+      background: var(--accent-dark);
+      transform: translateY(-3px);
+      box-shadow: 0 8px 25px rgba(42, 157, 143, 0.4);
+    }
+
+    .btn:active {
+      transform: translateY(1px);
+    }
+
+    .btn i {
+      margin-left: 8px;
+      font-size: 0.9rem;
+    }
+
+    .btn-outline {
+      background: transparent;
+      border: 2px solid white;
+      color: white;
+      box-shadow: none;
+    }
+
+    .btn-outline:hover {
+      background: white;
+      color: var(--primary);
+      border-color: white;
+    }
+
+    .btn-primary {
+      background: var(--primary);
+      box-shadow: 0 4px 15px rgba(0, 95, 115, 0.3);
+    }
+
+    .btn-primary:hover {
+      background: var(--primary-dark);
+      box-shadow: 0 8px 25px rgba(0, 95, 115, 0.4);
+    }
+
+    /* Hero Section */
+    .hero {
+  position: relative;
+  height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  overflow: hidden;
+  color: white;
+  z-index: 1;
+}
+
+.hero-video {
+  position: absolute;
+  top: 0;
+  left: 0;
+  min-width: 100%;
+  min-height: 100%;
+  object-fit: cover;
+  z-index: 0;
+  filter: brightness(0.5);
+}
+
+.hero-content {
+  position: relative;
+  z-index: 1;
+  max-width: 800px;
+  padding: 20px;
+}
+
+
+    .btn-group {
+      display: flex;
+      gap: 20px;
+      justify-content: center;
+      flex-wrap: wrap;
+    }
+
+    .scroll-down {
+      position: absolute;
+      bottom: 30px;
+      left: 50%;
+      transform: translateX(-50%);
+      color: white;
+      font-size: 1.8rem;
+      animation: bounce 2s infinite;
+      cursor: pointer;
+    }
+
+    /* Section Styles */
+    section {
+      padding: 120px 0;
+      position: relative;
+    }
+
+    .section-title {
+      text-align: center;
+      margin-bottom: 70px;
+    }
+
+    .section-title h2 {
+      font-size: 2.8rem;
+      color: var(--dark);
+      margin-bottom: 20px;
+      position: relative;
+      display: inline-block;
+    }
+
+    .section-title h2::after {
+      content: '';
+      position: absolute;
+      width: 80px;
+      height: 4px;
+      background: var(--accent);
+      bottom: -15px;
+      left: 50%;
+      transform: translateX(-50%);
+      border-radius: 2px;
+    }
+
+    .section-title p {
+      color: var(--text-light);
+      max-width: 750px;
+      margin: 0 auto;
+      font-size: 1.1rem;
+    }
+
+    /* Services Section */
+    .services {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+      gap: 30px;
+      margin-top: 50px;
+    }
+
+    .card {
+      background: white;
+      border-radius: 16px;
+      padding: 45px 35px;
+      box-shadow: 0 12px 40px rgba(0, 0, 0, 0.06);
+      transition: all 0.4s cubic-bezier(0.165, 0.84, 0.44, 1);
+      text-align: center;
+      position: relative;
+      overflow: hidden;
+      z-index: 1;
+    }
+
+    .card::before {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 5px;
+      background: var(--accent);
+      transition: height 0.3s ease;
+      z-index: -1;
+    }
+
+    .card:hover {
+      transform: translateY(-12px);
+      box-shadow: 0 20px 50px rgba(0, 0, 0, 0.12);
+    }
+
+    .card:hover::before {
+      height: 100%;
+    }
+
+    .card:hover i, 
+    .card:hover h3, 
+    .card:hover p {
+      color: white;
+    }
+
+    .card i {
+      font-size: 3.2rem;
+      color: var(--accent);
+      margin-bottom: 25px;
+      transition: all 0.3s ease;
+    }
+
+    .card h3 {
+      font-size: 1.6rem;
+      margin-bottom: 20px;
+      color: var(--dark);
+      transition: all 0.3s ease;
+    }
+
+    .card p {
+      color: var(--text-light);
+      transition: all 0.3s ease;
+    }
+
+    /* Features Section */
+    .features {
+      background-color: var(--primary-light);
+    }
+
+    .feature-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+      gap: 40px;
+    }
+
+    .feature-item {
+      display: flex;
+      gap: 20px;
+    }
+
+    .feature-icon {
+      flex-shrink: 0;
+      width: 60px;
+      height: 60px;
+      background: var(--accent);
+      border-radius: 12px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: white;
+      font-size: 1.6rem;
+      box-shadow: 0 8px 20px rgba(42, 157, 143, 0.3);
+    }
+
+    .feature-content h3 {
+      font-size: 1.4rem;
+      margin-bottom: 12px;
+      color: var(--dark);
+    }
+
+    .feature-content p {
+      color: var(--text-light);
+    }
+
+    /* KPIs Section */
+    .kpis {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+      gap: 40px;
+      margin: 80px auto;
+      text-align: center;
+    }
+
+    .kpi-item {
+      padding: 30px 20px;
+      background: white;
+      border-radius: 12px;
+      box-shadow: 0 8px 30px rgba(0, 0, 0, 0.05);
+      transition: transform 0.3s ease;
+    }
+
+    .kpi-item:hover {
+      transform: translateY(-10px);
+    }
+
+    .kpi-item strong {
+      font-size: 2.8rem;
+      font-weight: 700;
+      color: var(--primary);
+      display: block;
+      margin-bottom: 10px;
+      line-height: 1;
+    }
+
+    .kpi-item span {
+      color: var(--text-light);
+      font-size: 1.1rem;
+    }
+
+    /* Chart Section */
+    .chart-container {
+      background: white;
+      border-radius: 16px;
+      padding: 50px;
+      box-shadow: 0 15px 40px rgba(0, 0, 0, 0.08);
+      margin: 60px auto;
+    }
+
+    .chart-title {
+      text-align: center;
+      margin-bottom: 40px;
+      color: var(--dark);
+    }
+
+    .chart-title h3 {
+      font-size: 1.8rem;
+      margin-bottom: 10px;
+    }
+
+    .chart-title p {
+      color: var(--text-light);
+    }
+
+    /* Testimonials */
+    .testimonials {
+      background: linear-gradient(135deg, var(--primary) 0%, var(--primary-dark) 100%);
+      color: white;
+    }
+
+    .testimonials .section-title h2 {
+      color: white;
+    }
+
+    .testimonials .section-title p {
+      color: rgba(255, 255, 255, 0.85);
+    }
+
+    .testimonial-slider {
+      max-width: 900px;
+      margin: 0 auto;
+      padding: 20px;
+    }
+
+    .testimonial-slide {
+      background: rgba(255, 255, 255, 0.1);
+      backdrop-filter: blur(10px);
+      border-radius: 16px;
+      padding: 40px;
+      text-align: center;
+      margin: 20px;
+      border: 1px solid rgba(255, 255, 255, 0.2);
+    }
+
+    .testimonial-content {
+      font-size: 1.1rem;
+      line-height: 1.8;
+      margin-bottom: 30px;
+      font-style: italic;
+      position: relative;
+    }
+
+    .testimonial-content::before,
+    .testimonial-content::after {
+      content: '"';
+      font-size: 3rem;
+      color: rgba(255, 255, 255, 0.2);
+      position: absolute;
+    }
+
+    .testimonial-content::before {
+      top: -20px;
+      left: -15px;
+    }
+
+    .testimonial-content::after {
+      bottom: -40px;
+      right: -15px;
+    }
+
+    .testimonial-author {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+    }
+
+    .author-avatar {
+      width: 70px;
+      height: 70px;
+      border-radius: 50%;
+      object-fit: cover;
+      margin-bottom: 15px;
+      border: 3px solid rgba(255, 255, 255, 0.3);
+    }
+
+    .author-name {
+      font-weight: 600;
+      margin-bottom: 5px;
+    }
+
+    .author-position {
+      opacity: 0.8;
+      font-size: 0.9rem;
+    }
+
+    .swiper-pagination-bullet {
+      background: white;
+      opacity: 0.5;
+      width: 12px;
+      height: 12px;
+      transition: all 0.3s ease;
+    }
+
+    .swiper-pagination-bullet-active {
+      background: var(--accent);
+      opacity: 1;
+      transform: scale(1.2);
+    }
+
+    /* Gallery Section */
+    .gallery {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+      gap: 25px;
+      margin: 60px auto;
+    }
+
+
+    .gallery-item {
+      position: relative;
+      border-radius: 16px;
+      overflow: hidden;
+      box-shadow: 0 8px 30px rgba(0, 0, 0, 0.1);
+      height: 280px;
+      transition: all 0.4s ease;
+    }
+
+    .gallery-item:hover {
+      transform: scale(1.03);
+      box-shadow: 0 15px 50px rgba(0, 0, 0, 0.2);
+    }
+
+  .gallery-item img {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  display: block;
+  background-color: #f0f4f8; /* arka plan boşluk varsa temiz görünür */
+}
+
+
+
+    .gallery-item:hover img {
+      transform: scale(1.1);
+    }
+
+    .gallery-caption {
+      position: absolute;
+      bottom: 0;
+      left: 0;
+      right: 0;
+      background: linear-gradient(to top, rgba(0, 0, 0, 0.8), transparent);
+      color: white;
+      padding: 25px;
+      transform: translateY(100%);
+      transition: transform 0.4s ease;
+    }
+
+    .gallery-item:hover .gallery-caption {
+      transform: translateY(0);
+    }
+
+    .gallery-caption h4 {
+      margin-bottom: 8px;
+      font-size: 1.3rem;
+    }
+
+    .gallery-caption p {
+      opacity: 0.9;
+      font-size: 0.9rem;
+    }
+
+    /* CTA Section */
+    .cta {
+      background: linear-gradient(135deg, var(--accent) 0%, var(--accent-dark) 100%);
+      color: white;
+      text-align: center;
+      padding: 100px 0;
+    }
+
+    .cta h2 {
+      font-size: 2.5rem;
+      margin-bottom: 20px;
+    }
+
+    .cta p {
+      max-width: 700px;
+      margin: 0 auto 40px;
+      font-size: 1.1rem;
+      opacity: 0.9;
+    }
+
+    /* Contact Section */
+    .contact {
+      background: white;
+    }
+
+    .contact-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(400px, 1fr));
+      gap: 50px;
+      align-items: center;
+    }
+
+    .contact-info h3 {
+      font-size: 1.8rem;
+      margin-bottom: 25px;
+      color: var(--dark);
+    }
+
+    .contact-details {
+      margin-bottom: 40px;
+    }
+
+    .contact-item {
+      display: flex;
+      align-items: flex-start;
+      margin-bottom: 25px;
+    }
+
+    .contact-icon {
+      width: 50px;
+      height: 50px;
+      background: var(--primary-light);
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: var(--primary);
+      font-size: 1.2rem;
+      margin-right: 20px;
+      flex-shrink: 0;
+    }
+
+    .contact-text h4 {
+      font-size: 1.1rem;
+      margin-bottom: 5px;
+      color: var(--dark);
+    }
+
+    .contact-text p, 
+    .contact-text a {
+      color: var(--text-light);
+      text-decoration: none;
+      transition: color 0.3s ease;
+    }
+
+    .contact-text a:hover {
+      color: var(--accent);
+    }
+
+    .contact-form {
+      background: var(--gray);
+      border-radius: 16px;
+      padding: 50px;
+      box-shadow: 0 10px 40px rgba(0, 0, 0, 0.05);
+    }
+
+    .form-group {
+      margin-bottom: 25px;
+    }
+
+    .form-group label {
+      display: block;
+      margin-bottom: 10px;
+      color: var(--dark);
+      font-weight: 500;
+    }
+
+    .form-control {
+      width: 100%;
+      padding: 14px 20px;
+      border: 1px solid #ddd;
+      border-radius: 8px;
+      font-family: 'Poppins', sans-serif;
+      transition: all 0.3s ease;
+      background: white;
+    }
+
+    .form-control:focus {
+      outline: none;
+      border-color: var(--accent);
+      box-shadow: 0 0 0 3px rgba(42, 157, 143, 0.2);
+    }
+
+    textarea.form-control {
+      min-height: 180px;
+    }
+
+    /* Footer */
+    footer {
+      background: var(--dark);
+      color: white;
+      padding: 80px 0 30px;
+      position: relative;
+    }
+
+    .footer-content {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+      gap: 50px;
+      margin-bottom: 60px;
+    }
+
+    .footer-column h3 {
+      font-size: 1.4rem;
+      margin-bottom: 25px;
+      position: relative;
+      padding-bottom: 15px;
+    }
+
+    .footer-column h3::after {
+      content: '';
+      position: absolute;
+      width: 50px;
+      height: 3px;
+      background: var(--accent);
+      bottom: 0;
+      left: 0;
+      border-radius: 2px;
+    }
+
+    .footer-about p {
+      opacity: 0.8;
+      margin-bottom: 25px;
+    }
+
+    .footer-logo {
+      font-size: 1.8rem;
+      margin-bottom: 20px;
+      display: inline-block;
+    }
+
+    .footer-links {
+      list-style: none;
+    }
+
+    .footer-links li {
+      margin-bottom: 12px;
+    }
+
+    .footer-links a {
+      color: white;
+      opacity: 0.8;
+      text-decoration: none;
+      transition: all 0.3s ease;
+      display: inline-block;
+    }
+
+    .footer-links a:hover {
+      opacity: 1;
+      color: var(--accent);
+      transform: translateX(5px);
+    }
+
+    .social-links {
+      display: flex;
+      gap: 15px;
+      margin-top: 25px;
+    }
+
+    .social-links a {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      width: 42px;
+      height: 42px;
+      background: rgba(255, 255, 255, 0.1);
+      border-radius: 50%;
+      color: white;
+      transition: all 0.3s ease;
+      font-size: 1.1rem;
+    }
+
+    .social-links a:hover {
+      background: var(--accent);
+      transform: translateY(-3px);
+    }
+
+    .footer-newsletter p {
+      opacity: 0.8;
+      margin-bottom: 20px;
+    }
+
+    .newsletter-form {
+      display: flex;
+    }
+
+    .newsletter-input {
+      flex: 1;
+      padding: 12px 15px;
+      border: none;
+      border-radius: 50px 0 0 50px;
+      font-family: 'Poppins', sans-serif;
+    }
+
+    .newsletter-btn {
+      background: var(--accent);
+      color: white;
+      border: none;
+      padding: 0 25px;
+      border-radius: 0 50px 50px 0;
+      cursor: pointer;
+      transition: background 0.3s ease;
+    }
+
+    .newsletter-btn:hover {
+      background: var(--accent-dark);
+    }
+
+    .copyright {
+      text-align: center;
+      padding-top: 30px;
+      border-top: 1px solid rgba(255, 255, 255, 0.1);
+      opacity: 0.7;
+      font-size: 0.9rem;
+    }
+
+    /* Animations */
+    @keyframes fadeInUp {
+      from {
+        opacity: 0;
+        transform: translateY(40px);
+      }
+      to {
+        opacity: 1;
+        transform: translateY(0);
+      }
+    }
+
+    @keyframes bounce {
+      0%, 20%, 50%, 80%, 100% {
+        transform: translateY(0) translateX(-50%);
+      }
+      40% {
+        transform: translateY(-20px) translateX(-50%);
+      }
+      60% {
+        transform: translateY(-10px) translateX(-50%);
+      }
+    }
+
+    /* Responsive Styles */
+    @media (max-width: 1200px) {
+      .hero h1 {
+        font-size: 3.2rem;
+      }
+      
+      .section-title h2 {
+        font-size: 2.4rem;
+      }
+    }
+
+    @media (max-width: 992px) {
+      .mobile-menu-btn {
+        display: block;
+      }
+      
+      .nav-links {
+        position: fixed;
+        top: 0;
+        left: -100%;
+        width: 280px;
+        height: 100vh;
+        background: white;
+        flex-direction: column;
+        align-items: flex-start;
+        padding: 100px 40px 40px;
+        transition: left 0.4s ease;
+        box-shadow: 10px 0 30px rgba(0, 0, 0, 0.1);
+      }
+      
+      .nav-links.active {
+        left: 0;
+      }
+      
+      .nav-links li {
+        margin: 15px 0;
+      }
+      
+      .nav-links a {
+        color: var(--dark);
+        font-size: 1.1rem;
+      }
+      
+      .hero h1 {
+        font-size: 2.8rem;
+      }
+      
+      .hero p {
+        font-size: 1.1rem;
+      }
+      
+      section {
+        padding: 90px 0;
+      }
+      
+      .contact-grid {
+        grid-template-columns: 1fr;
+      }
+      
+      .contact-info {
+        order: 2;
+      }
+      
+      .contact-form {
+        order: 1;
+      }
+    }
+
+    @media (max-width: 768px) {
+      .hero {
+        min-height: 700px;
+      }
+      
+      .hero h1 {
+        font-size: 2.4rem;
+      }
+      
+      .btn-group {
+        flex-direction: column;
+        gap: 15px;
+      }
+      
+      .btn-outline {
+        margin-left: 0;
+      }
+      
+      .section-title h2 {
+        font-size: 2rem;
+      }
+      
+      .kpis {
+        grid-template-columns: repeat(2, 1fr);
+      }
+      
+      .chart-container {
+        padding: 30px;
+      }
+      
+      .testimonial-slide {
+        padding: 30px;
+      }
+    }
+
+    @media (max-width: 576px) {
+      .container {
+        padding: 0 20px;
+      }
+      
+      .hero h1 {
+        font-size: 2rem;
+      }
+      
+      .section-title h2 {
+        font-size: 1.8rem;
+      }
+      
+      .kpis {
+        grid-template-columns: 1fr;
+        gap: 20px;
+      }
+      
+      .card {
+        padding: 35px 25px;
+      }
+      
+      .contact-form {
+        padding: 30px;
+      }
+      
+      .footer-content {
+        grid-template-columns: 1fr;
+        gap: 40px;
+      }
+    }
+  </style>
+</head>
 </head>
 <body>
-    <div id="warningModal" class="modal">
-        <div class="modal-content">
-            <p>Bu site akademik amaçlara hizmet etmektedir.</p>
-            <button id="acceptButton">Tamam</button>
-        </div>
-    </div>
-
-    <div id="reportModal" class="modal">
-        <div class="modal-content">
-            <h2>Kalite Raporu Talebi</h2>
-            <form id="reportForm">
-                <input type="text" id="reportName" placeholder="Adınız Soyadınız" required>
-                <input type="email" id="reportEmail" placeholder="E-posta Adresiniz" required>
-                <input type="tel" id="reportPhone" placeholder="Telefon Numaranız" required>
-                <input type="text" id="reportCompany" placeholder="Kurum/Firma Adı" required>
-                <select id="reportType" required>
-                    <option value="">Rapor Türü Seçiniz</option>
-                    <option value="günlük">Günlük Rapor</option>
-                    <option value="haftalık">Haftalık Rapor</option>
-                    <option value="aylık">Aylık Rapor</option>
-                </select>
-                <button type="submit">Rapor Talebi Oluştur</button>
-            </form>
-            <button class="close-button" onclick="closeReportModal()">Kapat</button>
-        </div>
-    </div>
-    <nav class="navbar">
-        <div class="logo">Bitirme Projesi</div>
-
-        <div class="burger">
-            <div class="line1"></div>
-            <div class="line2"></div>
-            <div class="line3"></div>
-        </div>
-
-        <ul class="nav-links">
-            <li><a href="#anasayfa">Anasayfa</a></li>
-            <li><a href="#ozellikler">Özellikler</a></li>
-            <li><a href="#sensordata">Canlı Veriler</a></li>
-            <li><a href="#cozumler">Çözümler</a></li>
-            <li><a href="#iletisim">İletişim</a></li>
-            <li><a href="blog.html">Blog</a></li>
-            <li><a href="/dashboard/login.html"> Giriş</a></li>
+  <header id="header">
+    <div class="container header-container">
+     <a href="#" class="logo">
+  <img src="images/logo.png" alt="SuKaliteX Logo">
+  <span>AEA</span>
+</a>
+      <nav>
+        <ul class="nav-links" id="navLinks">
+          <li><a href="#home">Ana Sayfa</a></li>
+          <li><a href="#services">Çözümler</a></li>
+          <li><a href="#features">Özellikler</a></li>
+          <li><a href="#technology">Teknoloji</a></li>
+          <li><a href="#testimonials">Proje Yürütücüleri</a></li>
+          <li><a href="#contact">İletişim</a></li>
+          <li><a href="board.html">Giriş Yap</a></li>
         </ul>
-        <div class="burger">
-            <div class="line1"></div>
-            <div class="line2"></div>
-            <div class="line3"></div>
-        </div>
-    </nav>
+        <button class="mobile-menu-btn" id="mobileMenuBtn">
+          <i class="fas fa-bars"></i>
+        </button>
+      </nav>
+    </div>
+  </header>
 
-    <section id="anasayfa" class="hero">
-        <h1>SU KALİTESİ İZLEME SİSTEMİ</h1>
-        <p>7/24 gerçek zamanlı su kalitesi izleme ve erken uyarı sistemi</p>
-        <button class="cta-button">Kalite Raporu Al</button>
-        
-    </section>
-
-    <section id="ozellikler" class="about">
-        <h2>Neden Biz?</h2>
-        <div class="about-content">
-            <div class="feature-grid">
-                <div class="feature-item">
-                    <h3>7/24 İzleme</h3>
-                    <p>Kesintisiz veri akışı ve anlık bildirimlerle su kalitenizi sürekli kontrol altında tutun.</p>
-                </div>
-                <div class="feature-item">
-                    <h3>Erken Uyarı</h3>
-                    <p>Kritik değişimlerde anında SMS ve e-posta bildirimleriyle önlem alın.</p>
-                </div>
-                <div class="feature-item">
-                    <h3>Kolay Entegrasyon</h3>
-                    <p>Mevcut sistemlerinize hızlı ve sorunsuz entegrasyon imkanı.</p>
-                </div>
-                <div class="feature-item">
-                    <h3>Detaylı Raporlama</h3>
-                    <p>Günlük, haftalık ve aylık detaylı analiz raporları.</p>
-                </div>
-            </div>
-        </div>
-    </section>
-
-    <section id="sensordata" class="sensor-data">
-        <h2>Canlı Su Kalitesi Verileri</h2>
-        <div class="sensor-grid">
-            <div class="sensor-card">
-                <h3>Sıcaklık</h3>
-                <div class="sensor-value" id="temperature">--°C</div>
-                <canvas id="temperatureChart"></canvas>
-                <p class="sensor-info">Optimum aralık: 20-25°C</p>
-            </div>
-            <div class="sensor-card">
-                <h3>TDS (Toplam Çözünmüş Katı)</h3>
-                <div class="sensor-value" id="tds">-- ppm</div>
-                <canvas id="tdsChart"></canvas>
-                <p class="sensor-info">Standart değer: <500 ppm</p>
-            </div>
-            <div class="sensor-card">
-                <h3>Bulanıklık</h3>
-                <div class="sensor-value" id="turbidity">-- NTU</div>
-                <canvas id="turbidityChart"></canvas>
-                <p class="sensor-info">Ideal değer: <1 NTU</p>
-            </div>
-            <div class="sensor-card">
-                <h3>İletkenlik</h3>
-                <div class="sensor-value" id="conductivity">-- µS/cm</div>
-                <canvas id="conductivityChart"></canvas>
-                <p class="sensor-info">Normal aralık: 500-800 µS/cm</p>
-            </div>
-        </div>
-        <div class="sensor-info">
-            <p>Son Güncelleme: <span id="lastUpdate">--</span></p>
-            <p>Ölçüm Noktası: <span id="location">Demo İstasyonu</span></p>
-        </div>
-    </section>
-
-    <section id="cozumler" class="services">
-        <h2>Sektörel Çözümler</h2>
-        <div class="services-grid">
-            <div class="service-card">
-                <h3>Belediyeler</h3>
-                <p>Şehir şebekesi su kalitesi takibi ve yönetimi</p>
-                <ul>
-                    <li>24/7 izleme</li>
-                    <li>Otomatik raporlama</li>
-                    <li>Mobil uygulama</li>
-                </ul>
-            </div>
-            
-            <div class="service-card">
-                <h3>Endüstriyel Tesisler</h3>
-                <p>Endüstriyel su kalitesi kontrolü ve atık su yönetimi</p>
-                <ul>
-                    <li>Özel sensör çözümleri</li>
-                    <li>Proses optimizasyonu</li>
-                    <li>Uyumluluk raporları</li>
-                </ul>
-            </div>
-            <div class="service-card">
-                <h3>Tarım İşletmeleri</h3>
-                <p>Sulama suyu kalitesi ve verimlilik takibi</p>
-                <ul>
-                    <li>Toprak-su analizi</li>
-                    <li>Sulama optimizasyonu</li>
-                    <li>Verim artırma</li>
-                </ul>
-            </div>
-            <div class="service-card">
-                <h3>Bireysel Kullanım</h3>
-                <p>Ev ve küçük işletmeler için akıllı su kalitesi takibi</p>
-                <ul>
-                    <li>Kolay kurulum</li>
-                    <li>Mobil uygulama desteği</li>
-                    <li>Uygun fiyatlı çözümler</li>
-                </ul>
-            </div>
-        </div>
-    </section>
-
-    <section id="iletisim" class="contact">
-        <h2>Ekibimizle İletişime Geçin</h2>
-        <form id="contact-form">
-            <input type="text" placeholder="Adınız Soyadınız" required>
-            <input type="email" placeholder="E-posta" required>
-            <input type="tel" placeholder="Telefon Numarası" required>
-            <input type="text" placeholder="Kurum/Firma Adı" required>
-            <select required>
-                <option value="bos">Seçiniz</option>
-                <option value="öneri">Öneri</option>
-                <option value="teknik">Teknik Destek</option>
-                <option value="görüşme">Görüşme Talebi</option>
-                <option value="bilgi">Bilgi</option>
-                <option value="diger">Diğer</option>
-            </select>
-            <textarea placeholder="Mesajınız (Opsiyonel)"></textarea>
-            <button type="submit">GÖNDER</button>
-        </form>
-    </section>
-
-    <footer>
-        <div class="footer-content">
-            <div class="footer-section">
-                <h4>İletişim</h4>
-                <p>E-posta: erteneren073@gmail.com</p>
-                <p>Tel: +90 (536) 262 77 90</p>
-
-            </div>
-            <div class="footer-section">
-    <h4>Adres</h4>
-    <a href="https://maps.app.goo.gl/HYDvYHGxGRGPFgqb7" target="_blank" style="text-decoration: none; color: inherit;">
-        <p>Yıldız Teknik Üniversitesi, Davutpaşa Kampüsü Elektronik Haberleşme Bölümü</p>
-        <p>34000 İstanbul, Türkiye</p>
-    </a>
+  <section class="hero" id="home">
+    <video autoplay muted loop playsinline class="hero-video">
+      <source src="videos/20250614_1255_Dancing Waves Serenity_storyboard_01jxpxtnncexstrxcfj1vfrbh1.mp4" type="video/mp4">
+      Tarayıcınız video etiketini desteklemiyor.
+    </video>
+  <div class="hero-content">
+  <h1>Gelişmiş Su Kalitesi İzleme Çözümleri</h1>
+  <p>Endüstriler, belediyeler, çevre koruma kuruluşları ve bireysel kullanıcılar için gerçek zamanlı, su kalitesi ve sızıntı tespit analizi</p>
+  <div class="btn-group">
+    <a href="#contact" class="btn">İletişime Geçin</a>
+    <a href="#services" class="btn btn-outline">Daha Fazla Bilgi</a>
+   <a href="game.html" class="btn btn-special">Sürprizi Keşfet <i class="fas fa-gift"></i></a>
+  </div>
 </div>
-            <div class="footer-section">
-                <h4>Sosyal Medya</h4>
-                <div class="social-links">
-                    <a href="#">LinkedIn</a>
-                    <a href="#">Twitter</a>
-                    <a href="#">Instagram</a>
-                </div>
-            </div>
-        </div>
-        <div class="footer-bottom">
-            <p>&copy; 2024 AEA- Tüm hakları saklıdır.</p>
-            <p><a href="admin.html" style="color: inherit; text-decoration: underline;">Admin Paneli</a></p>
-        </div>
-    </footer>
+  </section>
 
-    <script src="script.js"></script>
-    <script>
-    // Rapor talep formu işleme
-    document.getElementById('reportForm').addEventListener('submit', function(e) {
+  <section id="services">
+    <div class="container">
+      <div class="section-title">
+        <h2>Kapsamlı İzleme Çözümleri</h2>
+        <p>Gerçek zamanlı veri toplamadan ileri analitiklere kadar, ihtiyaçlarınıza özel uçtan uca su kalitesi çözümleri sunuyoruz</p>
+      </div>
+      <div class="services">
+        <div class="card">
+          <i class="fas fa-flask"></i>
+          <h3>Su Kimyası Analizi</h3>
+          <p>Gelişmiş sensör dizilerimizle iletkenlik, TDS, tuzluluk ve sıcaklığın  hassas ölçümü.</p>
+        </div>
+        <div class="card">
+          <i class="fas fa-microscope"></i>
+          <h3>Kirlilik Tespiti</h3>
+          <p>Bulanıklık analiz sistemlerimizle ağır metalleri, organik bileşikleri ve mikrobiyal kirleticileri belirleyin.</p>
+        </div>
+        <div class="card">
+          <i class="fas fa-brain"></i>
+          <h3>Tahmine Dayalı Analitik</h3>
+          <p>Su kalitesi trendlerini ve olası kirlilik olaylarını öngören tespit algoritmaları.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section class="features" id="features">
+    <div class="container container-narrow">
+      <div class="section-title">
+        <h2>Neden Bizi Seçmelisiniz?</h2>
+        <p>Ucuz,uyarlanabilir ve yenilikçi sistemlere sahibiz</p>
+      </div>
+      <div class="feature-grid">
+        <div class="feature-item">
+          <div class="feature-icon">
+            <i class="fas fa-bolt"></i>
+          </div>
+          <div class="feature-content">
+            <h3>Gerçek Zamanlı İzleme</h3>
+            <p>Su kalitesi parametrelerindeki kritik değişiklikler için değişken çalışma süreleri ve anlık uyarılarla sürekli veri akışı.</p>
+          </div>
+        </div>
+        <div class="feature-item">
+          <div class="feature-icon">
+            <i class="fas fa-robot"></i>
+          </div>
+          <div class="feature-content">
+            <h3>Uzun Batarya Ömrü</h3>
+            <p>Sistem belirli sürelerde aktifleşerek ölçüm verilerini aktarır bu sayede uzun süreli kullanım için uygun hale gelir. </p>
+          </div>
+        </div>
+        <div class="feature-item">
+          <div class="feature-icon">
+            <i class="fas fa-cloud"></i>
+          </div>
+          <div class="feature-content">
+            <h3>Web Sitemiz</h3>
+            <p>Web sitesi kontrol panelimiz aracılığıyla su kalitesi verilerinize istediğiniz zaman, istediğiniz yerden erişin.</p>
+          </div>
+        </div>
+        <div class="feature-item">
+          <div class="feature-icon">
+            <i class="fas fa-shield-alt"></i>
+          </div>
+          <div class="feature-content">
+            <h3>Raporlama</h3>
+            <p>Ölçülen verilerin tümünü karşılayan otomatik raporlama.</p>
+          </div>
+        </div>
+        <div class="feature-item">
+          <div class="feature-icon">
+            <i class="fas fa-cogs"></i>
+          </div>
+          <div class="feature-content">
+            <h3>Özel Entegrasyon</h3>
+            <p>Göl,deniz,depo vb. alanlar için farklı çözüm ve ürün tipleri</p>
+          </div>
+        </div>
+        <div class="feature-item">
+          <div class="feature-icon">
+            <i class="fas fa-headset"></i>
+          </div>
+          <div class="feature-content">
+            <h3>7/24 İletişim</h3>
+            <p>Projemiz hakkında bilgi almak için ulaşabilirsiniz.</p>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <div class="container">
+    <div class="kpis">
+      <div class="kpi-item">
+        <strong>7/24</strong>
+        <span>Gerçek Zamanlı İzleme</span>
+      </div>
+      <div class="kpi-item">
+        <strong>Yüksek</strong>
+        <span>Veri Doğruluğu</span>
+      </div>
+      <div class="kpi-item">
+        <strong>5+</strong>
+        <span>Ölçülen Parametre</span>
+      </div>
+      <div class="kpi-item">
+          <strong>Gelişmiş</strong>
+        <span>Yenilikçi Ürün</span>
+      </div>
+    </div>
+  </div>
+
+  <section id="technology">
+    <div class="container">
+      <div class="section-title">
+        <h2>Gelişmiş İzleme Teknolojisi</h2>
+        <p>Özel sistemlerimiz, kapsamlı su kalitesi yönetimi için IoT sensörlerini, edge computing'i ve bulut analitiğini birleştirir</p>
+      </div>
+      <div class="chart-container">
+        <div class="chart-title">
+          <h3>Canlı Su Kalitesi Panosu</h3>
+          <p>Kritik parametrelerin gerçek zamanlı izlenmesi </p>
+        </div>
+        <canvas id="phChart"></canvas>
+      </div>
+    </div>
+  </section>
+
+  <div class="container">
+    <div class="gallery">
+      <div class="gallery-item">
+       <img src="images/sensor.png" alt="Gelişmiş su test ekipmanı" style="width: 100%; height: 100%; object-fit: cover;">
+
+        <div class="gallery-caption">
+          <h4>Çok Parametreli Sistem</h4>
+          <p>Sensör dizimiz aynı anda 5+ parametreyi ölçer</p>
+        </div>
+      </div>
+      <div class="gallery-item">
+        <img src="https://images.unsplash.com/photo-1654776944281-cc604dc2b07b" alt="Su drone'u eylem halinde">
+        <div class="gallery-caption">
+          <h4>Uzun Ömürlü Sistem</h4>
+          <p>Ulaşılması zor lokasyonlar için uzun ömürlü sistem.</p>
+        </div>
+      </div>
+     
+      <div class="gallery-item">
+        <img src="https://images.unsplash.com/photo-1551288049-bebda4e38f71" alt="Veri görselleştirme">
+        <div class="gallery-caption">
+          <h4>Veri Görselleştirme</h4>
+          <p>Harekete geçirilebilir öngörüler için etkileşimli panolar</p>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <section class="testimonials" id="testimonials">
+    <div class="container">
+      <div class="section-title">
+        <h2></h2>
+        <p>Proje yürütücülerimiz ne diyor?</p>
+      </div>
+      <div class="testimonial-slider swiper">
+        <div class="swiper-wrapper">
+          <div class="testimonial-slide swiper-slide">
+            <div class="testimonial-content">
+             Katma değer sağlayanilecek yenilikçi bir projeye sahibiz.
+            </div>
+          <div class="testimonial-author">
+            <img src="images/ben2.png" alt="eren erten" class="author-avatar">
+            </div>
+
+
+              <div class="author-name">Eren Erten</div>
+              <div class="author-position">Proje Yürütücüsü,AEK</div>
+            </div>
+          </div>
+          <div class="testimonial-slide swiper-slide">
+            <div class="testimonial-content">
+              SuKaliteX'i uyguladığımızdan beri uyum maliyetlerimizi %40 azalttık. Otomatik raporlama yılda yüzlerce saat tasarruf sağlıyor ve destek ekibimizin ihtiyaçlarına inanılmaz derecede duyarlı.
+            </div>
+            <div class="testimonial-author">
+              <img src="https://randomuser.me/api/portraits/men/32.jpg" alt="Michael Chen" class="author-avatar">
+              <div class="author-name">Alaaddin Can Gürsoy</div>
+              <div class="author-position">Proje Yürütücüsü,AEK</div>
+            </div>
+          </div>
+          <div class="testimonial-slide swiper-slide">
+            <div class="testimonial-content">
+              Belediye su sağlayıcısı olarak güvenilirlik çok önemlidir. SuKaliteX'in sistemi 3 yıldır kusursuz çalışıyor, su kalitesi verilerimizde bize güven veriyor ve toplumumuza daha iyi hizmet etmemize yardımcı oluyor.
+            </div>
+            <div class="testimonial-author">
+              <img src="https://randomuser.me/api/portraits/women/68.jpg" alt="Elena Rodriguez" class="author-avatar">
+              <div class="author-name">Ali Osman Dalkılıç</div>
+              <div class="author-position">Proje Yürütücüsü,AEK</div>
+            </div>
+          </div>
+        </div>
+        <div class="swiper-pagination"></div>
+      </div>
+    </div>
+  </section>
+
+  <section class="cta">
+    <div class="container">
+      <h2>Su İzlemenizi Dönüştürmeye Hazır mısınız?</h2>
+      <p>Daha temiz, daha güvenli su için ihtiyacınız olan öngörüleri SuKaliteX'in nasıl sağlayabileceğini görmek için bir demo planlayın</p>
+      <a href="#contact" class="btn btn-primary">Hemen Başlayın <i class="fas fa-arrow-right"></i></a>
+    </div>
+  </section>
+
+  <section class="contact" id="contact">
+    <div class="container">
+      <div class="section-title">
+        <h2>Proje Yürütücüleri İle İletişime Geçin</h2>
+        <p>Sistem hakkında bilgi almak için bize ulaşın</p>
+      </div>
+      <div class="contact-grid">
+        <div class="contact-info">
+          <h3>Su Kalitesi Hakkında Konuşalım</h3>
+          <div class="contact-details">
+            <div class="contact-item">
+              <div class="contact-icon">
+                <i class="fas fa-map-marker-alt"></i>
+              </div>
+              <div class="contact-text">
+                <h4>Genel Merkez</h4>
+                <p>123 Su Kenarı Caddesi<br>İstanbul, Türkiye 34000</p>
+              </div>
+            </div>
+            <div class="contact-item">
+              <div class="contact-icon">
+                <i class="fas fa-phone-alt"></i>
+              </div>
+              <div class="contact-text">
+                <h4>Telefon</h4>
+                <p><a href="tel:+902125551212">+90 212 555 1212</a></p>
+              </div>
+            </div>
+            <div class="contact-item">
+              <div class="contact-icon">
+                <i class="fas fa-envelope"></i>
+              </div>
+              <div class="contact-text">
+                <h4>E-posta</h4>
+                <p><a href="mailto:info@sukalitex.com">info@sukalitex.com</a></p>
+              </div>
+            </div>
+            <div class="contact-item">
+              <div class="contact-icon">
+                <i class="fas fa-clock"></i>
+              </div>
+              <div class="contact-text">
+                <h4>Çalışma Saatleri</h4>
+                <p>Pazartesi - Cuma: 8:00 - 18:00<br>7/24 Acil Destek</p>
+              </div>
+            </div>
+          </div>
+          <div class="social-links">
+            <a href="#"><i class="fab fa-linkedin-in"></i></a>
+            <a href="#"><i class="fab fa-twitter"></i></a>
+            <a href="#"><i class="fab fa-facebook-f"></i></a>
+            <a href="#"><i class="fab fa-youtube"></i></a>
+          </div>
+        </div>
+        <div class="contact-form">
+          <form id="contactForm">
+            <div class="form-group">
+              <label for="name">Tam Adınız</label>
+              <input type="text" id="name" class="form-control" required>
+            </div>
+            <div class="form-group">
+              <label for="email">E-posta Adresiniz</label>
+              <input type="email" id="email" class="form-control" required>
+            </div>
+            <div class="form-group">
+              <label for="company">Kuruluş</label>
+              <input type="text" id="company" class="form-control">
+            </div>
+            <div class="form-group">
+              <label for="phone">Telefon Numarası</label>
+              <input type="tel" id="phone" class="form-control">
+            </div>
+            <div class="form-group">
+              <label for="message">Size Nasıl Yardımcı Olabiliriz?</label>
+              <textarea id="message" class="form-control" required></textarea>
+            </div>
+            <button type="submit" class="btn btn-primary">Mesaj Gönder <i class="fas fa-paper-plane"></i></button>
+          </form>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <footer>
+    <div class="container">
+      <div class="footer-content">
+        <div class="footer-column footer-about">
+          <a href="#" class="footer-logo">
+            <i class="fas fa-tint"></i> AEA
+          </a>
+          <p>2018'den beri akıllı su kalitesi izleme çözümlerinin önde gelen sağlayıcısı. Misyonumuz yenilikçi teknolojiyle temiz, güvenli su sağlamaktır.</p>
+          <div class="social-links">
+            <a href="#"><i class="fab fa-linkedin-in"></i></a>
+            <a href="#"><i class="fab fa-twitter"></i></a>
+            <a href="#"><i class="fab fa-facebook-f"></i></a>
+            <a href="#"><i class="fab fa-instagram"></i></a>
+          </div>
+        </div>
+        <div class="footer-column">
+          <h3>Çözümler</h3>
+          <ul class="footer-links">
+            <li><a href="#">Belediye Suları</a></li>
+            <li><a href="#">Endüstriyel Atık Sular</a></li>
+            <li><a href="#">Çevresel İzleme</a></li>
+            <li><a href="#">Su Ürünleri Yetiştiriciliği</a></li>
+            <li><a href="#">Araştırma Kurumları</a></li>
+          </ul>
+        </div>
+        <div class="footer-column">
+          <h3>Şirket</h3>
+          <ul class="footer-links">
+            <li><a href="#">Hakkımızda</a></li>
+            <li><a href="#">Teknolojimiz</a></li>
+            <li><a href="#">Vaka Çalışmaları</a></li>
+            <li><a href="#">Kariyer</a></li>
+            <li><a href="#">Haberler & Etkinlikler</a></li>
+          </ul>
+        </div>
+        <div class="footer-column footer-newsletter">
+          <h3>Bülten</h3>
+          <p>Su kalitesi yenilikleri ve şirket haberleri hakkında güncellemeler almak için abone olun.</p>
+          <form class="newsletter-form">
+            <input type="email" placeholder="E-postanız" class="newsletter-input" required>
+            <button type="submit" class="newsletter-btn">
+              <i class="fas fa-paper-plane"></i>
+            </button>
+          </form>
+        </div>
+      </div>
+      <div class="copyright">
+        <p>&copy; 2025 SuKaliteX Teknolojileri. Tüm hakları saklıdır. | <a href="#">Gizlilik Politikası</a> | <a href="#">Hizmet Şartları</a></p>
+      </div>
+    </div>
+  </footer>
+
+  <!-- JavaScript kodu aynı kalıyor -->
+  <script>
+    // Mobil menü toggle
+    const mobileMenuBtn = document.getElementById('mobileMenuBtn');
+    const navLinks = document.getElementById('navLinks');
+    
+    mobileMenuBtn.addEventListener('click', () => {
+      navLinks.classList.toggle('active');
+      mobileMenuBtn.innerHTML = navLinks.classList.contains('active') 
+        ? '<i class="fas fa-times"></i>' 
+        : '<i class="fas fa-bars"></i>';
+    });
+    
+    // Başlık scroll efekti
+    const header = document.getElementById('header');
+    window.addEventListener('scroll', () => {
+      if (window.scrollY > 100) {
+        header.classList.add('scrolled');
+      } else {
+        header.classList.remove('scrolled');
+      }
+    });
+    
+    // Anchor linkler için smooth scrolling
+    document.querySelectorAll('a[href^="#"]').forEach(anchor => {
+      anchor.addEventListener('click', function(e) {
         e.preventDefault();
         
-        const reportData = {
-            id: Date.now().toString(),
-            name: document.getElementById('reportName').value,
-            email: document.getElementById('reportEmail').value,
-            phone: document.getElementById('reportPhone').value,
-            company: document.getElementById('reportCompany').value,
-            reportType: document.getElementById('reportType').value,
-            date: new Date().toISOString()
-        };
-
-        // Rapor taleplerini localStorage'a kaydet
-        let reports = JSON.parse(localStorage.getItem('reportRequests') || '[]');
-        reports.push(reportData);
-        localStorage.setItem('reportRequests', JSON.stringify(reports));
-
-        // Formu temizle ve modalı kapat
-        this.reset();
-        closeReportModal();
-        alert('Rapor talebiniz başarıyla alındı!');
+        if (navLinks.classList.contains('active')) {
+          navLinks.classList.remove('active');
+          mobileMenuBtn.innerHTML = '<i class="fas fa-bars"></i>';
+        }
+        
+        const target = document.querySelector(this.getAttribute('href'));
+        if (target) {
+          window.scrollTo({
+            top: target.offsetTop - 80,
+            behavior: 'smooth'
+          });
+        }
+      });
     });
-    </script>
+    
+    // Referans slider'ını başlat
+    const testimonialSwiper = new Swiper('.testimonial-slider', {
+      loop: true,
+      autoplay: {
+        delay: 8000,
+        disableOnInteraction: false,
+      },
+      pagination: {
+        el: '.swiper-pagination',
+        clickable: true,
+      },
+    });
+    
+    // Grafik uygulaması
+    const ctx = document.getElementById('phChart');
+    new Chart(ctx, {
+      type: 'line',
+      data: {
+        labels: Array.from({ length: 24 }, (_, i) => `${i}:00`),
+        datasets: [
+          {
+            label: 'TDS Seviyesi',
+            data: [7.2, 7.1, 7.0, 6.9, 6.8, 6.9, 7.0, 7.1, 7.2, 7.3, 7.4, 7.3, 7.2, 7.1, 7.0, 6.9, 6.8, 6.7, 6.6, 6.7, 6.8, 6.9, 7.0, 7.1],
+            borderColor: '#2a9d8f',
+            backgroundColor: 'rgba(42, 157, 143, 0.1)',
+            borderWidth: 3,
+            tension: 0.4,
+            fill: true,
+            pointRadius: 0,
+            pointHoverRadius: 6
+          },
+          {
+            label: 'Bulanıklık (NTU)',
+            data: [1.0, 0.9, 0.8, 0.9, 1.0, 1.2, 1.5, 1.8, 2.0, 1.9, 1.7, 1.5, 1.3, 1.2, 1.3, 1.5, 1.7, 1.9, 2.1, 2.3, 2.5, 2.7, 2.9, 3.1],
+            borderColor: '#005f73',
+            backgroundColor: 'rgba(0, 95, 115, 0.1)',
+            borderWidth: 3,
+            tension: 0.4,
+            fill: true,
+            pointRadius: 0,
+            pointHoverRadius: 6
+          },
+          {
+            label: 'Sıcaklık (mg/L)',
+            data: [8.2, 8.1, 8.0, 7.9, 7.8, 7.7, 7.6, 7.5, 7.6, 7.7, 7.8, 7.9, 8.0, 8.1, 8.2, 8.3, 8.4, 8.5, 8.6, 8.7, 8.8, 8.9, 9.0, 9.1],
+            borderColor: '#e9c46a',
+            backgroundColor: 'rgba(233, 196, 106, 0.1)',
+            borderWidth: 3,
+            tension: 0.4,
+            fill: true,
+            pointRadius: 0,
+            pointHoverRadius: 6
+          }
+        ]
+      },
+      options: {
+        responsive: true,
+        maintainAspectRatio: true,
+        plugins: {
+          legend: {
+            position: 'top',
+            labels: {
+              font: {
+                family: 'Poppins',
+                size: 13
+              },
+              padding: 20,
+              usePointStyle: true,
+              pointStyle: 'circle'
+            }
+          },
+          tooltip: {
+            mode: 'index',
+            intersect: false,
+            backgroundColor: 'rgba(0, 0, 0, 0.8)',
+            titleFont: {
+              family: 'Poppins',
+              size: 14,
+              weight: 'bold'
+            },
+            bodyFont: {
+              family: 'Poppins',
+              size: 13
+            },
+            padding: 12,
+            cornerRadius: 8
+          }
+        },
+        scales: {
+          y: {
+            beginAtZero: false,
+            title: {
+              display: true,
+              text: 'Ölçüm Değerleri',
+              font: {
+                family: 'Poppins',
+                size: 13,
+                weight: '500'
+              }
+            },
+            grid: {
+              color: 'rgba(0, 0, 0, 0.05)'
+            }
+          },
+          x: {
+            title: {
+              display: true,
+              text: 'Saat (24h)',
+              font: {
+                family: 'Poppins',
+                size: 13,
+                weight: '500'
+              }
+            },
+            grid: {
+              display: false
+            }
+          }
+        },
+        interaction: {
+          mode: 'nearest',
+          axis: 'x',
+          intersect: false
+        }
+      }
+    });
+    
+    // Form gönderimi
+    const contactForm = document.getElementById('contactForm');
+    contactForm.addEventListener('submit', (e) => {
+      e.preventDefault();
+      
+      // Form gönderimini simüle et
+      const submitBtn = contactForm.querySelector('button[type="submit"]');
+      const originalText = submitBtn.innerHTML;
+      
+      submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Gönderiliyor...';
+      submitBtn.disabled = true;
+      
+      setTimeout(() => {
+        submitBtn.innerHTML = '<i class="fas fa-check"></i> Mesaj Gönderildi!';
+        
+        // Başarı mesajını göster
+        const successMessage = document.createElement('div');
+        successMessage.style.color = '#2a9d8f';
+        successMessage.style.marginTop = '20px';
+        successMessage.style.fontWeight = '500';
+        successMessage.innerHTML = 'Mesajınız için teşekkürler! Ekibimiz en kısa sürede sizinle iletişime geçecektir.';
+        contactForm.appendChild(successMessage);
+        
+        // Gecikmeden sonra formu sıfırla
+        setTimeout(() => {
+          contactForm.reset();
+          submitBtn.innerHTML = originalText;
+          submitBtn.disabled = false;
+          successMessage.remove();
+        }, 3000);
+      }, 1500);
+    });
+    
+    // Görünüm alanına girdiklerinde elementleri canlandır
+    const animateOnScroll = () => {
+      const elements = document.querySelectorAll('.card, .feature-item, .kpi-item, .gallery-item');
+      
+      elements.forEach(element => {
+        const elementPosition = element.getBoundingClientRect().top;
+        const windowHeight = window.innerHeight;
+        
+        if (elementPosition < windowHeight - 100) {
+          element.style.opacity = '1';
+          element.style.transform = 'translateY(0)';
+        }
+      });
+    };
+    
+    // Animasyonlu elementler için başlangıç durumunu ayarla
+    document.querySelectorAll('.card, .feature-item, .kpi-item, .gallery-item').forEach(element => {
+      element.style.opacity = '0';
+      element.style.transform = 'translateY(30px)';
+      element.style.transition = 'all 0.6s cubic-bezier(0.165, 0.84, 0.44, 1)';
+    });
+    
+    // Yükleme sırasında bir kez çalıştır
+    animateOnScroll();
+    
+    // Sonra scroll sırasında çalıştır
+    window.addEventListener('scroll', animateOnScroll);
+  </script>
 </body>
-<script src="script.js"></script>
 </html>

@@ -1,60 +1,160 @@
-<!-- frontend/login.html -->
 <!DOCTYPE html>
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
-  <title>Login – Water Quality App</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Login | SuKaliteX</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600&display=swap" rel="stylesheet">
   <style>
-    body { font-family: sans-serif; display:flex; flex-direction:column; align-items:center; }
-    .login-box {
-      margin-top: 6em;
-      padding: 2em;
-      border: 1px solid #ddd;
-      border-radius: 8px;
-      background: #fafafa;
-      min-width: 280px;
-      box-shadow: 0 2px 8px #eee;
+    :root {
+      --primary: #004f98;
+      --accent: #2196f3;
+      --light: #ffffff;
+      --dark: #14213d;
+      --text: #333333;
     }
-    .login-box input { margin: 0.6em 0; width: 100%; padding: 0.5em; }
-    .login-box button { width: 100%; background: #0077cc; color: white; padding: 0.7em; border: none; border-radius: 6px; font-size: 1em; cursor: pointer; }
+
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+      font-family: 'Poppins', sans-serif;
+    }
+
+    body, html {
+      height: 100%;
+      overflow: hidden;
+    }
+
+    .video-bg {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      z-index: -1;
+    }
+
+    .login-box {
+      position: relative;
+      background: rgba(255, 255, 255, 0.9);
+      padding: 40px;
+      border-radius: 12px;
+      box-shadow: 0 8px 20px rgba(0, 0, 0, 0.15);
+      width: 100%;
+      max-width: 400px;
+      z-index: 1;
+    }
+
+    .center-wrapper {
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      height: 100vh;
+    }
+
+    .login-box h2 {
+      text-align: center;
+      margin-bottom: 30px;
+      color: var(--dark);
+    }
+
+    .form-group {
+      margin-bottom: 20px;
+    }
+
+    .form-group label {
+      display: block;
+      margin-bottom: 8px;
+      color: var(--text);
+    }
+
+    .form-group input {
+      width: 100%;
+      padding: 12px 15px;
+      border: 1px solid #ddd;
+      border-radius: 6px;
+      outline: none;
+      transition: border 0.3s;
+    }
+
+    .form-group input:focus {
+      border-color: var(--accent);
+    }
+
+    .btn-login {
+      width: 100%;
+      padding: 12px;
+      border: none;
+      background: var(--accent);
+      color: white;
+      font-size: 1rem;
+      border-radius: 6px;
+      cursor: pointer;
+      transition: background 0.3s;
+    }
+
+    .btn-login:hover {
+      background: var(--primary);
+    }
+
+    .login-footer {
+      margin-top: 20px;
+      text-align: center;
+      font-size: 0.9rem;
+    }
+
+    .login-footer a {
+      color: var(--accent);
+      text-decoration: none;
+    }
+
+    .login-footer a:hover {
+      text-decoration: underline;
+    }
   </style>
-  <link rel="stylesheet" href="../style.css">
 </head>
 <body>
-  <div style="width:100%; text-align:right; padding:1em;">
-    <a href="/index.html" class="home-btn">Home</a>
+
+  <!-- 🔁 Video Background -->
+  <video autoplay muted loop class="video-bg">
+    <source src="videos\20250614_1255_Dancing Waves Serenity_storyboard_01jxpxtnncexstrxcfj1vfrbh1.mp4" type="video/mp4">
+    Your browser does not support the video tag.
+  </video>
+
+  <div class="center-wrapper">
+    <div class="login-box">
+      <h2>Login to SuKaliteX</h2>
+      <form onsubmit="loginUser(event)">
+        <div class="form-group">
+          <label for="email">Email</label>
+          <input type="text" id="email" required />
+        </div>
+        <div class="form-group">
+          <label for="password">Password</label>
+          <input type="password" id="password" required />
+        </div>
+        <button class="btn-login" type="submit">Login</button>
+      </form>
+      <div class="login-footer">
+        <p>Don't have an account? <a href="#">Register</a></p>
+      </div>
+    </div>
   </div>
-  <div class="login-box">
-    <h2>Login</h2>
-    <form id="login-form">
-      <input name="username" placeholder="Username" required /><br/>
-      <input type="password" name="password" placeholder="Password" required /><br/>
-      <button type="submit">Sign In</button>
-    </form>
-  </div>
-    
+
   <script>
-    document
-      .getElementById('login-form')
-      .addEventListener('submit', async e => {
-        e.preventDefault();
-        const u = e.target.username.value;
-        const p = e.target.password.value;
-        try {
-          const res = await fetch('/api/auth/login', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ username: u, password: p })
-          });
-          if (!res.ok) throw new Error('Login failed');
-          const { jwt } = await res.json();
-          localStorage.setItem('token', jwt);
-          location.href = '/dashboard/dashboard.html';
-        } catch (err) {
-          alert('Login failed: ' + err.message);
-        }
-      });
+    function loginUser(event) {
+      event.preventDefault();
+      const email = document.getElementById('email').value;
+      const password = document.getElementById('password').value;
+
+      const res = await fetch('/api/auth/login', {…});
+      localStorage.setItem('token', (await res.json()).jwt);
+      location.href = '/dashboard/dashboard.html';
+    }
   </script>
 </body>
 </html>
-
