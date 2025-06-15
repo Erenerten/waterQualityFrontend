@@ -172,19 +172,23 @@ function toggleSidebar(){
   icon.classList.toggle('fa-chevron-right',sidebarCollapsed);
 }
 
-function updateSidebar(sensorType,value){
-  const box=document.querySelector(`.sensor-box[data-type="${sensorType}"]`);
-  if(!box||value==null) return;                                    /* graceful skip */
-  const unit=box.querySelector('.sensor-unit').textContent.trim();
-  box.querySelector('.sensor-value').innerHTML=`${Number(value).toFixed(1)} ${unit}`;
-  const st=box.querySelector('.sensor-status');
-  if(sensorType==='temperature'){
-    if(value>26){st.textContent='Tehlikeli';st.className='sensor-status status-danger';}
-    else if(value>24){st.textContent='Yüksek';st.className='sensor-status status-warning';}
-    else{st.textContent='Normal';st.className='sensor-status status-normal';}
-  }else if(sensorType==='conductivity'){
-    if(value>1000){st.textContent='Yüksek';st.className='sensor-status status-warning';}
-    else{st.textContent='Normal';st.className='sensor-status status-normal';}
+function updateSidebar(type, value) {
+  const box = document.querySelector(`.sensor-box[data-type="${type}"]`);
+  if (!box || value == null) return;                       // stop if box missing
+
+  const unitEl = box.querySelector('.sensor-unit');
+  const valEl  = box.querySelector('.sensor-value');
+  if (valEl) valEl.innerHTML = `${Number(value).toFixed(1)} ${unitEl ? unitEl.textContent.trim() : ''}`;
+
+  const st = box.querySelector('.sensor-status');
+  if (!st) return;                                         // nothing to style → exit
+
+  if (type === 'temperature') {
+    st.textContent = value > 26 ? 'Tehlikeli' : value > 24 ? 'Yüksek' : 'Normal';
+    st.className   = `sensor-status ${value > 26 ? 'status-danger' : value > 24 ? 'status-warning' : 'status-normal'}`;
+  } else if (type === 'conductivity') {
+    st.textContent = value > 1000 ? 'Yüksek' : 'Normal';
+    st.className   = `sensor-status ${value > 1000 ? 'status-warning' : 'status-normal'}`;
   }
 }
 
@@ -246,14 +250,17 @@ async function fetchLiveData(){
   }
 }
 
-function applySensorUpdate(arr){
-  if(!Array.isArray(arr)||arr.length===0) return;
-  arr.forEach(d=>{
-    const type=ALIAS[d.type]||d.type;         // canonicalise
-    updateSidebar(type,d.value);
-    recordValue(type,d.value);
+function applySensorUpdate(arr) {
+  if (!Array.isArray(arr) || arr.length === 0) return;
+
+  arr.forEach(d => {
+    const type = alias[d.type] || d.type;          // <── NEW
+    const v    = Number(d.value);
+    if (Number.isFinite(v)) {
+      updateSidebar(type, v);
+      recordValue(type, v);
+    }
   });
-  updateHeatmap();
 }
 
 /*--------------------------------------------------------------------
