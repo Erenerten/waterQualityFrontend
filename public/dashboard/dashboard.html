@@ -4,7 +4,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width,initial-scale=1.0" />
-  <title>SuKaliteX | Sıcaklık Paneli</title>
+  <title>SuKaliteX | Sıcaklık Paneli (DEBUG)</title>
   <meta http-equiv="Cache-Control" content="no-store" />
 
   <!-- libs -->
@@ -75,77 +75,105 @@
   </section>
 
   <script>
-    /* ─── guard ─── */
+    /* ────────────────────── auth guard ────────────────────── */
     const TOKEN = localStorage.getItem('token');
     if (!TOKEN) location.href = '/dashboard/login.html';
 
-    /* ─── clock ─── */
-    setInterval(()=>{document.getElementById('clock').textContent =
-      new Date().toLocaleTimeString('tr-TR',{hour:'2-digit',minute:'2-digit'});},1000);
+    /* ────────────────────── clock ─────────────────────────── */
+    setInterval(()=>{
+      document.getElementById('clock').textContent =
+        new Date().toLocaleTimeString('tr-TR',{hour:'2-digit',minute:'2-digit'});
+    },1000);
 
-    /* ─── map ─── */
+    /* ────────────────────── map ───────────────────────────── */
     const map=L.map('map').setView([41.03,28.89],15);
     L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',
       {attribution:'© OpenStreetMap'}).addTo(map);
     L.marker([41.03,28.89]).addTo(map).bindPopup('Ölçüm Noktası');
 
-    /* ─── chart ─── */
+    /* ────────────────────── chart ─────────────────────────── */
     const ctx=document.getElementById('sensorChart').getContext('2d');
-    const chart=new Chart(ctx,{type:'line',data:{labels:[],datasets:[{
-      data:[],borderColor:'#0066cc',borderWidth:2,tension:.3,fill:false,pointRadius:3}]},
+    const chart=new Chart(ctx,{type:'line',
+      data:{labels:[],datasets:[{data:[],borderColor:'#0066cc',borderWidth:2,
+                                tension:.3,fill:false,pointRadius:3}]},
       options:{plugins:{legend:{display:false}},scales:{x:{grid:{display:false}}}}});
     const MAX=120;
     function pushTemp(v){
-      const ts=new Date().toLocaleTimeString('tr-TR');
-      chart.data.labels.push(ts);
+      const t=new Date().toLocaleTimeString('tr-TR');
+      chart.data.labels.push(t);
       chart.data.datasets[0].data.push(v);
       if(chart.data.labels.length>MAX){
-        chart.data.labels.shift();chart.data.datasets[0].data.shift();
+        chart.data.labels.shift();
+        chart.data.datasets[0].data.shift();
       }
       chart.update();
     }
 
-    /* ─── sidebar ─── */
+    /* ────────────────────── sidebar helper ───────────────── */
     function updateSidebar(v){
-      document.getElementById('tempVal').innerHTML=`${v.toFixed(1)} <span class="sensor-unit">°C</span>`;
+      document.getElementById('tempVal').innerHTML =
+        `${v.toFixed(1)} <span class="sensor-unit">°C</span>`;
       const st=document.getElementById('tempStatus');
       if(v>26){st.textContent='Tehlikeli';st.style.background='var(--danger)';}
       else if(v>24){st.textContent='Yüksek';st.style.background='var(--warning)';}
-      else{st.textContent='Normal';st.style.background='var(--success)';}
+      else {st.textContent='Normal';st.style.background='var(--success)';}
     }
 
-    /* ─── robust poll ─── */
-    async function poll(){
-      const num=raw=>{
-        if(typeof raw==='number')return raw;
-        if(typeof raw==='string'){
-          const m=raw.replace(',','.').match(/[-+]?\d*\.?\d+/);
-          return m?parseFloat(m[0]):NaN;
-        }
-        return NaN;
-      };
+    /* ────────────────────── DEBUG LOGGER ─────────────────── */
+    async function debugSensorApi(){
       try{
-        const r=await fetch('/api/sensor-data',{headers:{Authorization:'Bearer '+TOKEN}});
-        if(!r.ok)throw new Error('HTTP '+r.status);
-        const rows=await r.json();
+        const res = await fetch('/api/sensor-data',{headers:{Authorization:'Bearer '+TOKEN}});
+        console.log('↩︎ /api/sensor-data status',res.status);
+        const txt = await res.text();
+        console.log('↩︎ raw:', txt.slice(0,400)+(txt.length>400?' …':''));
+        let json; try{json=JSON.parse(txt);}catch(e){console.error('‼ not JSON');return;}
+        console.table(json.slice(-3)); // show last 3 rows
+      }catch(e){console.error('debug fetch failed',e);}
+    }
+    debugSensorApi();
+    setInterval(debugSensorApi,10000);
 
-        const tRow=[...rows].reverse().find(o=>String(o.type||'').toLowerCase().includes('temp'));
-        if(!tRow)return;
+    /* ────────────────────── robust poll ───────────────────── */
+    const toNum = raw => {
+      if(typeof raw==='number') return raw;
+      if(typeof raw==='string'){
+        const m = raw.replace(',','.').match(/[-+]?\d*\.?\d+/);
+        return m ? parseFloat(m[0]) : NaN;
+      }
+      return NaN;
+    };
 
-        let v=num(tRow.value);
-        if(!Number.isFinite(v))v=num(tRow.temperature);
-        if(!Number.isFinite(v)){
+    async function poll(){
+      try{
+        const res = await fetch('/api/sensor-data',{headers:{Authorization:'Bearer '+TOKEN}});
+        if(!res.ok) throw new Error('HTTP '+res.status);
+        const rows = await res.json();
+
+        /* newest row whose type includes "temp" */
+        const tRow = [...rows].reverse()
+          .find(r=>String(r.type||'').toLowerCase().includes('temp'));
+        if(!tRow){console.warn('no temperature row'); return;}
+
+        /* pull a numeric field */
+        let v = toNum(tRow.value);
+        if(!Number.isFinite(v)) v = toNum(tRow.temperature);
+        if(!Number.isFinite(v)) {
           for(const [k,val] of Object.entries(tRow)){
-            if(['id','type','timestamp'].includes(k))continue;
-            v=num(val);
-            if(Number.isFinite(v))break;
+            if(['id','type','timestamp'].includes(k)) continue;
+            v = toNum(val);
+            if(Number.isFinite(v)) break;
           }
         }
-        if(!Number.isFinite(v)||v<-50||v>150)return;
+        if(!Number.isFinite(v)){
+          console.warn('no numeric value in row',tRow);
+          return;
+        }
+        if(v < -50 || v > 150){console.warn('out-of-range temp',v);return;}
 
         pushTemp(v);
         updateSidebar(v);
-      }catch(e){console.error(e);}
+
+      }catch(e){console.error('poll failed',e);}
     }
     poll();
     setInterval(poll,5000);
