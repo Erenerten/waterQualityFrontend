@@ -1,10 +1,10 @@
-<!--  public/dashboard/dashboard.html  -->
+<!-- public/dashboard/dashboard.html -->
 <!DOCTYPE html>
 <html lang="tr">
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width,initial-scale=1.0" />
-  <title>SuKaliteX | Canlı Sıcaklık Paneli</title>
+  <title>SuKaliteX | Sıcaklık Paneli</title>
   <meta http-equiv="Cache-Control" content="no-store" />
 
   <!-- libs -->
@@ -15,22 +15,27 @@
   <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 
   <style>
-    :root{--dark:#0a2342;--gray:#f8fafc;--text:#223;--accent:#00b4d8;--success:#2ecc71;--danger:#e74c3c}
+    :root{--dark:#0a2342;--gray:#f8fafc;--text:#223;--accent:#00b4d8;
+          --success:#2ecc71;--warning:#f39c12;--danger:#e74c3c}
     *{margin:0;padding:0;box-sizing:border-box}
-    body{font-family:Poppins,sans-serif;background:var(--gray);color:var(--text);display:flex;height:100vh;overflow:hidden}
+    body{font-family:Poppins,sans-serif;background:var(--gray);color:var(--text);
+         display:flex;height:100vh;overflow:hidden}
 
     /* sidebar */
-    .sidebar{width:250px;background:var(--dark);color:#fff;padding:20px 16px;display:flex;flex-direction:column;gap:18px}
+    .sidebar{width:250px;background:var(--dark);color:#fff;padding:20px 16px;
+             display:flex;flex-direction:column;gap:18px}
     .logo{display:flex;align-items:center;font-weight:600;font-size:1.3rem}
     .logo img{height:52px;margin-right:10px}
-    .sensor-box{background:rgba(255,255,255,.08);padding:14px;border-radius:10px;border-left:3px solid var(--accent)}
+    .sensor-box{background:rgba(255,255,255,.08);padding:14px;border-radius:10px;
+                border-left:3px solid var(--accent)}
     .sensor-value{font-size:1.3rem;font-weight:600;margin:4px 0}
     .sensor-unit{font-size:.75rem;opacity:.8}
     .sensor-status{font-size:.65rem;padding:2px 6px;border-radius:14px;background:var(--success)}
 
-    /* layout */
+    /* main layout */
     .main{flex:1;display:flex;flex-direction:column}
-    .top-bar{padding:10px 20px;background:#fff;box-shadow:0 2px 5px rgba(0,0,0,.05);display:flex;justify-content:space-between}
+    .top-bar{padding:10px 20px;background:#fff;box-shadow:0 2px 5px rgba(0,0,0,.05);
+             display:flex;justify-content:space-between}
     .content{flex:1;display:flex;overflow:hidden}
     .map-wrap{flex:1.1;min-width:360px}
     #map{width:100%;height:100%}
@@ -47,7 +52,10 @@
     <div class="logo"><img src="/images/logo.png" alt="logo"><span>SuKaliteX</span></div>
 
     <div class="sensor-box" id="tempBox">
-      <div class="sensor-header"><h4>Sıcaklık</h4><span class="sensor-status" id="tempStatus">—</span></div>
+      <div class="sensor-header">
+        <h4>Sıcaklık</h4>
+        <span class="sensor-status" id="tempStatus">—</span>
+      </div>
       <div class="sensor-value" id="tempVal">-- <span class="sensor-unit">°C</span></div>
     </div>
   </aside>
@@ -67,76 +75,80 @@
   </section>
 
   <script>
-    /* ---------- auth guard ---------- */
+    /* ─── guard ─── */
     const TOKEN = localStorage.getItem('token');
     if (!TOKEN) location.href = '/dashboard/login.html';
 
-    /* ---------- simple clock ---------- */
-    setInterval(() => {
-      document.getElementById('clock').textContent =
-        new Date().toLocaleTimeString('tr-TR', { hour:'2-digit', minute:'2-digit' });
-    }, 1000);
+    /* ─── clock ─── */
+    setInterval(()=>{document.getElementById('clock').textContent =
+      new Date().toLocaleTimeString('tr-TR',{hour:'2-digit',minute:'2-digit'});},1000);
 
-    /* ---------- map ---------- */
-    const map = L.map('map').setView([41.03, 28.89], 15);
+    /* ─── map ─── */
+    const map=L.map('map').setView([41.03,28.89],15);
     L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',
-      { attribution:'© OpenStreetMap' }).addTo(map);
-    L.marker([41.03, 28.89]).addTo(map).bindPopup('Ölçüm Noktası');
+      {attribution:'© OpenStreetMap'}).addTo(map);
+    L.marker([41.03,28.89]).addTo(map).bindPopup('Ölçüm Noktası');
 
-    /* ---------- chart ---------- */
-    const ctx = document.getElementById('sensorChart').getContext('2d');
-    const chart = new Chart(ctx, {
-      type:'line',
-      data:{labels:[],datasets:[{data:[],borderColor:'#0066cc',borderWidth:2,
-                                 tension:.3,fill:false,pointRadius:3}]},
-      options:{plugins:{legend:{display:false}},scales:{x:{grid:{display:false}}}}
-    });
-    const MAX = 120;
-
-    function pushSample(val) {
-      chart.data.labels.push(new Date().toLocaleTimeString('tr-TR'));
-      chart.data.datasets[0].data.push(val);
-      if (chart.data.labels.length > MAX) {
-        chart.data.labels.shift(); chart.data.datasets[0].data.shift();
+    /* ─── chart ─── */
+    const ctx=document.getElementById('sensorChart').getContext('2d');
+    const chart=new Chart(ctx,{type:'line',data:{labels:[],datasets:[{
+      data:[],borderColor:'#0066cc',borderWidth:2,tension:.3,fill:false,pointRadius:3}]},
+      options:{plugins:{legend:{display:false}},scales:{x:{grid:{display:false}}}}});
+    const MAX=120;
+    function pushTemp(v){
+      const ts=new Date().toLocaleTimeString('tr-TR');
+      chart.data.labels.push(ts);
+      chart.data.datasets[0].data.push(v);
+      if(chart.data.labels.length>MAX){
+        chart.data.labels.shift();chart.data.datasets[0].data.shift();
       }
       chart.update();
     }
 
-    /* ---------- sidebar helper ---------- */
-    function updateSidebar(val) {
-      document.getElementById('tempVal').innerHTML = `${val.toFixed(1)} <span class="sensor-unit">°C</span>`;
-      const st = document.getElementById('tempStatus');
-      if (val > 26)      { st.textContent='Tehlikeli'; st.style.background='var(--danger)'; }
-      else if (val > 24) { st.textContent='Yüksek';    st.style.background='var(--success)'; st.style.background='var(--warning)'; }
-      else               { st.textContent='Normal';    st.style.background='var(--success)'; }
+    /* ─── sidebar ─── */
+    function updateSidebar(v){
+      document.getElementById('tempVal').innerHTML=`${v.toFixed(1)} <span class="sensor-unit">°C</span>`;
+      const st=document.getElementById('tempStatus');
+      if(v>26){st.textContent='Tehlikeli';st.style.background='var(--danger)';}
+      else if(v>24){st.textContent='Yüksek';st.style.background='var(--warning)';}
+      else{st.textContent='Normal';st.style.background='var(--success)';}
     }
 
-    /* ---------- data fetch (temperature only) ---------- */
-    async function fetchTemp() {
-      try {
-        const res = await fetch('/api/sensor-data', { headers:{ Authorization:'Bearer '+TOKEN } });
-        if (!res.ok) throw new Error('HTTP ' + res.status);
-        const arr = await res.json();                 // array of rows
-
-        /* newest row whose type includes "temp" (case-insensitive) */
-        for (let i = arr.length - 1; i >= 0; --i) {
-          const row = arr[i];
-          if (!row.type || !row.type.toLowerCase().includes('temp')) continue;
-
-          /* value may be in row.value OR row.temperature */
-          const raw = row.value ?? row.temperature;
-          const val = parseFloat(String(raw).replace(/[^\d.+-]/g,''));
-          if (Number.isFinite(val)) {
-            pushSample(val);
-            updateSidebar(val);
-          }
-          break;
+    /* ─── robust poll ─── */
+    async function poll(){
+      const num=raw=>{
+        if(typeof raw==='number')return raw;
+        if(typeof raw==='string'){
+          const m=raw.replace(',','.').match(/[-+]?\d*\.?\d+/);
+          return m?parseFloat(m[0]):NaN;
         }
-      } catch (e) { console.error(e); }
-    }
+        return NaN;
+      };
+      try{
+        const r=await fetch('/api/sensor-data',{headers:{Authorization:'Bearer '+TOKEN}});
+        if(!r.ok)throw new Error('HTTP '+r.status);
+        const rows=await r.json();
 
-    fetchTemp();
-    setInterval(fetchTemp, 5000);
+        const tRow=[...rows].reverse().find(o=>String(o.type||'').toLowerCase().includes('temp'));
+        if(!tRow)return;
+
+        let v=num(tRow.value);
+        if(!Number.isFinite(v))v=num(tRow.temperature);
+        if(!Number.isFinite(v)){
+          for(const [k,val] of Object.entries(tRow)){
+            if(['id','type','timestamp'].includes(k))continue;
+            v=num(val);
+            if(Number.isFinite(v))break;
+          }
+        }
+        if(!Number.isFinite(v)||v<-50||v>150)return;
+
+        pushTemp(v);
+        updateSidebar(v);
+      }catch(e){console.error(e);}
+    }
+    poll();
+    setInterval(poll,5000);
   </script>
 </body>
 </html>
