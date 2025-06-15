@@ -177,7 +177,6 @@ function select(type,ev){
   redraw();
 }
 
-/* fetch loop (temperature only) */
 async function poll () {
   try {
     const r = await fetch('/api/sensor-data', {
@@ -185,17 +184,27 @@ async function poll () {
     });
     if (!r.ok) throw new Error('HTTP ' + r.status);
 
-    const rows = await r.json();                    // [{type, value?, temperature?, …}, …]
+    /*  rows: [{type:'temperature', value:27.07, timestamp:…}, …]    */
+    const rows = await r.json();
 
-    /* grab the newest temperature sample, regardless of field name */
-    const tempRows = rows.filter(row => row.type === 'temperature');
-    if (tempRows.length === 0) return;
+    /* newest temperature packet */
+    const tRow = [...rows].reverse().find(row => row.type === 'temperature');
+    if (!tRow) return;                       // nothing yet
 
-    const latest   = tempRows[tempRows.length - 1];
-    const rawVal   = latest.value ?? latest.temperature;   // <── dual lookup
-    const val      = parseFloat(rawVal);
+    /* extract a number from ANY shape the backend sends */
+    let raw = (typeof tRow.value === 'number')      ? tRow.value
+            : (typeof tRow.value === 'string')      ? tRow.value
+            : (typeof tRow.temperature === 'number')? tRow.temperature
+            : (typeof tRow.temperature === 'string')? tRow.temperature
+            : 0;
 
-    if (!Number.isFinite(val)) return;              // skip NaN
+    /* strip units if needed  e.g. "27.1 °C" → "27.1" */
+    if (typeof raw === 'string') raw = raw.replace(/[^\d.+-]/g,'');
+    const val = parseFloat(raw);
+
+    console.log('[TEMP]', val);              // <── watch the console
+
+    if (!Number.isFinite(val)) return;       // skip junk
     pushTemp(val);
     updateTempTile(val);
 
