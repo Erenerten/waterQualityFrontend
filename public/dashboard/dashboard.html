@@ -178,18 +178,33 @@ function select(type,ev){
 }
 
 /* fetch loop (temperature only) */
-async function poll(){
-  try{
-    const r=await fetch('/api/sensor-data',{headers:{Authorization:'Bearer '+TOKEN}});
-    if(!r.ok) throw new Error('HTTP '+r.status);
-    const rows=await r.json();                  // [{type,value,timestamp},…]
-    const latest=rows.findLast(r=>r.type==='temperature');
-    if(!latest) return;
-    const val=Number(latest.value);
-    if(!Number.isFinite(val)) return;
-    pushTemp(val); updateTempTile(val);
-  }catch(e){console.error(e);toast('Veri alınamadı');}
+async function poll () {
+  try {
+    const r = await fetch('/api/sensor-data', {
+      headers: { Authorization: 'Bearer ' + TOKEN }
+    });
+    if (!r.ok) throw new Error('HTTP ' + r.status);
+
+    const rows = await r.json();                    // [{type, value?, temperature?, …}, …]
+
+    /* grab the newest temperature sample, regardless of field name */
+    const tempRows = rows.filter(row => row.type === 'temperature');
+    if (tempRows.length === 0) return;
+
+    const latest   = tempRows[tempRows.length - 1];
+    const rawVal   = latest.value ?? latest.temperature;   // <── dual lookup
+    const val      = parseFloat(rawVal);
+
+    if (!Number.isFinite(val)) return;              // skip NaN
+    pushTemp(val);
+    updateTempTile(val);
+
+  } catch (e) {
+    console.error(e);
+    toast('Veri alınamadı');
+  }
 }
+
 setInterval(poll,5000);poll();
 </script>
 </body>
