@@ -1,452 +1,145 @@
+<!-- public/dashboard/dashboard.html -->
 <!DOCTYPE html>
 <html lang="tr">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1.0" />
   <title>SuKaliteX Pro | Akıllı Su Kalitesi İzleme Paneli</title>
-  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+
+  <!-- Fonts & libs -->
+  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" />
   <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
   <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/leaflet.heat@0.2.0/dist/leaflet-heat.min.js"></script>
+
+  <!-- Styles (unchanged apart from a few comments snipped) -->
   <style>
-    :root {
-      --primary: #0066cc;
-      --primary-dark: #0052a3;
-      --primary-light: #e6f2ff;
-      --accent: #00b4d8;
-      --accent-dark: #0093b8;
-      --light: #ffffff;
-      --dark: #0a2342;
-      --gray: #f8fafc;
-      --gray-dark: #e9ecef;
-      --text: #2d3748;
-      --text-light: #6c757d;
-      --success: #2ecc71;
-      --warning: #f39c12;
-      --danger: #e74c3c;
+    :root{
+      --primary:#0066cc;--primary-dark:#0052a3;--primary-light:#e6f2ff;
+      --accent:#00b4d8;--accent-dark:#0093b8;
+      --light:#ffffff;--dark:#0a2342;
+      --gray:#f8fafc;--gray-dark:#e9ecef;
+      --text:#2d3748;--text-light:#6c757d;
+      --success:#2ecc71;--warning:#f39c12;--danger:#e74c3c;
     }
+    *{margin:0;padding:0;box-sizing:border-box}
+    body{font-family:Poppins,sans-serif;background:var(--gray);color:var(--text);display:flex;height:100vh;overflow:hidden}
 
-    * {
-      margin: 0;
-      padding: 0;
-      box-sizing: border-box;
-    }
-
-    body {
-      font-family: 'Poppins', sans-serif;
-      background-color: var(--gray);
-      color: var(--text);
-      display: flex;
-      height: 100vh;
-      overflow: hidden;
-    }
-
-    /* Sidebar Styles */
-    .sidebar {
-      width: 280px;
-      background: var(--dark);
-      color: white;
-      padding: 20px;
-      display: flex;
-      flex-direction: column;
-      box-shadow: 4px 0 15px rgba(0, 0, 0, 0.1);
-      z-index: 10;
-      transition: all 0.3s ease;
-    }
-
-    .sidebar.collapsed {
-      width: 80px;
-    }
-
+    /* ----- sidebar ---- */
+    .sidebar{width:280px;background:var(--dark);color:#fff;padding:20px;
+      display:flex;flex-direction:column;box-shadow:4px 0 15px rgba(0,0,0,.1);transition:.3s}
+    .sidebar.collapsed{width:80px}
     .sidebar.collapsed .logo span,
     .sidebar.collapsed .sensor-box h3,
     .sidebar.collapsed .sensor-unit,
-    .sidebar.collapsed .sensor-status {
-      display: none;
-    }
+    .sidebar.collapsed .sensor-status{display:none}
+    .sidebar.collapsed .sensor-box{padding:10px;text-align:center}
+    .sidebar.collapsed .sensor-value{font-size:1rem}
 
-    .sidebar.collapsed .sensor-box {
-      padding: 10px;
-      text-align: center;
-    }
+    .logo{display:flex;align-items:center;margin-bottom:30px;font-size:1.4rem;font-weight:600;cursor:pointer}
+    .logo i{margin-right:10px;color:var(--accent);font-size:1.6rem}
 
-    .sidebar.collapsed .sensor-value {
-      font-size: 1rem;
-    }
+    .toggle-sidebar{position:absolute;right:-15px;top:20px;background:#fff;width:30px;height:30px;border-radius:50%;
+      display:flex;align-items:center;justify-content:center;box-shadow:0 0 5px rgba(0,0,0,.2);cursor:pointer;z-index:20}
 
-    .logo {
-      display: flex;
-      align-items: center;
-      margin-bottom: 30px;
-      font-size: 1.4rem;
-      font-weight: 600;
-      cursor: pointer;
-    }
+    .sensor-container{display:flex;flex-direction:column;gap:12px;flex-grow:1;overflow-y:auto;padding-right:5px}
+    .sensor-box{background:rgba(255,255,255,.08);padding:15px;border-radius:10px;cursor:pointer;transition:.3s;border-left:3px solid var(--accent)}
+    .sensor-box:hover{background:rgba(255,255,255,.12)}
+    .sensor-box.active{background:rgba(0,180,216,.15);border-left-color:var(--success)}
+    .sensor-header{display:flex;justify-content:space-between;align-items:center;margin-bottom:8px}
+    .sensor-box h3{margin:0;font-size:.95rem;font-weight:500;color:rgba(255,255,255,.9)}
+    .sensor-value{font-size:1.4rem;font-weight:600;margin:3px 0;color:#fff}
+    .sensor-unit{font-size:.85rem;opacity:.7}
+    .sensor-status{display:inline-block;padding:3px 8px;border-radius:20px;font-size:.7rem;font-weight:600;text-transform:uppercase}
+    .status-normal{background:var(--success)}
+    .status-warning{background:var(--warning)}
+    .status-danger{background:var(--danger)}
 
-    .logo i {
-      margin-right: 10px;
-      color: var(--accent);
-      font-size: 1.6rem;
-    }
+    /* ----- main ----- */
+    .main-content{flex-grow:1;display:flex;flex-direction:column;position:relative}
+    .top-bar{display:flex;justify-content:space-between;align-items:center;padding:12px 20px;background:#fff;box-shadow:0 2px 5px rgba(0,0,0,.05)}
+    .battery-loader{display:flex;align-items:center;gap:10px}
+    .loader{width:60px;height:30px;border:2px solid var(--success);border-right-color:transparent;padding:2px;
+      background:repeating-linear-gradient(90deg,var(--success)0 8px,#0000 0 12px)left/0% 100% no-repeat content-box}
+    .loader::before{content:"";position:absolute;top:-2px;bottom:-2px;left:100%;width:8px;
+      background:linear-gradient(#0000 calc(50% - 5px),var(--success)0 calc(50% - 4px),#0000 0 calc(50% + 4px),var(--success)0 calc(50% + 5px),#0000 0)left/100% 100%,
+                 linear-gradient(var(--success) calc(50% - 4px),#0000 0 calc(50% + 4px),var(--success) 0)left/2px 100%,
+                 linear-gradient(#0000 calc(50% - 4px),var(--success) 0 calc(50% + 4px),#0000 0)right/2px 100%;background-repeat:no-repeat}
+    .battery-percent{font-size:.9rem;font-weight:500;color:var(--dark)}
 
-    .toggle-sidebar {
-      position: absolute;
-      right: -15px;
-      top: 20px;
-      background: white;
-      width: 30px;
-      height: 30px;
-      border-radius: 50%;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      box-shadow: 0 0 5px rgba(0,0,0,0.2);
-      cursor: pointer;
-      z-index: 20;
-    }
+    .content-area{display:flex;flex-grow:1;overflow:hidden}
+    .map-container{width:60%;height:100%;position:relative}
+    #map{height:100%;width:100%;background:#0a2342}
+    .graph-container{width:40%;padding:20px;background:#fff;display:flex;flex-direction:column}
+    .graph-title{font-size:1.2rem;margin-bottom:15px;color:var(--dark);font-weight:600;display:flex;justify-content:space-between;align-items:center}
+    .chart-wrapper{flex-grow:1;position:relative}
+    .chart-container{position:absolute;width:100%;height:100%}
+    .sensor-info{margin-top:20px;display:grid;grid-template-columns:repeat(2,1fr);gap:15px}
+    .info-card{background:var(--gray);padding:12px;border-radius:8px;transition:.3s}
+    .info-card:hover{transform:translateY(-3px);box-shadow:0 5px 15px rgba(0,0,0,.1)}
+    .info-card h4{font-size:.8rem;color:var(--text-light);margin-bottom:5px}
+    .info-card p{font-size:1.1rem;font-weight:600;color:var(--dark)}
 
-    .sensor-container {
-      display: flex;
-      flex-direction: column;
-      gap: 12px;
-      flex-grow: 1;
-      overflow-y: auto;
-      padding-right: 5px;
-    }
+    .notification{position:fixed;bottom:20px;right:20px;background:var(--dark);color:#fff;padding:15px;border-radius:5px;
+      box-shadow:0 0 20px rgba(0,0,0,.2);transform:translateX(200%);transition:.3s;z-index:1000}
+    .notification.show{transform:translateX(0)}
 
-    .sensor-box {
-      background: rgba(255, 255, 255, 0.08);
-      padding: 15px;
-      border-radius: 10px;
-      cursor: pointer;
-      transition: all 0.3s ease;
-      border-left: 3px solid var(--accent);
-      position: relative;
+    @media (max-width:992px){
+      .content-area{flex-direction:column}
+      .map-container,.graph-container{width:100%}
+      .map-container{height:50vh}
     }
-
-    .sensor-box:hover {
-      background: rgba(255, 255, 255, 0.12);
-    }
-
-    .sensor-box.active {
-      background: rgba(0, 180, 216, 0.15);
-      border-left: 3px solid var(--success);
-    }
-
-    .sensor-header {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      margin-bottom: 8px;
-    }
-
-    .sensor-box h3 {
-      margin: 0;
-      font-size: 0.95rem;
-      font-weight: 500;
-      color: rgba(255, 255, 255, 0.9);
-    }
-
-    .sensor-value {
-      font-size: 1.4rem;
-      font-weight: 600;
-      margin: 3px 0;
-      color: white;
-    }
-
-    .sensor-unit {
-      font-size: 0.85rem;
-      opacity: 0.7;
-    }
-
-    .sensor-status {
-      display: inline-block;
-      padding: 3px 8px;
-      border-radius: 20px;
-      font-size: 0.7rem;
-      font-weight: 600;
-      text-transform: uppercase;
-    }
-
-    .status-normal {
-      background-color: var(--success);
-    }
-
-    .status-warning {
-      background-color: var(--warning);
-    }
-
-    .status-danger {
-      background-color: var(--danger);
-    }
-
-    /* Main Content Styles */
-    .main-content {
-      flex-grow: 1;
-      display: flex;
-      flex-direction: column;
-      position: relative;
-    }
-
-    .top-bar {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      padding: 12px 20px;
-      background: white;
-      box-shadow: 0 2px 5px rgba(0, 0, 0, 0.05);
-    }
-
-    .map-controls {
-      position: absolute;
-      top: 70px;
-      right: 20px;
-      z-index: 1000;
-      background: white;
-      padding: 10px;
-      border-radius: 5px;
-      box-shadow: 0 0 10px rgba(0,0,0,0.1);
-    }
-
-    .map-controls button {
-      display: block;
-      width: 100%;
-      padding: 5px 10px;
-      margin-bottom: 5px;
-      background: var(--primary);
-      color: white;
-      border: none;
-      border-radius: 3px;
-      cursor: pointer;
-    }
-
-    .map-controls button:hover {
-      background: var(--primary-dark);
-    }
-
-    /* Battery loader from Uiverse.io */
-    .battery-loader {
-      display: flex;
-      align-items: center;
-      gap: 10px;
-    }
-    
-    .loader {
-      width: 60px;
-      height: 30px;
-      border: 2px solid var(--success);
-      border-right-color: transparent;
-      padding: 2px;
-      background: repeating-linear-gradient(90deg, var(--success) 0 8px, #0000 0 12px)
-        left/0% 100% no-repeat content-box content-box;
-      position: relative;
-    }
-    
-    .loader::before {
-      content: "";
-      position: absolute;
-      top: -2px;
-      bottom: -2px;
-      left: 100%;
-      width: 8px;
-      background: linear-gradient(
-            #0000 calc(50% - 5px),
-            var(--success) 0 calc(50% - 4px),
-            #0000 0 calc(50% + 4px),
-            var(--success) 0 calc(50% + 5px),
-            #0000 0
-          )
-          left / 100% 100%,
-        linear-gradient(var(--success) calc(50% - 4px), #0000 0 calc(50% + 4px), var(--success) 0)
-          left / 2px 100%,
-        linear-gradient(#0000 calc(50% - 4px), var(--success) 0 calc(50% + 4px), #0000 0)
-          right/2px 100%;
-      background-repeat: no-repeat;
-    }
-
-    .battery-percent {
-      font-size: 0.9rem;
-      font-weight: 500;
-      color: var(--dark);
-    }
-
-    .content-area {
-      display: flex;
-      flex-grow: 1;
-      overflow: hidden;
-    }
-
-    .map-container {
-      width: 60%;
-      height: 100%;
-      position: relative;
-    }
-
-    #map {
-      height: 100%;
-      width: 100%;
-      background-color: #0a2342;
-    }
-
-    .graph-container {
-      width: 40%;
-      padding: 20px;
-      background: white;
-      display: flex;
-      flex-direction: column;
-    }
-
-    .graph-title {
-      font-size: 1.2rem;
-      margin-bottom: 15px;
-      color: var(--dark);
-      font-weight: 600;
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-    }
-
-    .chart-wrapper {
-      flex-grow: 1;
-      position: relative;
-    }
-
-    .chart-container {
-      position: absolute;
-      width: 100%;
-      height: 100%;
-    }
-
-    .sensor-info {
-      margin-top: 20px;
-      display: grid;
-      grid-template-columns: repeat(2, 1fr);
-      gap: 15px;
-    }
-
-    .info-card {
-      background: var(--gray);
-      padding: 12px;
-      border-radius: 8px;
-      transition: all 0.3s ease;
-    }
-
-    .info-card:hover {
-      transform: translateY(-3px);
-      box-shadow: 0 5px 15px rgba(0,0,0,0.1);
-    }
-
-    .info-card h4 {
-      font-size: 0.8rem;
-      color: var(--text-light);
-      margin-bottom: 5px;
-    }
-
-    .info-card p {
-      font-size: 1.1rem;
-      font-weight: 600;
-      color: var(--dark);
-    }
-
-    /* Notification styles */
-    .notification {
-      position: fixed;
-      bottom: 20px;
-      right: 20px;
-      background: var(--dark);
-      color: white;
-      padding: 15px;
-      border-radius: 5px;
-      box-shadow: 0 0 20px rgba(0,0,0,0.2);
-      z-index: 1000;
-      transform: translateX(200%);
-      transition: transform 0.3s ease;
-    }
-
-    .notification.show {
-      transform: translateX(0);
-    }
-
-    /* Responsive Design */
-    @media (max-width: 992px) {
-      .content-area {
-        flex-direction: column;
-      }
-      
-      .map-container,
-      .graph-container {
-        width: 100%;
-      }
-      
-      .map-container {
-        height: 50vh;
-      }
-    }
-
-    @media (max-width: 768px) {
-      body {
-        flex-direction: column;
-        height: auto;
-      }
-      
-      .sidebar {
-        width: 100%;
-        padding: 15px;
-      }
-      
-      .sensor-container {
-        flex-direction: row;
-        overflow-x: auto;
-        padding-bottom: 10px;
-      }
-      
-      .sensor-box {
-        min-width: 160px;
-      }
+    @media (max-width:768px){
+      body{flex-direction:column;height:auto}
+      .sidebar{width:100%;padding:15px}
+      .sensor-container{flex-direction:row;overflow-x:auto;padding-bottom:10px}
+      .sensor-box{min-width:160px}
     }
   </style>
 </head>
-<body>
 
+<body>
+  <!-- ===== Sidebar ====================================================== -->
   <div class="sidebar">
     <div class="toggle-sidebar" onclick="toggleSidebar()">
       <i class="fas fa-chevron-left"></i>
     </div>
     <div class="logo" onclick="toggleSidebar()">
-      <img src="images/logo.png" alt="SuKaliteX Logo" style="height: 60px; margin-right: 10px;">
+      <img src="images/logo.png" alt="SuKaliteX Logo" style="height:60px;margin-right:10px" />
       <span>SuKaliteX</span>
     </div>
-    
+
     <div class="sensor-container">
-      <div class="sensor-box active" onclick="showSensorDetails('temperature')">
+      <!-- Temperature -->
+      <div class="sensor-box active" data-type="temperature" onclick="showSensorDetails('temperature')">
         <div class="sensor-header">
           <h3><i class="fas fa-thermometer-half"></i> Su Sıcaklığı</h3>
           <span class="sensor-status status-normal">Normal</span>
         </div>
-        <div class="sensor-value">22.5 <span class="sensor-unit">°C</span></div>
+        <div class="sensor-value">-- <span class="sensor-unit">°C</span></div>
       </div>
-      
-      <div class="sensor-box" onclick="showSensorDetails('turbidity')">
+      <!-- Turbidity -->
+      <div class="sensor-box" data-type="turbidity" onclick="showSensorDetails('turbidity')">
         <div class="sensor-header">
           <h3><i class="fas fa-water"></i> Bulanıklık</h3>
           <span class="sensor-status status-normal">Normal</span>
         </div>
-        <div class="sensor-value">1.4 <span class="sensor-unit">NTU</span></div>
+        <div class="sensor-value">-- <span class="sensor-unit">NTU</span></div>
       </div>
-      
-      <div class="sensor-box" onclick="showSensorDetails('conductivity')">
+      <!-- Conductivity -->
+      <div class="sensor-box" data-type="conductivity" onclick="showSensorDetails('conductivity')">
         <div class="sensor-header">
           <h3><i class="fas fa-bolt"></i> İletkenlik</h3>
-          <span class="sensor-status status-warning">Yüksek</span>
+          <span class="sensor-status status-normal">Normal</span>
         </div>
-        <div class="sensor-value">480 <span class="sensor-unit">μS/cm</span></div>
+        <div class="sensor-value">-- <span class="sensor-unit">µS/cm</span></div>
       </div>
-      
-      <div class="sensor-box" onclick="showSensorDetails('leak')">
+      <!-- Leak -->
+      <div class="sensor-box" data-type="leak" onclick="showSensorDetails('leak')">
         <div class="sensor-header">
-          <h3><i class="fas fa-tint-slash"></i> Sızıntı Tespiti</h3>
+          <h3><i class="fas fa-tint-slash"></i> Sızıntı</h3>
           <span class="sensor-status status-normal">Yok</span>
         </div>
         <div class="sensor-value">-</div>
@@ -454,18 +147,18 @@
     </div>
   </div>
 
+  <!-- ===== Main content ================================================ -->
   <div class="main-content">
     <div class="top-bar">
-      <div class="time-display">
-        <i class="far fa-clock"></i> <span id="current-time">15:45</span>
-      </div>
+      <div class="time-display"><i class="far fa-clock"></i> <span id="current-time">--:--</span></div>
       <div class="battery-loader">
         <div class="battery-percent">87%</div>
         <div class="loader"></div>
       </div>
     </div>
-    
+
     <div class="content-area">
+      <!-- Map -->
       <div class="map-container">
         <div id="map"></div>
         <div class="map-controls">
@@ -474,11 +167,12 @@
           <button onclick="showAllSensors()"><i class="fas fa-map-marker-alt"></i> Tüm Sensörler</button>
         </div>
       </div>
-      
+
+      <!-- Chart & details -->
       <div class="graph-container">
         <h3 class="graph-title">
           <span id="graph-title">Su Sıcaklığı Verileri</span>
-          <span class="time-range">
+          <span>
             <select id="time-range" onchange="updateChartRange()">
               <option value="24">Son 24 Saat</option>
               <option value="168">Son 7 Gün</option>
@@ -486,513 +180,194 @@
             </select>
           </span>
         </h3>
-        <div class="chart-wrapper">
-          <div class="chart-container">
-            <canvas id="sensorChart"></canvas>
-          </div>
-        </div>
-        
+
+        <div class="chart-wrapper"><div class="chart-container"><canvas id="sensorChart"></canvas></div></div>
+
         <div class="sensor-info">
-          <div class="info-card">
-            <h4>Son Ölçüm</h4>
-            <p id="detail-last">22.5°C</p>
-          </div>
-          <div class="info-card">
-            <h4>Ortalama</h4>
-            <p id="detail-avg">21.8°C</p>
-          </div>
-          <div class="info-card">
-            <h4>Minimum</h4>
-            <p id="detail-min">20.3°C</p>
-          </div>
-          <div class="info-card">
-            <h4>Maksimum</h4>
-            <p id="detail-max">23.7°C</p>
-          </div>
+          <div class="info-card"><h4>Son Ölçüm</h4><p id="detail-last">--</p></div>
+          <div class="info-card"><h4>Ortalama</h4><p id="detail-avg">--</p></div>
+          <div class="info-card"><h4>Minimum</h4><p id="detail-min">--</p></div>
+          <div class="info-card"><h4>Maksimum</h4><p id="detail-max">--</p></div>
         </div>
       </div>
     </div>
   </div>
 
-  <div class="notification" id="notification">
-    <div id="notification-message">Yeni veri güncellemesi alındı!</div>
-  </div>
+  <!-- Floating toast -->
+  <div class="notification" id="notification"><div id="notification-message">---</div></div>
 
+  <!-- ================== Scripts ======================================== -->
   <script>
-    // Global variables
-    let map;
-    let userMarker;
-    let sensorMarkers = [];
-    let heatmapLayer = null;
-    let isHeatmapVisible = false;
-    let lastUpdateTime = new Date();
-    let sidebarCollapsed = false;
+    /*--------------------------------------------------------------------
+     *  AUTH & BASIC UTILITIES
+     *------------------------------------------------------------------*/
+    const token = localStorage.getItem('token');
+    if (!token) location.href = '/dashboard/login.html';
 
-    // Initialize map with OpenStreetMap
+    const notify = (msg) => {
+      const n = document.getElementById('notification');
+      document.getElementById('notification-message').textContent = msg;
+      n.classList.add('show');
+      setTimeout(() => n.classList.remove('show'), 3000);
+    };
+
+    /*--------------------------------------------------------------------
+     *  MAP INITIALISATION
+     *------------------------------------------------------------------*/
+    let map, userMarker, heatmapLayer, isHeatmapVisible = false;
+    const sensorMarkers = [];           // [{marker,lat,lng,type,value}]
     function initMap() {
-      // Sabit konum (Verdiğiniz koordinatlar)
-      const fixedPosition = [41.028860325040284, 28.88775314519362];
-      
-      // Haritayı oluştur ve sabit konuma odaklan
-      map = L.map('map').setView(fixedPosition, 15);
-      
-      // OpenStreetMap katmanı
-      L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-        attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors',
-        maxZoom: 18,
+      const center = [41.0288603, 28.8877531];
+      map = L.map('map').setView(center, 15);
+      L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',{
+        attribution:'&copy; OpenStreetMap contributors', maxZoom:18
       }).addTo(map);
-      
-      // Ana sabit konum marker'ı (mavi puls efekti ile)
-      userMarker = L.circleMarker(fixedPosition, {
-        radius: 12,
-        fillColor: '#0066cc',
-        color: 'white',
-        weight: 3,
-        opacity: 1,
-        fillOpacity: 1
-      }).addTo(map).bindPopup("<b>ÖLÇÜM PROBU-1</b><br>Ana İzleme Noktası").openPopup();
-      
-      // Pulsing efekti için ek katman
-      const pulsingMarker = L.circleMarker(fixedPosition, {
-        radius: 12,
-        fillColor: '#0066cc',
-        color: 'transparent',
-        weight: 0,
-        fillOpacity: 0.3
-      }).addTo(map);
-      
-      // Puls animasyonu
-      function animatePulse() {
-        pulsingMarker.setRadius(12);
-        pulsingMarker.setStyle({fillOpacity: 0.3});
-        
-        pulsingMarker.animate({
-          radius: 35,
-          fillOpacity: 0
-        }, {
-          duration: 2000,
-          onEnd: animatePulse
-        });
-      }
-      animatePulse();
-      
-      // Sensör işaretçilerini ekle (sabit konum etrafında)
-      const sensors = [
-        { lat: 41.028860, lng: 28.887753, type: 'primary', name: 'Ana Sensör', value: 22.5 },
-        { lat: 41.029, lng: 28.888, type: 'warning', name: 'Şube 1', value: 25.1 },
-        { lat: 41.028, lng: 28.886, type: 'normal', name: 'Şube 2', value: 21.3 },
-        { lat: 41.029, lng: 28.885, type: 'normal', name: 'Şube 3', value: 20.8 },
-        { lat: 41.027, lng: 28.887, type: 'danger', name: 'Şube 4', value: 28.7 },
-        { lat: 41.030, lng: 28.887, type: 'normal', name: 'Şube 5', value: 22.0 }
+
+      // Main probe
+      userMarker = L.circleMarker(center,{
+        radius:12,fillColor:'#0066cc',color:'#fff',weight:3,fillOpacity:1
+      }).addTo(map).bindPopup('<b>ÖLÇÜM PROBU-1</b><br>Ana İzleme Noktası').openPopup();
+
+      // Dummy satellite markers
+      const demo = [
+        {lat:41.029,lng:28.888,type:'temperature',name:'Şube 1'},
+        {lat:41.028,lng:28.886,type:'temperature',name:'Şube 2'},
+        {lat:41.027,lng:28.887,type:'temperature',name:'Şube 3'}
       ];
-      
-      sensors.forEach(sensor => {
-        let iconColor;
-        if (sensor.type === 'primary') iconColor = '#0066cc';
-        else if (sensor.type === 'warning') iconColor = '#f39c12';
-        else if (sensor.type === 'danger') iconColor = '#e74c3c';
-        else iconColor = '#2ecc71';
-        
-        // Ana işaretçi
-        const marker = L.circleMarker([sensor.lat, sensor.lng], {
-          radius: 10,
-          fillColor: iconColor,
-          color: 'white',
-          weight: 2,
-          opacity: 1,
-          fillOpacity: 1
-        }).addTo(map);
-        
-        // Puls efekti
-        const sensorPulse = L.circleMarker([sensor.lat, sensor.lng], {
-          radius: 10,
-          fillColor: iconColor,
-          color: 'transparent',
-          weight: 0,
-          fillOpacity: 0.2
-        }).addTo(map);
-        
-        // Animasyon
-        function animateSensorPulse() {
-          sensorPulse.setRadius(10);
-          sensorPulse.setStyle({fillOpacity: 0.2});
-          
-          sensorPulse.animate({
-            radius: 25,
-            fillOpacity: 0
-          }, {
-            duration: 2000,
-            onEnd: animateSensorPulse
-          });
-        }
-        animateSensorPulse();
-        
-        // Popup ekle
-        marker.bindPopup(`
-          <b>${sensor.name}</b><br>
-          Durum: ${sensor.type}<br>
-          Değer: ${sensor.value}${sensor.type === 'temperature' ? '°C' : sensor.type === 'turbidity' ? 'NTU' : 'μS/cm'}<br>
-          Son Güncelleme: ${new Date().toLocaleTimeString()}
-        `);
-        
-        sensorMarkers.push({
-          marker: marker,
-          lat: sensor.lat,
-          lng: sensor.lng,
-          value: sensor.value
-        });
+      demo.forEach(d=>{
+        const m = L.circleMarker([d.lat,d.lng],{radius:10,fillColor:'#2ecc71',color:'#fff',weight:2,fillOpacity:1}).addTo(map)
+              .bindPopup(`<b>${d.name}</b><br>--`);
+        sensorMarkers.push({marker:m,lat:d.lat,lng:d.lng,type:d.type,value:0});
       });
-      
-      // Heatmap verilerini hazırla
-      const heatmapData = sensorMarkers.map(sensor => [sensor.lat, sensor.lng, sensor.value/10]);
-      
-      // Heatmap katmanını oluştur (başlangıçta gizli)
-      heatmapLayer = L.heatLayer(heatmapData, {
-        radius: 25,
-        blur: 15,
-        maxZoom: 17,
-        gradient: {0.4: 'blue', 0.6: 'lime', 0.8: 'yellow', 1.0: 'red'}
-      });
-      
-      // Simüle edilmiş veri güncellemeleri
-      setInterval(updateSensorData, 10000);
-      
-      // Başlangıç bildirimi göster
-      showNotification("Sistem başarıyla başlatıldı. Veri akışı aktif.");
+
+      // Heatmap layer (empty for now)
+      heatmapLayer = L.heatLayer([], {radius:25,blur:15,maxZoom:17,
+        gradient:{.4:'blue',.6:'lime',.8:'yellow',1:'red'}});
     }
-    
-    // Toggle sidebar
-    function toggleSidebar() {
-      const sidebar = document.querySelector('.sidebar');
-      const toggleIcon = document.querySelector('.toggle-sidebar i');
-      
-      sidebar.classList.toggle('collapsed');
+
+    /*--------------------------------------------------------------------
+     *  SIDEBAR / UI HELPERS
+     *------------------------------------------------------------------*/
+    let sidebarCollapsed = false;
+    function toggleSidebar(){
+      const sb = document.querySelector('.sidebar');
+      sb.classList.toggle('collapsed');
       sidebarCollapsed = !sidebarCollapsed;
-      
-      if (sidebarCollapsed) {
-        toggleIcon.classList.remove('fa-chevron-left');
-        toggleIcon.classList.add('fa-chevron-right');
-      } else {
-        toggleIcon.classList.remove('fa-chevron-right');
-        toggleIcon.classList.add('fa-chevron-left');
+      const icon = document.querySelector('.toggle-sidebar i');
+      icon.classList.toggle('fa-chevron-left', !sidebarCollapsed);
+      icon.classList.toggle('fa-chevron-right', sidebarCollapsed);
+    }
+
+    function updateSidebar(sensorType, value){
+      const box = document.querySelector(`.sensor-box[data-type="${sensorType}"]`);
+      if(!box) return;
+      const unit = box.querySelector('.sensor-unit')?.textContent.trim() || '';
+      box.querySelector('.sensor-value').innerHTML = `${value.toFixed(1)} ${unit}`;
+      const statusEl = box.querySelector('.sensor-status');
+      if(sensorType==='temperature'){
+        if(value>26){statusEl.textContent='Tehlikeli';statusEl.className='sensor-status status-danger';}
+        else if(value>24){statusEl.textContent='Yüksek';statusEl.className='sensor-status status-warning';}
+        else{statusEl.textContent='Normal';statusEl.className='sensor-status status-normal';}
       }
     }
-    
-    // Toggle heatmap
-    function toggleHeatmap() {
-      if (isHeatmapVisible) {
-        map.removeLayer(heatmapLayer);
-        document.querySelector('.map-controls button:nth-child(1)').innerHTML = '<i class="fas fa-fire"></i> Isı Haritası';
-      } else {
-        map.addLayer(heatmapLayer);
-        document.querySelector('.map-controls button:nth-child(1)').innerHTML = '<i class="fas fa-ban"></i> Isı Haritası Kapat';
-      }
-      isHeatmapVisible = !isHeatmapVisible;
-    }
-    
-    // Center map on main sensor
-    function centerMap() {
-      map.setView([41.028860325040284, 28.88775314519362], 15);
-      showNotification("Harita ana sensöre odaklandı");
-    }
-    
-    // Show all sensors
-    function showAllSensors() {
-      const group = new L.featureGroup(sensorMarkers.map(s => s.marker));
-      map.fitBounds(group.getBounds().pad(0.2));
-      showNotification("Tüm sensörler haritada gösteriliyor");
-    }
-    
-    // Show notification
-    function showNotification(message) {
-      const notification = document.getElementById('notification');
-      const notificationMsg = document.getElementById('notification-message');
-      
-      notificationMsg.textContent = message;
-      notification.classList.add('show');
-      
-      setTimeout(() => {
-        notification.classList.remove('show');
-      }, 3000);
-    }
-    
-    // Update sensor data randomly
-    function updateSensorData() {
-      const now = new Date();
-      const timeDiff = (now - lastUpdateTime) / 1000; // seconds
-      
-      if (timeDiff > 30) { // 30 saniyede bir güncelle
-        sensorMarkers.forEach(sensor => {
-          // Rastgele değer üret (mevcut değere yakın)
-          const change = (Math.random() * 2 - 1) * 0.5;
-          sensor.value = Math.max(18, Math.min(30, sensor.value + change));
-          
-          // Marker rengini güncelle
-          let iconColor;
-          if (sensor.value > 26) {
-            iconColor = '#e74c3c'; // danger
-          } else if (sensor.value > 24) {
-            iconColor = '#f39c12'; // warning
-          } else {
-            iconColor = '#2ecc71'; // normal
-          }
-          
-          sensor.marker.setStyle({
-            fillColor: iconColor
-          });
-          
-          // Puls rengini güncelle
-          const pulses = document.querySelectorAll('.leaflet-layer:not(:first-child) circle');
-          pulses.forEach(pulse => {
-            if (pulse._latlng.lat === sensor.lat && pulse._latlng.lng === sensor.lng) {
-              pulse.setAttribute('fill', iconColor);
-            }
-          });
-          
-          // Popup'ı güncelle
-          sensor.marker.setPopupContent(`
-            <b>${sensor.marker._popup._content.split('<br>')[0].replace('<b>','').replace('</b>','')}</b><br>
-            Durum: ${sensor.value > 26 ? 'Tehlikeli' : sensor.value > 24 ? 'Uyarı' : 'Normal'}<br>
-            Değer: ${sensor.value.toFixed(1)}°C<br>
-            Son Güncelleme: ${now.toLocaleTimeString()}
-          `);
-        });
-        
-        // Heatmap verilerini güncelle
-        const heatmapData = sensorMarkers.map(sensor => [sensor.lat, sensor.lng, sensor.value/10]);
-        heatmapLayer.setLatLngs(heatmapData);
-        
-        // Sidebar verilerini güncelle
-        updateSidebarData();
-        
-        // Bildirim göster
-        showNotification(`Sensör verileri güncellendi (${now.toLocaleTimeString()})`);
-        
-        lastUpdateTime = now;
-      }
-    }
-    
-    // Update sidebar data
-    function updateSidebarData() {
-      const tempSensor = sensorMarkers.find(s => s.marker._popup._content.includes('Ana Sensör'));
-      if (tempSensor) {
-        document.querySelector('.sensor-box.active .sensor-value').textContent = 
-          `${tempSensor.value.toFixed(1)} ${document.querySelector('.sensor-box.active .sensor-unit').textContent}`;
-        
-        // Durum güncelleme
-        const statusElement = document.querySelector('.sensor-box.active .sensor-status');
-        if (tempSensor.value > 26) {
-          statusElement.textContent = 'Tehlikeli';
-          statusElement.className = 'sensor-status status-danger';
-        } else if (tempSensor.value > 24) {
-          statusElement.textContent = 'Yüksek';
-          statusElement.className = 'sensor-status status-warning';
-        } else {
-          statusElement.textContent = 'Normal';
-          statusElement.className = 'sensor-status status-normal';
-        }
-      }
-    }
-    
-    // Initialize map when page loads
-    document.addEventListener('DOMContentLoaded', initMap);
-    
-    // Update time display
-    function updateTime() {
-      const now = new Date();
-      const timeString = now.toLocaleTimeString('tr-TR', {
-        hour: '2-digit',
-        minute: '2-digit'
-      });
-      document.getElementById('current-time').textContent = timeString;
-    }
-    setInterval(updateTime, 1000);
-    updateTime();
-    
-    // Sensor details functionality
-    function showSensorDetails(sensorType) {
-      // Update active sensor box
-      document.querySelectorAll('.sensor-box').forEach(box => {
-        box.classList.remove('active');
-      });
-      event.currentTarget.classList.add('active');
-      
-      const titleMap = {
-        temperature: 'Su Sıcaklığı Verileri',
-        turbidity: 'Bulanıklık Verileri',
-        conductivity: 'İletkenlik Verileri',
-        leak: 'Sızıntı Durumu'
-      };
-      
-      document.getElementById('graph-title').textContent = titleMap[sensorType];
-      
-      // Update values
-      const values = getRandomValues(sensorType);
-      document.getElementById('detail-last').textContent = values.last;
-      document.getElementById('detail-avg').textContent = values.avg;
-      document.getElementById('detail-min').textContent = values.min;
-      document.getElementById('detail-max').textContent = values.max;
-      
-      updateSensorChart(sensorType);
-    }
-    
-    function getRandomValues(type) {
-      const ranges = {
-        temperature: { min: 18, max: 25, unit: '°C' },
-        turbidity: { min: 0.5, max: 2.5, unit: 'NTU' },
-        conductivity: { min: 300, max: 600, unit: 'μS/cm' },
-        leak: { min: 0, max: 1, unit: '' }
-      };
-      
-      const range = ranges[type];
-      
-      const last = (Math.random() * (range.max - range.min) + range.min).toFixed(type === 'temperature' ? 1 : 0) + range.unit;
-      const avg = (Math.random() * (range.max - range.min) + range.min * 0.9).toFixed(type === 'temperature' ? 1 : 0) + range.unit;
-      const min = (Math.random() * (range.max * 0.8 - range.min * 0.9) + range.min * 0.9).toFixed(type === 'temperature' ? 1 : 0) + range.unit;
-      const max = (Math.random() * (range.max * 1.1 - range.max * 0.9) + range.max * 0.9).toFixed(type === 'temperature' ? 1 : 0) + range.unit;
-      
-      if (type === 'leak') {
-        const status = Math.random() > 0.8 ? 'Tespit Edildi' : 'Yok';
-        return {
-          last: status,
-          avg: status,
-          min: status,
-          max: status
-        };
-      }
-      
-      return { last, avg, min, max };
-    }
-    
-    // Initialize sensor chart
+
+    /*--------------------------------------------------------------------
+     *  CHART
+     *------------------------------------------------------------------*/
     const sensorCtx = document.getElementById('sensorChart').getContext('2d');
-    let sensorChart = new Chart(sensorCtx, {
-      type: 'line',
-      data: {
-        labels: Array.from({ length: 24 }, (_, i) => `${i}:00`),
-        datasets: [{
-          data: [],
-          borderColor: '#0066cc',
-          borderWidth: 2,
-          tension: 0.4,
-          fill: false,
-          pointRadius: 0,
-          pointHoverRadius: 5
-        }]
-      },
-      options: {
-        responsive: true,
-        maintainAspectRatio: false,
-        plugins: {
-          legend: { display: false },
-          tooltip: {
-            mode: 'index',
-            intersect: false,
-            callbacks: {
-              label: function(context) {
-                return `${context.dataset.label}: ${context.parsed.y.toFixed(1)}°C`;
-              }
-            }
-          }
-        },
-        scales: {
-          y: { 
-            beginAtZero: false,
-            grid: {
-              color: 'rgba(0, 0, 0, 0.05)'
-            },
-            title: {
-              display: true,
-              text: 'Sıcaklık (°C)'
-            }
-          },
-          x: { 
-            grid: { 
-              display: false 
-            },
-            title: {
-              display: true,
-              text: 'Zaman'
-            }
-          }
-        }
+    const sensorChart = new Chart(sensorCtx,{
+      type:'line',
+      data:{labels:[],datasets:[{data:[],borderColor:'#0066cc',borderWidth:2,tension:.4,fill:false,pointRadius:0,pointHoverRadius:5}]},
+      options:{
+        responsive:true,maintainAspectRatio:false,
+        plugins:{legend:{display:false}},
+        scales:{y:{beginAtZero:false,title:{display:true,text:'Sıcaklık (°C)'}},x:{title:{display:true,text:'Zaman'},grid:{display:false}}}
       }
     });
-    
-    function updateSensorChart(sensorType) {
-      const ranges = {
-        temperature: { min: 18, max: 25 },
-        turbidity: { min: 0.5, max: 2.5 },
-        conductivity: { min: 300, max: 600 },
-        leak: { min: 0, max: 1 }
-      };
-      
-      const range = ranges[sensorType];
-      const dataPoints = parseInt(document.getElementById('time-range').value);
-      const labels = [];
-      const data = [];
-      
-      // Generate labels based on selected range
-      if (dataPoints === 24) {
-        // Last 24 hours
-        for (let i = 0; i < 24; i++) {
-          labels.push(`${i}:00`);
-          data.push(Math.random() * (range.max - range.min) + range.min);
-        }
-      } else if (dataPoints === 168) {
-        // Last 7 days (24 points)
-        for (let i = 0; i < 24; i++) {
-          const date = new Date();
-          date.setDate(date.getDate() - 6);
-          date.setHours(date.getHours() + i);
-          labels.push(`${date.getDate()} ${date.toLocaleString('default', { month: 'short' })} ${date.getHours()}:00`);
-          data.push(Math.random() * (range.max - range.min) + range.min);
-        }
-      } else {
-        // Last 30 days (24 points)
-        for (let i = 0; i < 24; i++) {
-          const date = new Date();
-          date.setDate(date.getDate() - 29);
-          date.setDate(date.getDate() + Math.floor(i * 1.25));
-          labels.push(`${date.getDate()} ${date.toLocaleString('default', { month: 'short' })}`);
-          data.push(Math.random() * (range.max - range.min) + range.min);
-        }
+
+    function pushChartValue(val){
+      const now = new Date().toLocaleTimeString('tr-TR');
+      sensorChart.data.labels.push(now);
+      sensorChart.data.datasets[0].data.push(val);
+      if(sensorChart.data.labels.length>30){
+        sensorChart.data.labels.shift();sensorChart.data.datasets[0].data.shift();
       }
-      
-      const colors = {
-        temperature: '#0066cc',
-        turbidity: '#00b4d8',
-        conductivity: '#f39c12',
-        leak: '#e74c3c'
-      };
-      
-      sensorChart.data.labels = labels;
-      sensorChart.data.datasets[0].data = data;
-      sensorChart.data.datasets[0].borderColor = colors[sensorType];
-      sensorChart.data.datasets[0].label = sensorType === 'temperature' ? 'Sıcaklık' : 
-                                         sensorType === 'turbidity' ? 'Bulanıklık' :
-                                         sensorType === 'conductivity' ? 'İletkenlik' : 'Sızıntı Durumu';
-      sensorChart.options.scales.y.title.text = sensorType === 'temperature' ? 'Sıcaklık (°C)' :
-                                              sensorType === 'turbidity' ? 'Bulanıklık (NTU)' :
-                                              sensorType === 'conductivity' ? 'İletkenlik (μS/cm)' : 'Durum';
       sensorChart.update();
     }
-    
-    function updateChartRange() {
-      const activeSensor = document.querySelector('.sensor-box.active');
-      if (activeSensor) {
-        const sensorType = activeSensor.getAttribute('onclick').includes('temperature') ? 'temperature' :
-                          activeSensor.getAttribute('onclick').includes('turbidity') ? 'turbidity' :
-                          activeSensor.getAttribute('onclick').includes('conductivity') ? 'conductivity' : 'leak';
-        updateSensorChart(sensorType);
+
+    /*--------------------------------------------------------------------
+     *  DATA FETCH (POLL EVERY 5 s)
+     *------------------------------------------------------------------*/
+    async function fetchLiveData(){
+      try{
+        const res = await fetch('/api/sensor-data',{headers:{Authorization:'Bearer '+token}});
+        if(!res.ok) throw new Error('fetch error '+res.status);
+        const data = await res.json();   // expected [{type,value,timestamp}, ...]
+        applySensorUpdate(data);
+      }catch(e){
+        console.warn('Fetch failed, falling back to random demo data.',e);
+        fakeDataFallback();
       }
     }
-    
-    // Initialize with temperature data
-    showSensorDetails('temperature');
-    
-    // Batarya göstergesi sabit %87
-    document.querySelector('.battery-percent').textContent = '87%';
+
+    function applySensorUpdate(arr){
+      const grouped = {};
+      arr.forEach(d=>grouped[d.type]=d);
+      ['temperature','turbidity','tds'].forEach(t=>{
+        if(grouped[t]){
+          const v = grouped[t].value;
+          updateSidebar(t,v);
+          if(t==='temperature') pushChartValue(v);
+        }
+      });
+      notify('Sensör verileri güncellendi');
+      updateHeatmap();
+    }
+
+    /*--------------------------------------------------------------------
+     *  HEATMAP HELPERS
+     *------------------------------------------------------------------*/
+    function updateHeatmap(){
+      const pts = sensorMarkers.map(s=>[s.lat,s.lng,(s.value||22)/10]);
+      heatmapLayer.setLatLngs(pts);
+    }
+    function toggleHeatmap(){
+      if(isHeatmapVisible){map.removeLayer(heatmapLayer);}
+      else{map.addLayer(heatmapLayer);}
+      isHeatmapVisible=!isHeatmapVisible;
+    }
+    const centerMap=()=>map.setView(userMarker.getLatLng(),15);
+    const showAllSensors=()=>map.fitBounds(L.featureGroup(sensorMarkers.map(s=>s.marker)).getBounds().pad(.2));
+
+    /*--------------------------------------------------------------------
+     *  OTHER UI
+     *------------------------------------------------------------------*/
+    function updateTime(){
+      document.getElementById('current-time').textContent = new Date().toLocaleTimeString('tr-TR',{hour:'2-digit',minute:'2-digit'});
+    }
+    setInterval(updateTime,1000);
+
+    function showSensorDetails(t){
+      document.querySelectorAll('.sensor-box').forEach(b=>b.classList.remove('active'));
+      event.currentTarget.classList.add('active');
+      document.getElementById('graph-title').textContent={
+        temperature:'Su Sıcaklığı Verileri',turbidity:'Bulanıklık Verileri',
+        conductivity:'İletkenlik Verileri',leak:'Sızıntı Durumu'
+      }[t];
+    }
+
+    const updateChartRange=()=>{};  // (kept placeholder – can extend later)
+
+    /*--------------------------------------------------------------------
+     *  BOOTSTRAP
+     *------------------------------------------------------------------*/
+    document.addEventListener('DOMContentLoaded',()=>{
+      initMap();
+      updateTime();
+      fetchLiveData();               // first shot
+      setInterval(fetchLiveData,10000);
+      notify('Sistem başlatıldı – REST polling aktif');
+    });
   </script>
 </body>
 </html>

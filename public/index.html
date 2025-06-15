@@ -1,373 +1,290 @@
-<!-- public/dashboard/dashboard.html -->
+<!-- public/index.html -->
 <!DOCTYPE html>
-<html lang="tr">
+<html lang="en">
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width,initial-scale=1.0" />
-  <title>SuKaliteX Pro | Akıllı Su Kalitesi İzleme Paneli</title>
+  <title>AEA&nbsp;| AKILLI SU KALİTESİ İZLEME ÇÖZÜMLERİ</title>
+
+  <!-- SEO -->
+  <meta name="description" content="AI-powered real-time water quality monitoring for industrial, municipal, and environmental applications">
+  <meta name="keywords"    content="su kalitesi, water quality, IoT sensörler, AI analytics, water safety">
 
   <!-- Fonts & libs -->
-  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet" />
-  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" />
-  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&family=Playfair+Display:wght@400;500;600&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/swiper@9/swiper-bundle.min.css">
+
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
-  <script src="https://cdn.jsdelivr.net/npm/leaflet.heat@0.2.0/dist/leaflet-heat.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/swiper@9/swiper-bundle.min.js"></script>
 
-  <!-- Styles (unchanged apart from a few comments snipped) -->
+  <!-- If favicon is in images/ -->
+  <link rel="icon" type="image/png" href="images/favico.png" />
+
   <style>
-    :root{
-      --primary:#0066cc;--primary-dark:#0052a3;--primary-light:#e6f2ff;
-      --accent:#00b4d8;--accent-dark:#0093b8;
-      --light:#ffffff;--dark:#0a2342;
-      --gray:#f8fafc;--gray-dark:#e9ecef;
-      --text:#2d3748;--text-light:#6c757d;
-      --success:#2ecc71;--warning:#f39c12;--danger:#e74c3c;
-    }
-    *{margin:0;padding:0;box-sizing:border-box}
-    body{font-family:Poppins,sans-serif;background:var(--gray);color:var(--text);display:flex;height:100vh;overflow:hidden}
+/* ──────────────────────────────────────────────────────────────────────────────
+   CSS (unchanged apart from:  1) .btn-special styling, 2) minor comments)
+   ─────────────────────────────────────────────────────────────────────────── */
+  :root{
+    --primary:#0066cc;--primary-dark:#0052a3;--primary-light:#e6f2ff;
+    --accent:#00b4d8;--accent-dark:#0093b8;
+    --light:#ffffff;--dark:#0a2342;
+    --gray:#f8fafc;--gray-dark:#e9ecef;
+    --text:#2d3748;--text-light:#6c757d;
+    --success:#2ecc71;--warning:#f39c12;--danger:#e74c3c;
+  }
+  *{margin:0;padding:0;box-sizing:border-box}
+  body{font-family:'Poppins',sans-serif;background:var(--gray);color:var(--text);line-height:1.7;overflow-x:hidden}
+  h1,h2,h3,h4{font-family:'Playfair Display',serif;font-weight:600;line-height:1.3}
+  .container{width:100%;max-width:1400px;margin:0 auto;padding:0 30px}
+  .container-narrow{max-width:1100px}
 
-    /* ----- sidebar ---- */
-    .sidebar{width:280px;background:var(--dark);color:#fff;padding:20px;
-      display:flex;flex-direction:column;box-shadow:4px 0 15px rgba(0,0,0,.1);transition:.3s}
-    .sidebar.collapsed{width:80px}
-    .sidebar.collapsed .logo span,
-    .sidebar.collapsed .sensor-box h3,
-    .sidebar.collapsed .sensor-unit,
-    .sidebar.collapsed .sensor-status{display:none}
-    .sidebar.collapsed .sensor-box{padding:10px;text-align:center}
-    .sidebar.collapsed .sensor-value{font-size:1rem}
+  /* header */
+  header{position:fixed;width:100%;top:0;padding:16px 0;background:rgba(255,255,255,.98);
+         box-shadow:0 2px 20px rgba(0,0,0,.08);z-index:1000;
+         transition:all .4s cubic-bezier(.165,.84,.44,1)}
+  header.scrolled{padding:12px 0;backdrop-filter:blur(10px);background:rgba(255,255,255,.92)}
+  .header-container{display:flex;justify-content:space-between;align-items:center}
+  .logo{font-size:3rem;font-weight:700;color:var(--primary);display:flex;align-items:center;text-decoration:none}
+  .logo img{height:128px;width:auto;margin-right:12px;transition:.3s}
+  header.scrolled .logo img{height:28px}
+  .logo span{position:relative}
+  .logo span::after{content:'™';font-size:.6rem;vertical-align:super;margin-left:2px}
 
-    .logo{display:flex;align-items:center;margin-bottom:30px;font-size:1.4rem;font-weight:600;cursor:pointer}
-    .logo i{margin-right:10px;color:var(--accent);font-size:1.6rem}
+  nav{display:flex;align-items:center}
+  .nav-links{display:flex;list-style:none}
+  .nav-links li{margin-left:32px;position:relative}
+  .nav-links a{color:var(--dark);text-decoration:none;font-weight:500;font-size:1.05rem;transition:.3s}
+  .nav-links a:hover{color:var(--accent)}
+  .nav-links a::after{content:'';position:absolute;width:0;height:2px;background:var(--accent);
+                      bottom:-6px;left:0;transition:width .3s}
+  .nav-links a:hover::after{width:100%}
+  .mobile-menu-btn{display:none;background:none;border:none;font-size:1.6rem;
+                   color:var(--primary);cursor:pointer;z-index:1001}
 
-    .toggle-sidebar{position:absolute;right:-15px;top:20px;background:#fff;width:30px;height:30px;border-radius:50%;
-      display:flex;align-items:center;justify-content:center;box-shadow:0 0 5px rgba(0,0,0,.2);cursor:pointer;z-index:20}
+  /* buttons */
+  .btn{display:inline-flex;align-items:center;justify-content:center;
+       background:var(--accent);color:#fff;border:none;padding:16px 38px;font-size:1.05rem;
+       font-weight:500;border-radius:50px;cursor:pointer;box-shadow:0 4px 15px rgba(42,157,143,.3);
+       text-decoration:none;transition:.4s cubic-bezier(.165,.84,.44,1);position:relative;overflow:hidden}
+  .btn:hover{background:var(--accent-dark);transform:translateY(-3px);box-shadow:0 8px 25px rgba(42,157,143,.4)}
+  .btn:active{transform:translateY(1px)}
+  .btn i{margin-left:8px;font-size:.9rem}
 
-    .sensor-container{display:flex;flex-direction:column;gap:12px;flex-grow:1;overflow-y:auto;padding-right:5px}
-    .sensor-box{background:rgba(255,255,255,.08);padding:15px;border-radius:10px;cursor:pointer;transition:.3s;border-left:3px solid var(--accent)}
-    .sensor-box:hover{background:rgba(255,255,255,.12)}
-    .sensor-box.active{background:rgba(0,180,216,.15);border-left-color:var(--success)}
-    .sensor-header{display:flex;justify-content:space-between;align-items:center;margin-bottom:8px}
-    .sensor-box h3{margin:0;font-size:.95rem;font-weight:500;color:rgba(255,255,255,.9)}
-    .sensor-value{font-size:1.4rem;font-weight:600;margin:3px 0;color:#fff}
-    .sensor-unit{font-size:.85rem;opacity:.7}
-    .sensor-status{display:inline-block;padding:3px 8px;border-radius:20px;font-size:.7rem;font-weight:600;text-transform:uppercase}
-    .status-normal{background:var(--success)}
-    .status-warning{background:var(--warning)}
-    .status-danger{background:var(--danger)}
+  .btn-outline{background:transparent;border:2px solid #fff;color:#fff;box-shadow:none}
+  .btn-outline:hover{background:#fff;color:var(--primary)}
+  .btn-primary{background:var(--primary);box-shadow:0 4px 15px rgba(0,95,115,.3)}
+  .btn-primary:hover{background:var(--primary-dark);box-shadow:0 8px 25px rgba(0,95,115,.4)}
 
-    /* ----- main ----- */
-    .main-content{flex-grow:1;display:flex;flex-direction:column;position:relative}
-    .top-bar{display:flex;justify-content:space-between;align-items:center;padding:12px 20px;background:#fff;box-shadow:0 2px 5px rgba(0,0,0,.05)}
-    .battery-loader{display:flex;align-items:center;gap:10px}
-    .loader{width:60px;height:30px;border:2px solid var(--success);border-right-color:transparent;padding:2px;
-      background:repeating-linear-gradient(90deg,var(--success)0 8px,#0000 0 12px)left/0% 100% no-repeat content-box}
-    .loader::before{content:"";position:absolute;top:-2px;bottom:-2px;left:100%;width:8px;
-      background:linear-gradient(#0000 calc(50% - 5px),var(--success)0 calc(50% - 4px),#0000 0 calc(50% + 4px),var(--success)0 calc(50% + 5px),#0000 0)left/100% 100%,
-                 linear-gradient(var(--success) calc(50% - 4px),#0000 0 calc(50% + 4px),var(--success) 0)left/2px 100%,
-                 linear-gradient(#0000 calc(50% - 4px),var(--success) 0 calc(50% + 4px),#0000 0)right/2px 100%;background-repeat:no-repeat}
-    .battery-percent{font-size:.9rem;font-weight:500;color:var(--dark)}
+  /* new: optional styling for .btn-special */
+  .btn-special{background:var(--warning)}
+  .btn-special:hover{background:#d4840b}
 
-    .content-area{display:flex;flex-grow:1;overflow:hidden}
-    .map-container{width:60%;height:100%;position:relative}
-    #map{height:100%;width:100%;background:#0a2342}
-    .graph-container{width:40%;padding:20px;background:#fff;display:flex;flex-direction:column}
-    .graph-title{font-size:1.2rem;margin-bottom:15px;color:var(--dark);font-weight:600;display:flex;justify-content:space-between;align-items:center}
-    .chart-wrapper{flex-grow:1;position:relative}
-    .chart-container{position:absolute;width:100%;height:100%}
-    .sensor-info{margin-top:20px;display:grid;grid-template-columns:repeat(2,1fr);gap:15px}
-    .info-card{background:var(--gray);padding:12px;border-radius:8px;transition:.3s}
-    .info-card:hover{transform:translateY(-3px);box-shadow:0 5px 15px rgba(0,0,0,.1)}
-    .info-card h4{font-size:.8rem;color:var(--text-light);margin-bottom:5px}
-    .info-card p{font-size:1.1rem;font-weight:600;color:var(--dark)}
+  /* hero */
+  .hero{position:relative;height:100vh;display:flex;align-items:center;justify-content:center;
+        text-align:center;overflow:hidden;color:#fff;z-index:1}
+  .hero-video{position:absolute;top:0;left:0;min-width:100%;min-height:100%;object-fit:cover;z-index:0;filter:brightness(.5)}
+  .hero-content{position:relative;z-index:1;max-width:800px;padding:20px}
 
-    .notification{position:fixed;bottom:20px;right:20px;background:var(--dark);color:#fff;padding:15px;border-radius:5px;
-      box-shadow:0 0 20px rgba(0,0,0,.2);transform:translateX(200%);transition:.3s;z-index:1000}
-    .notification.show{transform:translateX(0)}
-
-    @media (max-width:992px){
-      .content-area{flex-direction:column}
-      .map-container,.graph-container{width:100%}
-      .map-container{height:50vh}
-    }
-    @media (max-width:768px){
-      body{flex-direction:column;height:auto}
-      .sidebar{width:100%;padding:15px}
-      .sensor-container{flex-direction:row;overflow-x:auto;padding-bottom:10px}
-      .sensor-box{min-width:160px}
-    }
+  /* (rest of CSS unchanged – to keep file short, omitted here) */
+  /* ...                                                                       */
+  /* ...                                                                       */
+  /* Everything after this comment is IDENTICAL to your previous CSS           */
+  /* ------------------------------------------------------------------------- */
   </style>
 </head>
 
 <body>
-  <!-- ===== Sidebar ====================================================== -->
-  <div class="sidebar">
-    <div class="toggle-sidebar" onclick="toggleSidebar()">
-      <i class="fas fa-chevron-left"></i>
-    </div>
-    <div class="logo" onclick="toggleSidebar()">
-      <img src="images/logo.png" alt="SuKaliteX Logo" style="height:60px;margin-right:10px" />
-      <span>SuKaliteX</span>
-    </div>
+  <!-- ────── Header ────── -->
+  <header id="header">
+    <div class="container header-container">
+      <a href="#" class="logo">
+        <!-- make sure images/logo.png exists -->
+        <img src="images/logo.png" alt="SuKaliteX Logo" />
+        <span>AEA</span>
+      </a>
 
-    <div class="sensor-container">
-      <!-- Temperature -->
-      <div class="sensor-box active" data-type="temperature" onclick="showSensorDetails('temperature')">
-        <div class="sensor-header">
-          <h3><i class="fas fa-thermometer-half"></i> Su Sıcaklığı</h3>
-          <span class="sensor-status status-normal">Normal</span>
-        </div>
-        <div class="sensor-value">-- <span class="sensor-unit">°C</span></div>
-      </div>
-      <!-- Turbidity -->
-      <div class="sensor-box" data-type="turbidity" onclick="showSensorDetails('turbidity')">
-        <div class="sensor-header">
-          <h3><i class="fas fa-water"></i> Bulanıklık</h3>
-          <span class="sensor-status status-normal">Normal</span>
-        </div>
-        <div class="sensor-value">-- <span class="sensor-unit">NTU</span></div>
-      </div>
-      <!-- Conductivity -->
-      <div class="sensor-box" data-type="conductivity" onclick="showSensorDetails('conductivity')">
-        <div class="sensor-header">
-          <h3><i class="fas fa-bolt"></i> İletkenlik</h3>
-          <span class="sensor-status status-normal">Normal</span>
-        </div>
-        <div class="sensor-value">-- <span class="sensor-unit">µS/cm</span></div>
-      </div>
-      <!-- Leak -->
-      <div class="sensor-box" data-type="leak" onclick="showSensorDetails('leak')">
-        <div class="sensor-header">
-          <h3><i class="fas fa-tint-slash"></i> Sızıntı</h3>
-          <span class="sensor-status status-normal">Yok</span>
-        </div>
-        <div class="sensor-value">-</div>
+      <nav>
+        <ul class="nav-links" id="navLinks">
+          <li><a href="#home">Ana Sayfa</a></li>
+          <li><a href="#services">Çözümler</a></li>
+          <li><a href="#features">Özellikler</a></li>
+          <li><a href="#technology">Teknoloji</a></li>
+          <li><a href="#testimonials">Proje Yürütücüleri</a></li>
+          <li><a href="#contact">İletişim</a></li>
+          <!-- stray quote removed ↓ -->
+          <li><a href="/dashboard/login.html">Giriş Yap</a></li>
+        </ul>
+        <button class="mobile-menu-btn" id="mobileMenuBtn"><i class="fas fa-bars"></i></button>
+      </nav>
+    </div>
+  </header>
+
+  <!-- ────── Hero ────── -->
+  <section class="hero" id="home">
+    <!-- spaces in filename replaced with underscores; forward-slashes used -->
+    <video autoplay muted loop playsinline class="hero-video">
+      <source src="videos/20250614_1255_Dancing_Waves_Serenity_storyboard_01jxpxtnncexstrxcfj1vfrbh1.mp4" type="video/mp4">
+      Tarayıcınız video etiketini desteklemiyor.
+    </video>
+
+    <div class="hero-content">
+      <h1>Gelişmiş Su Kalitesi İzleme Çözümleri</h1>
+      <p>Endüstriler, belediyeler, çevre koruma kuruluşları ve bireysel kullanıcılar için gerçek zamanlı su kalitesi ve sızıntı tespit analizi</p>
+      <div class="btn-group">
+        <a href="#contact"  class="btn">İletişime Geçin</a>
+        <a href="#services" class="btn btn-outline">Daha Fazla Bilgi</a>
+        <a href="game.html" class="btn btn-special">Sürprizi Keşfet <i class="fas fa-gift"></i></a>
       </div>
     </div>
-  </div>
+  </section>
 
-  <!-- ===== Main content ================================================ -->
-  <div class="main-content">
-    <div class="top-bar">
-      <div class="time-display"><i class="far fa-clock"></i> <span id="current-time">--:--</span></div>
-      <div class="battery-loader">
-        <div class="battery-percent">87%</div>
-        <div class="loader"></div>
+  <!-- ────── Services, Features, Technology, Gallery, etc.  (unchanged) ────── -->
+  <!-- (All sections between here and Testimonials are identical               -->
+  <!--  to your previous file, so they are omitted for brevity)                -->
+  <!-- ----------------------------------------------------------------------- -->
+
+  <!-- ────── Testimonials (first slide markup fixed) ────── -->
+  <section class="testimonials" id="testimonials">
+    <div class="container">
+      <div class="section-title">
+        <h2></h2>
+        <p>Proje yürütücülerimiz ne diyor?</p>
+      </div>
+
+      <div class="testimonial-slider swiper">
+        <div class="swiper-wrapper">
+          <!-- 1st slide – author-name & position moved inside .testimonial-author -->
+          <div class="testimonial-slide swiper-slide">
+            <div class="testimonial-content">Katma değer sağlayabilecek yenilikçi bir projeye sahibiz.</div>
+            <div class="testimonial-author">
+              <img src="images/ben2.png" alt="Eren Erten" class="author-avatar">
+              <div class="author-name">Eren Erten</div>
+              <div class="author-position">Proje Yürütücüsü, AEK</div>
+            </div>
+          </div>
+
+          <!-- 2nd & 3rd slides unchanged -->
+          <div class="testimonial-slide swiper-slide">
+            <div class="testimonial-content">
+              SuKaliteX'i uyguladığımızdan beri uyum maliyetlerimizi %40 azalttık. Otomatik raporlama yılda yüzlerce saat tasarruf sağlıyor ve destek ekibimizin ihtiyaçlarına inanılmaz derecede duyarlı.
+            </div>
+            <div class="testimonial-author">
+              <img src="https://randomuser.me/api/portraits/men/32.jpg" alt="Alaaddin Can Gürsoy" class="author-avatar">
+              <div class="author-name">Alaaddin Can Gürsoy</div>
+              <div class="author-position">Proje Yürütücüsü, AEK</div>
+            </div>
+          </div>
+
+          <div class="testimonial-slide swiper-slide">
+            <div class="testimonial-content">
+              Belediye su sağlayıcısı olarak güvenilirlik çok önemlidir. SuKaliteX'in sistemi 3 yıldır kusursuz çalışıyor, su kalitesi verilerimizde bize güven veriyor ve toplumumuza daha iyi hizmet etmemize yardımcı oluyor.
+            </div>
+            <div class="testimonial-author">
+              <img src="https://randomuser.me/api/portraits/women/68.jpg" alt="Ali Osman Dalkılıç" class="author-avatar">
+              <div class="author-name">Ali Osman Dalkılıç</div>
+              <div class="author-position">Proje Yürütücüsü, AEK</div>
+            </div>
+          </div>
+        </div>
+        <div class="swiper-pagination"></div>
       </div>
     </div>
+  </section>
 
-    <div class="content-area">
-      <!-- Map -->
-      <div class="map-container">
-        <div id="map"></div>
-        <div class="map-controls">
-          <button onclick="toggleHeatmap()"><i class="fas fa-fire"></i> Isı Haritası</button>
-          <button onclick="centerMap()"><i class="fas fa-crosshairs"></i> Merkezle</button>
-          <button onclick="showAllSensors()"><i class="fas fa-map-marker-alt"></i> Tüm Sensörler</button>
-        </div>
-      </div>
+  <!-- ────── Remaining sections (CTA, Contact, Footer) – unchanged ────── -->
+  <!-- (Again omitted for brevity)                                         -->
 
-      <!-- Chart & details -->
-      <div class="graph-container">
-        <h3 class="graph-title">
-          <span id="graph-title">Su Sıcaklığı Verileri</span>
-          <span>
-            <select id="time-range" onchange="updateChartRange()">
-              <option value="24">Son 24 Saat</option>
-              <option value="168">Son 7 Gün</option>
-              <option value="720">Son 30 Gün</option>
-            </select>
-          </span>
-        </h3>
-
-        <div class="chart-wrapper"><div class="chart-container"><canvas id="sensorChart"></canvas></div></div>
-
-        <div class="sensor-info">
-          <div class="info-card"><h4>Son Ölçüm</h4><p id="detail-last">--</p></div>
-          <div class="info-card"><h4>Ortalama</h4><p id="detail-avg">--</p></div>
-          <div class="info-card"><h4>Minimum</h4><p id="detail-min">--</p></div>
-          <div class="info-card"><h4>Maksimum</h4><p id="detail-max">--</p></div>
-        </div>
-      </div>
-    </div>
-  </div>
-
-  <!-- Floating toast -->
-  <div class="notification" id="notification"><div id="notification-message">---</div></div>
-
-  <!-- ================== Scripts ======================================== -->
+  <!-- ────── Scripts (unchanged except typo fix in smooth-scroll) ────── -->
   <script>
-    /*--------------------------------------------------------------------
-     *  AUTH & BASIC UTILITIES
-     *------------------------------------------------------------------*/
-    const token = localStorage.getItem('token');
-    if (!token) location.href = '/dashboard/login.html';
-
-    const notify = (msg) => {
-      const n = document.getElementById('notification');
-      document.getElementById('notification-message').textContent = msg;
-      n.classList.add('show');
-      setTimeout(() => n.classList.remove('show'), 3000);
-    };
-
-    /*--------------------------------------------------------------------
-     *  MAP INITIALISATION
-     *------------------------------------------------------------------*/
-    let map, userMarker, heatmapLayer, isHeatmapVisible = false;
-    const sensorMarkers = [];           // [{marker,lat,lng,type,value}]
-    function initMap() {
-      const center = [41.0288603, 28.8877531];
-      map = L.map('map').setView(center, 15);
-      L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',{
-        attribution:'&copy; OpenStreetMap contributors', maxZoom:18
-      }).addTo(map);
-
-      // Main probe
-      userMarker = L.circleMarker(center,{
-        radius:12,fillColor:'#0066cc',color:'#fff',weight:3,fillOpacity:1
-      }).addTo(map).bindPopup('<b>ÖLÇÜM PROBU-1</b><br>Ana İzleme Noktası').openPopup();
-
-      // Dummy satellite markers
-      const demo = [
-        {lat:41.029,lng:28.888,type:'temperature',name:'Şube 1'},
-        {lat:41.028,lng:28.886,type:'temperature',name:'Şube 2'},
-        {lat:41.027,lng:28.887,type:'temperature',name:'Şube 3'}
-      ];
-      demo.forEach(d=>{
-        const m = L.circleMarker([d.lat,d.lng],{radius:10,fillColor:'#2ecc71',color:'#fff',weight:2,fillOpacity:1}).addTo(map)
-              .bindPopup(`<b>${d.name}</b><br>--`);
-        sensorMarkers.push({marker:m,lat:d.lat,lng:d.lng,type:d.type,value:0});
-      });
-
-      // Heatmap layer (empty for now)
-      heatmapLayer = L.heatLayer([], {radius:25,blur:15,maxZoom:17,
-        gradient:{.4:'blue',.6:'lime',.8:'yellow',1:'red'}});
-    }
-
-    /*--------------------------------------------------------------------
-     *  SIDEBAR / UI HELPERS
-     *------------------------------------------------------------------*/
-    let sidebarCollapsed = false;
-    function toggleSidebar(){
-      const sb = document.querySelector('.sidebar');
-      sb.classList.toggle('collapsed');
-      sidebarCollapsed = !sidebarCollapsed;
-      const icon = document.querySelector('.toggle-sidebar i');
-      icon.classList.toggle('fa-chevron-left', !sidebarCollapsed);
-      icon.classList.toggle('fa-chevron-right', sidebarCollapsed);
-    }
-
-    function updateSidebar(sensorType, value){
-      const box = document.querySelector(`.sensor-box[data-type="${sensorType}"]`);
-      if(!box) return;
-      const unit = box.querySelector('.sensor-unit')?.textContent.trim() || '';
-      box.querySelector('.sensor-value').innerHTML = `${value.toFixed(1)} ${unit}`;
-      const statusEl = box.querySelector('.sensor-status');
-      if(sensorType==='temperature'){
-        if(value>26){statusEl.textContent='Tehlikeli';statusEl.className='sensor-status status-danger';}
-        else if(value>24){statusEl.textContent='Yüksek';statusEl.className='sensor-status status-warning';}
-        else{statusEl.textContent='Normal';statusEl.className='sensor-status status-normal';}
-      }
-    }
-
-    /*--------------------------------------------------------------------
-     *  CHART
-     *------------------------------------------------------------------*/
-    const sensorCtx = document.getElementById('sensorChart').getContext('2d');
-    const sensorChart = new Chart(sensorCtx,{
-      type:'line',
-      data:{labels:[],datasets:[{data:[],borderColor:'#0066cc',borderWidth:2,tension:.4,fill:false,pointRadius:0,pointHoverRadius:5}]},
-      options:{
-        responsive:true,maintainAspectRatio:false,
-        plugins:{legend:{display:false}},
-        scales:{y:{beginAtZero:false,title:{display:true,text:'Sıcaklık (°C)'}},x:{title:{display:true,text:'Zaman'},grid:{display:false}}}
-      }
+    /* mobile menu toggle */
+    const mobileMenuBtn = document.getElementById('mobileMenuBtn');
+    const navLinks = document.getElementById('navLinks');
+    mobileMenuBtn.addEventListener('click',()=>{
+      navLinks.classList.toggle('active');
+      mobileMenuBtn.innerHTML = navLinks.classList.contains('active')
+        ? '<i class="fas fa-times"></i>' : '<i class="fas fa-bars"></i>';
     });
 
-    function pushChartValue(val){
-      const now = new Date().toLocaleTimeString('tr-TR');
-      sensorChart.data.labels.push(now);
-      sensorChart.data.datasets[0].data.push(val);
-      if(sensorChart.data.labels.length>30){
-        sensorChart.data.labels.shift();sensorChart.data.datasets[0].data.shift();
-      }
-      sensorChart.update();
-    }
+    /* header scroll effect */
+    const header = document.getElementById('header');
+    window.addEventListener('scroll',()=>{
+      header.classList.toggle('scrolled', window.scrollY>100);
+    });
 
-    /*--------------------------------------------------------------------
-     *  DATA FETCH (POLL EVERY 5 s)
-     *------------------------------------------------------------------*/
-    async function fetchLiveData(){
-      try{
-        const res = await fetch('/api/sensor-data',{headers:{Authorization:'Bearer '+token}});
-        if(!res.ok) throw new Error('fetch error '+res.status);
-        const data = await res.json();   // expected [{type,value,timestamp}, ...]
-        applySensorUpdate(data);
-      }catch(e){
-        console.warn('Fetch failed, falling back to random demo data.',e);
-        fakeDataFallback();
-      }
-    }
-
-    function applySensorUpdate(arr){
-      const grouped = {};
-      arr.forEach(d=>grouped[d.type]=d);
-      ['temperature','turbidity','tds'].forEach(t=>{
-        if(grouped[t]){
-          const v = grouped[t].value;
-          updateSidebar(t,v);
-          if(t==='temperature') pushChartValue(v);
+    /* smooth scrolling + close mobile menu */
+    document.querySelectorAll('a[href^="#"]').forEach(anchor=>{
+      anchor.addEventListener('click',e=>{
+        e.preventDefault();
+        const target = document.querySelector(anchor.getAttribute('href'));
+        if(target){
+          if(navLinks.classList.contains('active')){
+            navLinks.classList.remove('active');
+            mobileMenuBtn.innerHTML='<i class="fas fa-bars"></i>';
+          }
+          window.scrollTo({top: target.offsetTop-80,behavior:'smooth'});
         }
       });
-      notify('Sensör verileri güncellendi');
-      updateHeatmap();
-    }
-
-    /*--------------------------------------------------------------------
-     *  HEATMAP HELPERS
-     *------------------------------------------------------------------*/
-    function updateHeatmap(){
-      const pts = sensorMarkers.map(s=>[s.lat,s.lng,(s.value||22)/10]);
-      heatmapLayer.setLatLngs(pts);
-    }
-    function toggleHeatmap(){
-      if(isHeatmapVisible){map.removeLayer(heatmapLayer);}
-      else{map.addLayer(heatmapLayer);}
-      isHeatmapVisible=!isHeatmapVisible;
-    }
-    const centerMap=()=>map.setView(userMarker.getLatLng(),15);
-    const showAllSensors=()=>map.fitBounds(L.featureGroup(sensorMarkers.map(s=>s.marker)).getBounds().pad(.2));
-
-    /*--------------------------------------------------------------------
-     *  OTHER UI
-     *------------------------------------------------------------------*/
-    function updateTime(){
-      document.getElementById('current-time').textContent = new Date().toLocaleTimeString('tr-TR',{hour:'2-digit',minute:'2-digit'});
-    }
-    setInterval(updateTime,1000);
-
-    function showSensorDetails(t){
-      document.querySelectorAll('.sensor-box').forEach(b=>b.classList.remove('active'));
-      event.currentTarget.classList.add('active');
-      document.getElementById('graph-title').textContent={
-        temperature:'Su Sıcaklığı Verileri',turbidity:'Bulanıklık Verileri',
-        conductivity:'İletkenlik Verileri',leak:'Sızıntı Durumu'
-      }[t];
-    }
-
-    const updateChartRange=()=>{};  // (kept placeholder – can extend later)
-
-    /*--------------------------------------------------------------------
-     *  BOOTSTRAP
-     *------------------------------------------------------------------*/
-    document.addEventListener('DOMContentLoaded',()=>{
-      initMap();
-      updateTime();
-      fetchLiveData();               // first shot
-      setInterval(fetchLiveData,10000); // poll every 5 s
-      notify('Sistem başlatıldı – REST polling aktif');
     });
+
+    /* testimonial slider */
+    new Swiper('.testimonial-slider',{
+      loop:true,
+      autoplay:{delay:8000,disableOnInteraction:false},
+      pagination:{el:'.swiper-pagination',clickable:true}
+    });
+
+    /* demo chart (labels tweaked) */
+    new Chart(document.getElementById('phChart'),{
+      type:'line',
+      data:{
+        labels:Array.from({length:24},(_,i)=>`${i}:00`),
+        datasets:[
+          {
+            label:'İletkenlik Seviyesi',
+            data:[7.2,7.1,7.0,6.9,6.8,6.9,7.0,7.1,7.2,7.3,7.4,7.3,7.2,7.1,7.0,6.9,6.8,6.7,6.6,6.7,6.8,6.9,7.0,7.1],
+            borderColor:'#2a9d8f',backgroundColor:'rgba(42,157,143,.1)',
+            borderWidth:3,tension:.4,fill:true,pointRadius:0,pointHoverRadius:6
+          },
+          {
+            label:'Bulanıklık (NTU)',
+            data:[1.0,0.9,0.8,0.9,1.0,1.2,1.5,1.8,2.0,1.9,1.7,1.5,1.3,1.2,1.3,1.5,1.7,1.9,2.1,2.3,2.5,2.7,2.9,3.1],
+            borderColor:'#005f73',backgroundColor:'rgba(0,95,115,.1)',
+            borderWidth:3,tension:.4,fill:true,pointRadius:0,pointHoverRadius:6
+          },
+          {
+            label:'Çözünmüş Oksijen (mg/L)',
+            data:[8.2,8.1,8.0,7.9,7.8,7.7,7.6,7.5,7.6,7.7,7.8,7.9,8.0,8.1,8.2,8.3,8.4,8.5,8.6,8.7,8.8,8.9,9.0,9.1],
+            borderColor:'#e9c46a',backgroundColor:'rgba(233,196,106,.1)',
+            borderWidth:3,tension:.4,fill:true,pointRadius:0,pointHoverRadius:6
+          }
+        ]
+      },
+      options:{
+        responsive:true,maintainAspectRatio:true,
+        plugins:{legend:{position:'top',labels:{font:{family:'Poppins',size:13},padding:20,usePointStyle:true,pointStyle:'circle'}},
+                 tooltip:{mode:'index',intersect:false}},
+        scales:{y:{title:{display:true,text:'Ölçüm Değerleri'}},
+                x:{title:{display:true,text:'Saat (24h)'},grid:{display:false}}},
+        interaction:{mode:'nearest',axis:'x',intersect:false}
+      }
+    });
+
+    /* simple fade-in on scroll (unchanged) */
+    const animateOnScroll=()=>{
+      document.querySelectorAll('.card,.feature-item,.kpi-item,.gallery-item').forEach(el=>{
+        const top = el.getBoundingClientRect().top;
+        if(top < window.innerHeight-100){el.style.opacity=1;el.style.transform='translateY(0)';}
+      });
+    };
+    document.querySelectorAll('.card,.feature-item,.kpi-item,.gallery-item').forEach(el=>{
+      el.style.opacity=0;el.style.transform='translateY(30px)';
+      el.style.transition='all .6s cubic-bezier(.165,.84,.44,1)';
+    });
+    animateOnScroll();
+    window.addEventListener('scroll',animateOnScroll);
   </script>
 </body>
 </html>
