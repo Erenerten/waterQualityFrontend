@@ -75,23 +75,23 @@
   </section>
 
   <script>
-    /* ────────────────────── auth guard ────────────────────── */
+    /* ─── auth guard ─── */
     const TOKEN = localStorage.getItem('token');
     if (!TOKEN) location.href = '/dashboard/login.html';
 
-    /* ────────────────────── clock ─────────────────────────── */
+    /* ─── clock ─── */
     setInterval(()=>{
       document.getElementById('clock').textContent =
         new Date().toLocaleTimeString('tr-TR',{hour:'2-digit',minute:'2-digit'});
     },1000);
 
-    /* ────────────────────── map ───────────────────────────── */
+    /* ─── map ─── */
     const map=L.map('map').setView([41.03,28.89],15);
     L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',
       {attribution:'© OpenStreetMap'}).addTo(map);
     L.marker([41.03,28.89]).addTo(map).bindPopup('Ölçüm Noktası');
 
-    /* ────────────────────── chart ─────────────────────────── */
+    /* ─── chart ─── */
     const ctx=document.getElementById('sensorChart').getContext('2d');
     const chart=new Chart(ctx,{type:'line',
       data:{labels:[],datasets:[{data:[],borderColor:'#0066cc',borderWidth:2,
@@ -109,7 +109,7 @@
       chart.update();
     }
 
-    /* ────────────────────── sidebar helper ───────────────── */
+    /* ─── sidebar ─── */
     function updateSidebar(v){
       document.getElementById('tempVal').innerHTML =
         `${v.toFixed(1)} <span class="sensor-unit">°C</span>`;
@@ -119,7 +119,7 @@
       else {st.textContent='Normal';st.style.background='var(--success)';}
     }
 
-    /* ────────────────────── DEBUG LOGGER ─────────────────── */
+    /* ─── debug logger ─── */
     async function debugSensorApi(){
       try{
         const res = await fetch('/api/sensor-data',{headers:{Authorization:'Bearer '+TOKEN}});
@@ -127,52 +127,52 @@
         const txt = await res.text();
         console.log('↩︎ raw:', txt.slice(0,400)+(txt.length>400?' …':''));
         let json; try{json=JSON.parse(txt);}catch(e){console.error('‼ not JSON');return;}
-        console.table(json.slice(-3)); // show last 3 rows
+        console.table(json.slice(-3));
       }catch(e){console.error('debug fetch failed',e);}
     }
     debugSensorApi();
     setInterval(debugSensorApi,10000);
 
-    /* ────────────────────── robust poll ───────────────────── */
-    const toNum = raw => {
+    /* ─── helper to parse number ─── */
+    const toNum = raw=>{
       if(typeof raw==='number') return raw;
       if(typeof raw==='string'){
-        const m = raw.replace(',','.').match(/[-+]?\d*\.?\d+/);
-        return m ? parseFloat(m[0]) : NaN;
+        const m=raw.replace(',','.').match(/[-+]?\d*\.?\d+/);
+        return m?parseFloat(m[0]):NaN;
       }
       return NaN;
     };
 
+    /* ─── robust poll ─── */
     async function poll(){
       try{
         const res = await fetch('/api/sensor-data',{headers:{Authorization:'Bearer '+TOKEN}});
         if(!res.ok) throw new Error('HTTP '+res.status);
         const rows = await res.json();
 
-        /* newest row whose type includes "temp" */
-        const tRow = [...rows].reverse()
-          .find(r=>String(r.type||'').toLowerCase().includes('temp'));
-        if(!tRow){console.warn('no temperature row'); return;}
+        /* newest temp row that contains a numeric value */
+        let val = NaN;
+        for(let i=rows.length-1;i>=0;i--){
+          const r = rows[i];
+          if(!String(r.type||'').toLowerCase().includes('temp')) continue;
 
-        /* pull a numeric field */
-        let v = toNum(tRow.value);
-        if(!Number.isFinite(v)) v = toNum(tRow.temperature);
-        if(!Number.isFinite(v)) {
-          for(const [k,val] of Object.entries(tRow)){
-            if(['id','type','timestamp'].includes(k)) continue;
-            v = toNum(val);
-            if(Number.isFinite(v)) break;
+          val = toNum(r.value);
+          if(!Number.isFinite(val)) val = toNum(r.temperature);
+          if(!Number.isFinite(val)){
+            for(const [k,v] of Object.entries(r)){
+              if(['id','type','timestamp'].includes(k)) continue;
+              val = toNum(v);
+              if(Number.isFinite(val)) break;
+            }
           }
+          if(Number.isFinite(val)) break;   // found good one → stop
         }
-        if(!Number.isFinite(v)){
-          console.warn('no numeric value in row',tRow);
-          return;
-        }
-        if(v < -50 || v > 150){console.warn('out-of-range temp',v);return;}
 
-        pushTemp(v);
-        updateSidebar(v);
+        if(!Number.isFinite(val)){ console.warn('no numeric temperature'); return; }
+        if(val<-50||val>150){ console.warn('out-of-range temperature',val); return; }
 
+        pushTemp(val);
+        updateSidebar(val);
       }catch(e){console.error('poll failed',e);}
     }
     poll();
