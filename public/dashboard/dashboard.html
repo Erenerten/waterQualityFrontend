@@ -381,14 +381,14 @@
       refresh();
     });
 
-    function updateChartTitle() {
-      const title = active === 'flow-comparison' ? META.flowComparison.label : META[active]?.label || META.temperature.label;
-      document.getElementById('chartTitle').textContent = `${title} (${labels[slider.value]})`;
-    }
-
-    /* ─────────── active sensor ─────────── */
     const VALID_SENSORS = ['temperature', 'tds', 'flow-comparison'];
     let active = 'temperature';
+
+    function updateChartTitle(timeLabel) {
+      const title = active === 'flow-comparison' ? META.flowComparison.label : META[active]?.label || META.temperature.label;
+      document.getElementById('chartTitle').textContent = `${title} (${timeLabel || labels[slider.value]})`;
+    }
+
     document.querySelectorAll('.sensor-box').forEach(box => {
       box.addEventListener('click', () => {
         document.querySelectorAll('.sensor-box').forEach(b => b.classList.remove('active'));
@@ -401,33 +401,6 @@
       });
     });
 
-    /* ─────────── calculate 30-minute average ─────────── */
-    function calculate30MinAverage(rows, sensorType) {
-      const now = Date.now();
-      const thirtyMinutesAgo = now - 30 * 60 * 1000;
-      
-      // Filter data for the specific sensor type and last 30 minutes
-      const recentData = rows
-        .filter(r => r.type === sensorType && r.value != null && 
-               new Date(r.timestamp).getTime() >= thirtyMinutesAgo)
-        .map(r => ({ value: toNum(r.value), timestamp: new Date(r.timestamp).getTime() }));
-      
-      if (recentData.length === 0) return null;
-      
-      // Calculate average
-      const sum = recentData.reduce((acc, curr) => acc + curr.value, 0);
-      const average = sum / recentData.length;
-      
-      // Find the most recent timestamp
-      const latestTimestamp = Math.max(...recentData.map(r => r.timestamp));
-      
-      return {
-        average: average,
-        timestamp: latestTimestamp
-      };
-    }
-
-    /* ─────────── fetch & redraw ─────────── */
     async function fetchSensorData(type, startDate, endDate) {
       let url = `/api/sensor-data/filter?type=${type}`;
       if (startDate && endDate) {
@@ -441,54 +414,36 @@
     async function refresh() {
       try {
         if (!VALID_SENSORS.includes(active)) active = 'temperature';
-        
         const dateFilterVisible = document.getElementById('dateFilterInputs').style.display !== 'none';
         const todayOnly = document.getElementById('todayOnly').checked;
         const lastHourOnly = document.getElementById('lastHourOnly').checked;
-        const customDateFilter = dateFilterVisible && 
-          document.getElementById('startDate').value && 
+        const customDateFilter = dateFilterVisible &&
+          document.getElementById('startDate').value &&
           document.getElementById('endDate').value;
-        
-        // Determine which filter is active
-        let startDate, endDate;
-        let useFilter = false;
-        let titleDate;
-        
+        let startDate, endDate, useFilter = false, titleDate;
         if (todayOnly) {
-          // Today filter
           const now = new Date();
-          startDate = new Date(now);
-          startDate.setHours(0, 0, 0, 0);
-          endDate = new Date(now);
-          endDate.setHours(23, 59, 59, 999);
-          useFilter = true;
-          titleDate = 'Bugün';
+          startDate = new Date(now); startDate.setHours(0, 0, 0, 0);
+          endDate = new Date(now); endDate.setHours(23, 59, 59, 999);
+          useFilter = true; titleDate = 'Bugün';
         } else if (lastHourOnly) {
-          // Last hour filter
-          endDate = new Date();
-          startDate = new Date(endDate.getTime() - 60 * 60 * 1000);
-          useFilter = true;
-          titleDate = 'Son 1 Saat';
+          endDate = new Date(); startDate = new Date(endDate.getTime() - 60 * 60 * 1000);
+          useFilter = true; titleDate = 'Son 1 Saat';
         } else if (customDateFilter) {
-          // Custom date range filter
           startDate = new Date(document.getElementById('startDate').value);
           endDate = new Date(document.getElementById('endDate').value);
           useFilter = true;
           const formatDate = d => d.toLocaleDateString('tr-TR', { timeZone: 'Europe/Istanbul' });
           titleDate = `${formatDate(startDate)} - ${formatDate(endDate)}`;
         } else {
-          // Slider based filtering
           const now = new Date();
           const winMin = minutes[slider.value];
           if (winMin !== Infinity) {
-            endDate = now;
-            startDate = new Date(now.getTime() - winMin * 60 * 1000);
+            endDate = now; startDate = new Date(now.getTime() - winMin * 60 * 1000);
             useFilter = true;
           }
           titleDate = labels[slider.value];
         }
-        
-        // Reset other filters when one is selected
         if (todayOnly) {
           document.getElementById('lastHourOnly').checked = false;
           document.getElementById('dateFilterInputs').style.display = 'none';
@@ -499,165 +454,74 @@
           document.getElementById('todayOnly').checked = false;
           document.getElementById('lastHourOnly').checked = false;
         }
-        
-        // Update slider visibility
-        document.querySelector('.slider-wrap').style.display = 
+        document.querySelector('.slider-wrap').style.display =
           (todayOnly || lastHourOnly || customDateFilter) ? 'none' : 'flex';
-
-        // Fetch data based on active sensor
-        let data;
+        updateChartTitle(titleDate);
         if (active === 'flow-comparison') {
-          // Special handling for flow comparison
           const [flow1Data, flow2Data] = await Promise.all([
             fetchSensorData('flow1', startDate, endDate),
             fetchSensorData('flow2', startDate, endDate)
           ]);
-          
-          // Process flow comparison data
-          processFlowComparison(flow1Data, flow2Data);
+          processFlowComparison(flow1Data, flow2Data, titleDate);
           return;
         } else {
-          // Regular sensor data
-          data = await fetchSensorData(active, startDate, endDate);
+          const data = await fetchSensorData(active, startDate, endDate);
+          updateSidebarValues(data);
+          updateChart(data, active, titleDate);
         }
-
-        // Filter out null values and sort by timestamp
-        data = data
-          .filter(r => r.value != null)
-          .sort((a, b) => new Date(a.timestamp) - new Date(b.timestamp));
-
-        // Update sidebar values with 30-minute averages
-        updateSidebarValues(data);
-
-        // Update chart
-        updateChart(data, active, titleDate);
-        
-      } catch (e) { 
-        console.error('Refresh error:', e); 
-      }
+      } catch (e) { console.error('Refresh error:', e); }
     }
 
-    function processFlowComparison(flow1Data, flow2Data) {
-      // Filter and sort both datasets
-      const filteredFlow1 = flow1Data
-        .filter(r => r.value != null)
-        .sort((a, b) => new Date(a.timestamp) - new Date(b.timestamp)));
-      
-      const filteredFlow2 = flow2Data
-        .filter(r => r.value != null)
-        .sort((a, b) => new Date(a.timestamp) - new Date(b.timestamp)));
-
-      // Prepare data for comparison chart
-      const labels = [];
-      const flow1Values = [];
-      const flow2Values = [];
-      const diffValues = [];
-      
-      // Find matching or nearest timestamps
+    function processFlowComparison(flow1Data, flow2Data, timeLabel) {
+      const filteredFlow1 = flow1Data.filter(r => r.value != null).sort((a, b) => new Date(a.timestamp) - new Date(b.timestamp));
+      const filteredFlow2 = flow2Data.filter(r => r.value != null).sort((a, b) => new Date(a.timestamp) - new Date(b.timestamp));
+      const labelsArr = [], flow1Vals = [], flow2Vals = [], diffVals = [];
       let j = 0;
       for (let i = 0; i < filteredFlow1.length; i++) {
-        const flow1Time = new Date(filteredFlow1[i].timestamp).getTime();
+        const t1 = new Date(filteredFlow1[i].timestamp).getTime();
         let closestFlow2Index = j;
-        let minDiff = Math.abs(new Date(filteredFlow2[j]?.timestamp).getTime() - flow1Time);
-        
-        // Find closest flow2 point to this flow1 point
+        let minDiff = Math.abs(new Date(filteredFlow2[j]?.timestamp).getTime() - t1);
         for (let k = j + 1; k < filteredFlow2.length; k++) {
-          const currentDiff = Math.abs(new Date(filteredFlow2[k].timestamp).getTime() - flow1Time);
-          if (currentDiff < minDiff) {
-            minDiff = currentDiff;
-            closestFlow2Index = k;
-          } else {
-            break; // Since data is sorted, we can break when diffs start increasing
-          }
+          const currentDiff = Math.abs(new Date(filteredFlow2[k].timestamp).getTime() - t1);
+          if (currentDiff < minDiff) { minDiff = currentDiff; closestFlow2Index = k; } else { break; }
         }
-        
-        // Only use if timestamps are within 5 minutes of each other
         if (minDiff <= 5 * 60 * 1000 && filteredFlow2[closestFlow2Index]) {
           const flow1Val = toNum(filteredFlow1[i].value);
           const flow2Val = toNum(filteredFlow2[closestFlow2Index].value);
-          
-          labels.push(new Date(filteredFlow1[i].timestamp).toLocaleTimeString('tr-TR', {
-            hour: '2-digit',
-            minute: '2-digit',
-            hour12: false,
-            timeZone: 'Europe/Istanbul'
-          }));
-          
-          flow1Values.push(flow1Val);
-          flow2Values.push(flow2Val);
-          diffValues.push(flow1Val - flow2Val);
-          
-          j = closestFlow2Index + 1; // Move past this point in flow2 data
+          labelsArr.push(new Date(filteredFlow1[i].timestamp).toLocaleTimeString('tr-TR', { hour: '2-digit', minute: '2-digit', hour12: false, timeZone: 'Europe/Istanbul' }));
+          flow1Vals.push(flow1Val);
+          flow2Vals.push(flow2Val);
+          diffVals.push(flow1Val - flow2Val);
+          j = closestFlow2Index + 1;
         }
       }
-      
-      // Update chart for flow comparison
-      chart.data.labels = labels;
+      chart.data.labels = labelsArr;
       chart.data.datasets = [
-        {
-          label: 'Flow 1',
-          data: flow1Values,
-          borderColor: META.flowComparison.color1,
-          backgroundColor: META.flowComparison.backgroundColor1,
-          borderWidth: 2,
-          tension: 0.25,
-          fill: false,
-          pointRadius: 3
-        },
-        {
-          label: 'Flow 2',
-          data: flow2Values,
-          borderColor: META.flowComparison.color2,
-          backgroundColor: META.flowComparison.backgroundColor2,
-          borderWidth: 2,
-          tension: 0.25,
-          fill: false,
-          pointRadius: 3
-        },
-        {
-          label: 'Fark (Flow1 - Flow2)',
-          data: diffValues,
-          borderColor: META.flowComparison.colorDiff,
-          backgroundColor: META.flowComparison.backgroundColorDiff,
-          borderWidth: 2,
-          tension: 0.25,
-          fill: false,
-          pointRadius: 3
-        }
+        { label: 'Flow 1', data: flow1Vals, borderColor: META.flowComparison.color1, backgroundColor: META.flowComparison.backgroundColor1, borderWidth: 2, tension: 0.25, fill: false, pointRadius: 3 },
+        { label: 'Flow 2', data: flow2Vals, borderColor: META.flowComparison.color2, backgroundColor: META.flowComparison.backgroundColor2, borderWidth: 2, tension: 0.25, fill: false, pointRadius: 3 },
+        { label: 'Fark (Flow1 - Flow2)', data: diffVals, borderColor: META.flowComparison.colorDiff, backgroundColor: META.flowComparison.backgroundColorDiff, borderWidth: 2, tension: 0.25, fill: false, pointRadius: 3 }
       ];
-      
-      // Update legend
       chart.options.plugins.legend = { display: true };
       chart.update();
-      
-      // Update sidebar value for flow-comparison (show last diff)
-      if (diffValues.length > 0) {
-        const lastDiff = diffValues[diffValues.length - 1];
-        document.getElementById('val-flow-comparison').innerHTML = 
-          `${lastDiff.toFixed(2)} <span class="sensor-unit">${META.flowComparison.unit}</span>`;
-        
+      if (diffVals.length > 0) {
+        const lastDiff = diffVals[diffVals.length - 1];
+        document.getElementById('val-flow-comparison').innerHTML = `${lastDiff.toFixed(2)} <span class="sensor-unit">${META.flowComparison.unit}</span>`;
         const [statusText, statusClass] = META.flowComparison.status(lastDiff);
         const statusElement = document.getElementById('stat-flow-comparison');
         statusElement.textContent = statusText;
         statusElement.style.background = `var(--${statusClass})`;
-        
-        document.getElementById('time-flow-comparison').textContent = 
-          `Son: ${labels[labels.length - 1]}`;
+        document.getElementById('time-flow-comparison').textContent = `Son: ${labelsArr[labelsArr.length - 1]}`;
       }
-      
-      // Calculate and display 30-minute average for flow comparison
+      // 30-min average for flow-comparison
       const now = Date.now();
       const thirtyMinutesAgo = now - 30 * 60 * 1000;
-      const recentDiffs = diffValues
-        .filter((_, i) => {
-          const timestamp = new Date(filteredFlow1[i].timestamp).getTime();
-          return timestamp >= thirtyMinutesAgo;
-        });
-      
+      const recentDiffs = diffVals.filter((_, i) => {
+        const timestamp = new Date(filteredFlow1[i].timestamp).getTime();
+        return timestamp >= thirtyMinutesAgo;
+      });
       if (recentDiffs.length > 0) {
         const avgDiff = recentDiffs.reduce((sum, val) => sum + val, 0) / recentDiffs.length;
-        document.getElementById('val-flow-comparison').innerHTML = 
-          `${avgDiff.toFixed(2)} <span class="sensor-unit">${META.flowComparison.unit}</span>`;
+        document.getElementById('val-flow-comparison').innerHTML = `${avgDiff.toFixed(2)} <span class="sensor-unit">${META.flowComparison.unit}</span>`;
         document.getElementById('time-flow-comparison').textContent = '30 dakika ortalaması';
       }
     }
@@ -666,46 +530,24 @@
       ['temperature', 'tds'].forEach(key => {
         const avgData = calculate30MinAverage(data, key);
         if (!avgData) return;
-
         const v = avgData.average;
         if (!Number.isFinite(v)) return;
-
-        // Update value display
-        document.getElementById('val-' + key).innerHTML =
-          `${v.toFixed(1)} <span class="sensor-unit">${META[key].unit}</span>`;
-
-        // Update status
+        document.getElementById('val-' + key).innerHTML = `${v.toFixed(1)} <span class="sensor-unit">${META[key].unit}</span>`;
         const [txt, cls] = META[key].status(v);
         const st = document.getElementById('stat-' + key);
         st.textContent = txt;
         st.style.background = `var(--${cls})`;
-
-        // Update timestamp
         const timeElement = document.getElementById('time-' + key);
-        timeElement.textContent = `30 dakika ortalaması (${new Date(avgData.timestamp).toLocaleTimeString('tr-TR', {
-          hour: '2-digit',
-          minute: '2-digit',
-          hour12: false,
-          timeZone: 'Europe/Istanbul'
-        })})`;
+        timeElement.textContent = `30 dakika ortalaması (${new Date(avgData.timestamp).toLocaleTimeString('tr-TR', { hour: '2-digit', minute: '2-digit', hour12: false, timeZone: 'Europe/Istanbul' })})`;
       });
     }
 
     function updateChart(data, sensorType, timeRange) {
-      // Format timestamps for display
       const timestamps = data.map(r => {
         const date = new Date(r.timestamp);
-        return date.toLocaleTimeString('tr-TR', {
-          hour: '2-digit',
-          minute: '2-digit',
-          hour12: false,
-          timeZone: 'Europe/Istanbul'
-        });
+        return date.toLocaleTimeString('tr-TR', { hour: '2-digit', minute: '2-digit', hour12: false, timeZone: 'Europe/Istanbul' });
       });
-
       const values = data.map(r => toNum(r.value));
-
-      // Update chart
       chart.data.labels = timestamps;
       chart.data.datasets = [{
         label: META[sensorType]?.label || 'Sensör',
@@ -717,14 +559,9 @@
         fill: true,
         pointRadius: 2
       }];
-      
-      // Hide legend for single dataset
       chart.options.plugins.legend = { display: false };
       chart.update();
-
-      // Update chart title
-      document.getElementById('chartTitle').textContent = 
-        `${META[sensorType]?.label || 'Sensör'} (${timeRange})`;
+      document.getElementById('chartTitle').textContent = `${META[sensorType]?.label || 'Sensör'} (${timeRange})`;
     }
 
     // Initial refresh
