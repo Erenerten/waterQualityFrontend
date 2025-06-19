@@ -322,14 +322,6 @@
         warningThreshold: 30,
         criticalThreshold: 35,
       },
-      turbidity: {
-        label: "Bulanıklık",
-        unit: "NTU",
-        color: "#36A2EB",
-        backgroundColor: "rgba(54, 162, 235, 0.2)",
-        warningThreshold: 5,
-        criticalThreshold: 10,
-      },
       tds: {
         label: "TDS",
         unit: "ppm",
@@ -337,22 +329,6 @@
         backgroundColor: "rgba(75, 192, 192, 0.2)",
         warningThreshold: 500,
         criticalThreshold: 1000,
-      },
-      flow1: {
-        label: "Su Akış 1",
-        unit: "m³/s",
-        color: "#9966FF",
-        backgroundColor: "rgba(153, 102, 255, 0.2)",
-        warningThreshold: 20,
-        criticalThreshold: 30,
-      },
-      flow2: {
-        label: "Su Akış 2",
-        unit: "m³/s",
-        color: "#FF9F40",
-        backgroundColor: "rgba(255, 159, 64, 0.2)",
-        warningThreshold: 20,
-        criticalThreshold: 30,
       },
       flowComparison: {
         label: "Akış Karşılaştırma",
@@ -382,14 +358,15 @@
     });
 
     /* ─────────── active sensor ─────────── */
-    let active='temperature';
-    document.querySelectorAll('.sensor-box').forEach(box=>{
-      box.addEventListener('click',()=>{
-        document.querySelectorAll('.sensor-box').forEach(b=>b.classList.remove('active'));
+    let active = 'temperature';
+    document.querySelectorAll('.sensor-box').forEach(box => {
+      box.addEventListener('click', () => {
+        document.querySelectorAll('.sensor-box').forEach(b => b.classList.remove('active'));
         box.classList.add('active');
         active = box.dataset.sensor;
-        document.getElementById('chartTitle').textContent =
-          `${META[active].title} (${labels[slider.value]})`;
+        // Use correct label for flow-comparison
+        const title = active === 'flow-comparison' ? META.flowComparison.label : META[active].label;
+        document.getElementById('chartTitle').textContent = `${title} (${labels[slider.value]})`;
         refresh();
       });
     });
@@ -570,8 +547,87 @@
         const values = data.map(r => toNum(r.value));
 
         // Update chart with new data
+        if (active === 'flow-comparison') {
+          // Fetch flow1 and flow2 data
+          const rows1 = await fetch(url, { headers: { Authorization: 'Bearer ' + TOKEN } }).then(r => r.json());
+          let url2 = url.replace('flow1', 'flow2');
+          const rows2 = await fetch(url2, { headers: { Authorization: 'Bearer ' + TOKEN } }).then(r => r.json());
+          // Merge by timestamp (assume both sorted)
+          let data1 = rows1.filter(r => r.value != null).sort((a, b) => new Date(a.timestamp) - new Date(b.timestamp));
+          let data2 = rows2.filter(r => r.value != null).sort((a, b) => new Date(a.timestamp) - new Date(b.timestamp));
+          let labelsArr = [];
+          let flow1Vals = [];
+          let flow2Vals = [];
+          let diffVals = [];
+          let j = 0;
+          for (let i = 0; i < data1.length; i++) {
+            const t1 = new Date(data1[i].timestamp);
+            while (j < data2.length - 1 && Math.abs(new Date(data2[j + 1].timestamp) - t1) < Math.abs(new Date(data2[j].timestamp) - t1)) {
+              j++;
+            }
+            const t2 = new Date(data2[j]?.timestamp);
+            labelsArr.push(t1.toLocaleTimeString('tr-TR', { hour: '2-digit', minute: '2-digit', hour12: false, timeZone: 'Europe/Istanbul' }));
+            const v1 = toNum(data1[i].value);
+            const v2 = data2[j] ? toNum(data2[j].value) : null;
+            flow1Vals.push(v1);
+            flow2Vals.push(v2);
+            diffVals.push((v2 != null) ? (v1 - v2) : null);
+          }
+          // Update chart for flow-comparison
+          chart.data.labels = labelsArr;
+          chart.data.datasets = [
+            {
+              label: 'Flow 1',
+              data: flow1Vals,
+              borderColor: META.flowComparison.color1,
+              backgroundColor: META.flowComparison.backgroundColor1,
+              borderWidth: 2,
+              tension: 0.25,
+              fill: false,
+              pointRadius: 2
+            },
+            {
+              label: 'Flow 2',
+              data: flow2Vals,
+              borderColor: META.flowComparison.color2,
+              backgroundColor: META.flowComparison.backgroundColor2,
+              borderWidth: 2,
+              tension: 0.25,
+              fill: false,
+              pointRadius: 2
+            },
+            {
+              label: 'Fark (Flow1 - Flow2)',
+              data: diffVals,
+              borderColor: META.flowComparison.colorDiff,
+              backgroundColor: META.flowComparison.backgroundColorDiff,
+              borderWidth: 2,
+              tension: 0.25,
+              fill: false,
+              pointRadius: 2
+            }
+          ];
+          chart.update();
+          // Update sidebar value for flow-comparison (show last diff)
+          const lastDiff = diffVals.length ? diffVals[diffVals.length - 1] : null;
+          document.getElementById('val-flow-comparison').innerHTML = (lastDiff != null ? lastDiff.toFixed(2) : '--') + ' <span class="sensor-unit">m³/s</span>';
+          document.getElementById('stat-flow-comparison').textContent = lastDiff != null ? (Math.abs(lastDiff) > 1 ? 'FARK VAR' : 'Normal') : '—';
+          document.getElementById('stat-flow-comparison').style.background = lastDiff != null && Math.abs(lastDiff) > 1 ? 'var(--danger)' : 'var(--success)';
+          document.getElementById('time-flow-comparison').textContent = labelsArr.length ? `Son: ${labelsArr[labelsArr.length - 1]}` : '—';
+          return;
+        }
+        // For temperature and tds
+        chart.data.datasets = [{
+          label: META[active].label,
+          data: values,
+          borderColor: META[active].color,
+          backgroundColor: META[active].backgroundColor,
+          borderWidth: 2,
+          tension: 0.25,
+          fill: true,
+          pointRadius: 2
+        }];
         chart.data.labels = timestamps;
-        chart.data.datasets[0].data = values;
         chart.update();
 
         // Log for debugging
@@ -582,7 +638,8 @@
         });
 
       } catch (e) { console.error(e); }
-    }    refresh();
+    }
+    refresh();
     let refreshInterval = setInterval(refresh, 5000);
 
     /* ─────────── polling rate control ─────────── */
