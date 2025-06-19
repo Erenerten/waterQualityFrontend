@@ -430,8 +430,11 @@
           endDate = new Date(); startDate = new Date(endDate.getTime() - 60 * 60 * 1000);
           useFilter = true; titleDate = 'Son 1 Saat';
         } else if (customDateFilter) {
-          startDate = new Date(document.getElementById('startDate').value);
-          endDate = new Date(document.getElementById('endDate').value);
+          // Parse as local time (Europe/Istanbul)
+          const startVal = document.getElementById('startDate').value;
+          const endVal = document.getElementById('endDate').value;
+          startDate = parseLocalDateTime(startVal);
+          endDate = parseLocalDateTime(endVal);
           useFilter = true;
           const formatDate = d => d.toLocaleDateString('tr-TR', { timeZone: 'Europe/Istanbul' });
           titleDate = `${formatDate(startDate)} - ${formatDate(endDate)}`;
@@ -470,6 +473,16 @@
           updateChart(data, active, titleDate);
         }
       } catch (e) { console.error('Refresh error:', e); }
+    }
+
+    // Helper to parse yyyy-MM-ddTHH:mm as local time (not UTC)
+    function parseLocalDateTime(val) {
+      if (!val) return null;
+      // val is in 'yyyy-MM-ddTHH:mm' format
+      const [datePart, timePart] = val.split('T');
+      const [year, month, day] = datePart.split('-').map(Number);
+      const [hour, minute] = timePart.split(':').map(Number);
+      return new Date(year, month - 1, day, hour, minute, 0, 0);
     }
 
     function processFlowComparison(flow1Data, flow2Data, timeLabel) {
