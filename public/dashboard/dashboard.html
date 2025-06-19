@@ -162,15 +162,6 @@
       <div class="sensor-time" id="time-temperature">30 dakika ortalaması</div>
     </div>
 
-    <!-- <div class="sensor-box" data-sensor="turbidity">
-      <div class="sensor-header">
-        <h4>Bulanıklık</h4>
-        <span class="sensor-status" id="stat-turbidity">—</span>
-      </div>
-      <div class="sensor-value" id="val-turbidity">-- <span class="sensor-unit">NTU</span></div>
-      <div class="sensor-time" id="time-turbidity">30 dakika ortalaması</div>
-    </div> -->
-
     <div class="sensor-box" data-sensor="tds">
       <div class="sensor-header">
         <h4>TDS / İletkenlik</h4>
@@ -179,24 +170,6 @@
       <div class="sensor-value" id="val-tds">-- <span class="sensor-unit">ppm</span></div>
       <div class="sensor-time" id="time-tds">30 dakika ortalaması</div>
     </div>
-
-    <!-- <div class="sensor-box" data-sensor="flow1">
-      <div class="sensor-header">
-        <h4>Su Akış 1</h4>
-        <span class="sensor-status" id="stat-flow1">—</span>
-      </div>
-      <div class="sensor-value" id="val-flow1">-- <span class="sensor-unit">m³/s</span></div>
-      <div class="sensor-time" id="time-flow1">30 dakika ortalaması</div>
-    </div>
-
-    <div class="sensor-box" data-sensor="flow2">
-      <div class="sensor-header">
-        <h4>Su Akış 2</h4>
-        <span class="sensor-status" id="stat-flow2">—</span>
-      </div>
-      <div class="sensor-value" id="val-flow2">-- <span class="sensor-unit">m³/s</span></div>
-      <div class="sensor-time" id="time-flow2">30 dakika ortalaması</div>
-    </div> -->
 
     <div class="sensor-box" data-sensor="flow-comparison">
       <div class="sensor-header">
@@ -209,7 +182,8 @@
   </aside>
 
   <!-- ─── Main layout ─────────────────────────────────────── -->
-  <section class="main">    <div class="top-bar">
+  <section class="main">
+    <div class="top-bar">
       <span id="clock">--:--</span>
       <div class="polling-control">
         <label>Güncelleme Hızı:</label>
@@ -222,13 +196,15 @@
     </div>
 
     <div class="content">
-      <div class="map-wrap"><div id="map"></div></div>      <div class="chart-wrap">
+      <div class="map-wrap"><div id="map"></div></div>
+      <div class="chart-wrap">
         <div class="chart-header">
           <div class="chart-title" id="chartTitle">Su Sıcaklığı (son 10 dakika)</div>
         </div>
         <div class="chart-box"><canvas id="sensorChart"></canvas></div>
 
-        <div class="date-filter">          <div class="filter-toggle">
+        <div class="date-filter">
+          <div class="filter-toggle">
             <label>
               <input type="checkbox" id="todayOnly"> Sadece Bugün
             </label>
@@ -258,31 +234,49 @@
   <script>
     /* ─────────── auth guard & helpers ─────────── */
     const TOKEN = localStorage.getItem('token');
-    if (!TOKEN) location.href = '/dashboard/login.html';    setInterval(()=>{document.getElementById('clock').textContent =
-      new Date().toLocaleTimeString('tr-TR', {
-        hour:'2-digit',
-        minute:'2-digit',
-        hour12: false,
-        timeZone: 'Europe/Istanbul'
-      });
-    },1000);
+    if (!TOKEN) location.href = '/dashboard/login.html';
 
-    const toNum = x => typeof x==='number' ? x :
-      parseFloat(String(x).replace(',','.'));
+    setInterval(() => {
+      document.getElementById('clock').textContent =
+        new Date().toLocaleTimeString('tr-TR', {
+          hour: '2-digit',
+          minute: '2-digit',
+          hour12: false,
+          timeZone: 'Europe/Istanbul'
+        });
+    }, 1000);
+
+    const toNum = x => typeof x === 'number' ? x :
+      parseFloat(String(x).replace(',', '.'));
 
     /* ─────────── date helpers ─────────── */
     function formatDateForAPI(date) {
       return date.toISOString().slice(0, 19); // YYYY-MM-DDTHH:mm:ss
     }
 
+    function toLocalISOString(date) {
+      const tzOffset = -date.getTimezoneOffset();
+      const diff = tzOffset >= 0 ? '+' : '-';
+      const pad = n => `${Math.floor(Math.abs(n))}`.padStart(2, '0');
+      return date.getFullYear() +
+        '-' + pad(date.getMonth() + 1) +
+        '-' + pad(date.getDate()) +
+        'T' + pad(date.getHours()) +
+        ':' + pad(date.getMinutes()) +
+        ':' + pad(date.getSeconds()) +
+        diff + pad(tzOffset / 60) +
+        ':' + pad(tzOffset % 60);
+    }
+
     /* ─────────── map ─────────── */
-    const map = L.map('map').setView([41.03,28.89],15);
+    const map = L.map('map').setView([41.03, 28.89], 15);
     L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',
-      {attribution:'© OpenStreetMap'}).addTo(map);
-    L.marker([41.03,28.89]).addTo(map).bindPopup('Ölçüm Noktası');
+      { attribution: '© OpenStreetMap' }).addTo(map);
+    L.marker([41.03, 28.89]).addTo(map).bindPopup('Ölçüm Noktası');
 
     /* ─────────── chart ─────────── */
-    const ctx = document.getElementById('sensorChart').getContext('2d');    const chart = new Chart(ctx, {
+    const ctx = document.getElementById('sensorChart').getContext('2d');
+    const chart = new Chart(ctx, {
       type: 'line',
       data: {
         labels: [],
@@ -297,17 +291,34 @@
         }]
       },
       options: {
+        responsive: true,
+        maintainAspectRatio: false,
         plugins: {
-          legend: {display: false}
+          legend: { display: false },
+          tooltip: {
+            mode: 'index',
+            intersect: false
+          }
         },
         scales: {
-          x: {grid: {display: false}},
+          x: {
+            grid: { display: false },
+            ticks: {
+              maxRotation: 45,
+              minRotation: 45
+            }
+          },
           y: {
-            beginAtZero: true,
+            beginAtZero: false,
             grid: {
               color: 'rgba(0, 0, 0, 0.05)'
             }
           }
+        },
+        interaction: {
+          mode: 'nearest',
+          axis: 'x',
+          intersect: false
         }
       }
     });
@@ -321,6 +332,11 @@
         backgroundColor: "rgba(255, 99, 132, 0.2)",
         warningThreshold: 30,
         criticalThreshold: 35,
+        status: (v) => {
+          if (v >= 35) return ['Kritik', 'danger'];
+          if (v >= 30) return ['Uyarı', 'warning'];
+          return ['Normal', 'success'];
+        }
       },
       tds: {
         label: "TDS",
@@ -329,6 +345,11 @@
         backgroundColor: "rgba(75, 192, 192, 0.2)",
         warningThreshold: 500,
         criticalThreshold: 1000,
+        status: (v) => {
+          if (v >= 1000) return ['Kritik', 'danger'];
+          if (v >= 500) return ['Uyarı', 'warning'];
+          return ['Normal', 'success'];
+        }
       },
       flowComparison: {
         label: "Akış Karşılaştırma",
@@ -339,6 +360,10 @@
         backgroundColor1: "rgba(153, 102, 255, 0.1)",
         backgroundColor2: "rgba(255, 159, 64, 0.1)",
         backgroundColorDiff: "rgba(231, 76, 60, 0.08)",
+        status: (v) => {
+          if (Math.abs(v) > 1) return ['FARK VAR', 'danger'];
+          return ['Normal', 'success'];
+        }
       }
     };
 
@@ -346,16 +371,20 @@
     const slider = document.getElementById('timeSlider');
     const sliderLabel = document.getElementById('sliderLabel');
     const labels = [
-      'Son 10 dakika','Son 30 dakika','Son 1 saat','Son 4 saat',
-      'Son 1 gün','Son 3 gün','Son 1 hafta','Tüm veri'
+      'Son 10 dakika', 'Son 30 dakika', 'Son 1 saat', 'Son 4 saat',
+      'Son 1 gün', 'Son 3 gün', 'Son 1 hafta', 'Tüm veri'
     ];
-    const minutes = [10,30,60,240,1440,4320,10080,Infinity];
-    slider.addEventListener('input',()=>{
+    const minutes = [10, 30, 60, 240, 1440, 4320, 10080, Infinity];
+    slider.addEventListener('input', () => {
       sliderLabel.textContent = labels[slider.value];
-      document.getElementById('chartTitle').textContent =
-        `${META[active].title} (${labels[slider.value]})`;
+      updateChartTitle();
       refresh();
     });
+
+    function updateChartTitle() {
+      const title = active === 'flow-comparison' ? META.flowComparison.label : META[active]?.label || META.temperature.label;
+      document.getElementById('chartTitle').textContent = `${title} (${labels[slider.value]})`;
+    }
 
     /* ─────────── active sensor ─────────── */
     const VALID_SENSORS = ['temperature', 'tds', 'flow-comparison'];
@@ -367,9 +396,7 @@
         let sensor = box.dataset.sensor;
         if (!VALID_SENSORS.includes(sensor)) sensor = 'temperature';
         active = sensor;
-        // Use correct label for flow-comparison
-        const title = active === 'flow-comparison' ? META.flowComparison.label : META[active]?.label || META.temperature.label;
-        document.getElementById('chartTitle').textContent = `${title} (${labels[slider.value]})`;
+        updateChartTitle();
         refresh();
       });
     });
@@ -398,9 +425,23 @@
         average: average,
         timestamp: latestTimestamp
       };
-    }    /* ─────────── fetch & redraw ─────────── */    async function refresh() {
+    }
+
+    /* ─────────── fetch & redraw ─────────── */
+    async function fetchSensorData(type, startDate, endDate) {
+      let url = `/api/sensor-data/filter?type=${type}`;
+      if (startDate && endDate) {
+        url += `&startDate=${formatDateForAPI(startDate)}&endDate=${formatDateForAPI(endDate)}`;
+      }
+      const res = await fetch(url, { headers: { Authorization: 'Bearer ' + TOKEN } });
+      if (!res.ok) throw new Error('HTTP ' + res.status);
+      return await res.json();
+    }
+
+    async function refresh() {
       try {
         if (!VALID_SENSORS.includes(active)) active = 'temperature';
+        
         const dateFilterVisible = document.getElementById('dateFilterInputs').style.display !== 'none';
         const todayOnly = document.getElementById('todayOnly').checked;
         const lastHourOnly = document.getElementById('lastHourOnly').checked;
@@ -411,35 +452,37 @@
         // Determine which filter is active
         let startDate, endDate;
         let useFilter = false;
-        let titleDate;          if (todayOnly) {
+        let titleDate;
+        
+        if (todayOnly) {
           // Today filter
           const now = new Date();
           startDate = new Date(now);
           startDate.setHours(0, 0, 0, 0);
           endDate = new Date(now);
-          endDate.setHours(23, 59, 59, 0);
+          endDate.setHours(23, 59, 59, 999);
           useFilter = true;
           titleDate = 'Bugün';
         } else if (lastHourOnly) {
-          // Last hour filter - using local time
+          // Last hour filter
           endDate = new Date();
-          startDate = new Date(endDate - 60 * 60 * 1000);
+          startDate = new Date(endDate.getTime() - 60 * 60 * 1000);
           useFilter = true;
           titleDate = 'Son 1 Saat';
         } else if (customDateFilter) {
-          // Custom date range filter - already in local time from input
+          // Custom date range filter
           startDate = new Date(document.getElementById('startDate').value);
           endDate = new Date(document.getElementById('endDate').value);
           useFilter = true;
           const formatDate = d => d.toLocaleDateString('tr-TR', { timeZone: 'Europe/Istanbul' });
           titleDate = `${formatDate(startDate)} - ${formatDate(endDate)}`;
         } else {
-          // Slider based filtering - using local time
+          // Slider based filtering
           const now = new Date();
           const winMin = minutes[slider.value];
           if (winMin !== Infinity) {
             endDate = now;
-            startDate = new Date(now - winMin * 60 * 1000);
+            startDate = new Date(now.getTime() - winMin * 60 * 1000);
             useFilter = true;
           }
           titleDate = labels[slider.value];
@@ -460,191 +503,231 @@
         // Update slider visibility
         document.querySelector('.slider-wrap').style.display = 
           (todayOnly || lastHourOnly || customDateFilter) ? 'none' : 'flex';
-          // Construct URL based on filter state
-        const url = useFilter 
-          ? `/api/sensor-data/filter?type=${active}&startDate=${formatDateForAPI(startDate)}&endDate=${formatDateForAPI(endDate)}`
-          : `/api/sensor-data/filter?type=${active}`;
+
+        // Fetch data based on active sensor
+        let data;
+        if (active === 'flow-comparison') {
+          // Special handling for flow comparison
+          const [flow1Data, flow2Data] = await Promise.all([
+            fetchSensorData('flow1', startDate, endDate),
+            fetchSensorData('flow2', startDate, endDate)
+          ]);
           
-        // Update chart title safely
-        const chartTitle = isFlowComparison ? META.flowComparison.label : META[active]?.label || META.temperature.label;
-        document.getElementById('chartTitle').textContent = `${chartTitle} (${titleDate})`;
-
-        const res = await fetch(url, { headers: { Authorization: 'Bearer ' + TOKEN } });
-        if (!res.ok) throw new Error('HTTP ' + res.status);
-        const rows = await res.json();
-
-        /* update sidebar tiles with 30-minute averages */
-        ['temperature', 'tds', 'flow-comparison'].forEach(key => {
-          if (key === 'flow-comparison') return; // handled in flow-comparison logic
-          const avgData = calculate30MinAverage(rows, key);
-          if (!avgData) return;
-
-          const v = avgData.average;
-          if (!Number.isFinite(v)) return;
-
-          // Update value display
-          document.getElementById('val-' + key).innerHTML =
-            `${v.toFixed(1)} <span class="sensor-unit">${META[key].unit}</span>`;
-
-          // Update status
-          const [txt, cls] = META[key].status ? META[key].status(v) : ['Normal', 'success'];
-          const st = document.getElementById('stat-' + key);
-          st.textContent = txt;
-          st.style.background = `var(--${cls})`;
-
-          // Update timestamp
-          const timeElement = document.getElementById('time-' + key);
-          timeElement.textContent = `30 dakika ortalaması (${new Date(avgData.timestamp).toLocaleTimeString('tr-TR', { 
-            hour: '2-digit', 
-            minute: '2-digit',
-            hour12: false,
-            timeZone: 'Europe/Istanbul'
-          })})`;
-        });
-        /* special handling for flow-comparison */
-        const avgDataFlowComp = calculate30MinAverage(rows, 'flow-comparison');
-        if (avgDataFlowComp) {
-          const v = avgDataFlowComp.average;
-          document.getElementById('val-flow-comparison').innerHTML =
-            `${v.toFixed(1)} <span class="sensor-unit">${META['flowComparison'].unit}</span>`;
-
-          // Update status - custom logic for flow comparison
-          const flow1Latest = rows.find(r => r.type === 'flow1');
-          const flow2Latest = rows.find(r => r.type === 'flow2');
-          const diff = flow1Latest && flow2Latest ? toNum(flow1Latest.value) - toNum(flow2Latest.value) : 0;
-          const statusClass = diff > 0 ? 'success' : diff < 0 ? 'danger' : 'warning';
-          const statusText = diff > 0 ? 'Daha Fazla' : diff < 0 ? 'Daha Az' : 'Eşit';
-          const st = document.getElementById('stat-flow-comparison');
-          st.textContent = statusText;
-          st.style.background = `var(--${statusClass})`;
-
-          // Update timestamp
-          const timeElement = document.getElementById('time-flow-comparison');
-          timeElement.textContent = `30 dakika ortalaması (${new Date(avgDataFlowComp.timestamp).toLocaleTimeString('tr-TR', { 
-            hour: '2-digit', 
-            minute: '2-digit',
-            hour12: false,
-            timeZone: 'Europe/Istanbul'
-          })})`;
+          // Process flow comparison data
+          processFlowComparison(flow1Data, flow2Data);
+          return;
+        } else {
+          // Regular sensor data
+          data = await fetchSensorData(active, startDate, endDate);
         }
 
-        /* chart data for ACTIVE sensor */        let data = rows;
-        
-        // Filter for the active sensor type
-        if (!useFilter) {
-          // If not using date filter endpoint, first filter by sensor type
-          data = data.filter(r => r.type === active);
-        }
-        
         // Filter out null values and sort by timestamp
         data = data
           .filter(r => r.value != null)
-          .sort((a, b) => new Date(a.timestamp) - new Date(b.timestamp));        // Format timestamps and update chart
-        const timestamps = data.map(r => {          const date = new Date(r.timestamp);
-          return date.toLocaleTimeString('tr-TR', {
+          .sort((a, b) => new Date(a.timestamp) - new Date(b.timestamp));
+
+        // Update sidebar values with 30-minute averages
+        updateSidebarValues(data);
+
+        // Update chart
+        updateChart(data, active, titleDate);
+        
+      } catch (e) { 
+        console.error('Refresh error:', e); 
+      }
+    }
+
+    function processFlowComparison(flow1Data, flow2Data) {
+      // Filter and sort both datasets
+      const filteredFlow1 = flow1Data
+        .filter(r => r.value != null)
+        .sort((a, b) => new Date(a.timestamp) - new Date(b.timestamp)));
+      
+      const filteredFlow2 = flow2Data
+        .filter(r => r.value != null)
+        .sort((a, b) => new Date(a.timestamp) - new Date(b.timestamp)));
+
+      // Prepare data for comparison chart
+      const labels = [];
+      const flow1Values = [];
+      const flow2Values = [];
+      const diffValues = [];
+      
+      // Find matching or nearest timestamps
+      let j = 0;
+      for (let i = 0; i < filteredFlow1.length; i++) {
+        const flow1Time = new Date(filteredFlow1[i].timestamp).getTime();
+        let closestFlow2Index = j;
+        let minDiff = Math.abs(new Date(filteredFlow2[j]?.timestamp).getTime() - flow1Time);
+        
+        // Find closest flow2 point to this flow1 point
+        for (let k = j + 1; k < filteredFlow2.length; k++) {
+          const currentDiff = Math.abs(new Date(filteredFlow2[k].timestamp).getTime() - flow1Time);
+          if (currentDiff < minDiff) {
+            minDiff = currentDiff;
+            closestFlow2Index = k;
+          } else {
+            break; // Since data is sorted, we can break when diffs start increasing
+          }
+        }
+        
+        // Only use if timestamps are within 5 minutes of each other
+        if (minDiff <= 5 * 60 * 1000 && filteredFlow2[closestFlow2Index]) {
+          const flow1Val = toNum(filteredFlow1[i].value);
+          const flow2Val = toNum(filteredFlow2[closestFlow2Index].value);
+          
+          labels.push(new Date(filteredFlow1[i].timestamp).toLocaleTimeString('tr-TR', {
             hour: '2-digit',
             minute: '2-digit',
             hour12: false,
             timeZone: 'Europe/Istanbul'
-          });
-        });
-
-        const values = data.map(r => toNum(r.value));
-
-        // Update chart with new data
-        let isFlowComparison = (active === 'flow-comparison');
-        if (isFlowComparison) {
-          // Fetch flow1 and flow2 data
-          const rows1 = await fetch(url, { headers: { Authorization: 'Bearer ' + TOKEN } }).then(r => r.json());
-          let url2 = url.replace('flow1', 'flow2');
-          const rows2 = await fetch(url2, { headers: { Authorization: 'Bearer ' + TOKEN } }).then(r => r.json());
-          // Merge by timestamp (assume both sorted)
-          let data1 = rows1.filter(r => r.value != null).sort((a, b) => new Date(a.timestamp) - new Date(b.timestamp));
-          let data2 = rows2.filter(r => r.value != null).sort((a, b) => new Date(a.timestamp) - new Date(b.timestamp));
-          let labelsArr = [];
-          let flow1Vals = [];
-          let flow2Vals = [];
-          let diffVals = [];
-          let j = 0;
-          for (let i = 0; i < data1.length; i++) {
-            const t1 = new Date(data1[i].timestamp);
-            while (j < data2.length - 1 && Math.abs(new Date(data2[j + 1].timestamp) - t1) < Math.abs(new Date(data2[j].timestamp) - t1)) {
-              j++;
-            }
-            const t2 = new Date(data2[j]?.timestamp);
-            labelsArr.push(t1.toLocaleTimeString('tr-TR', { hour: '2-digit', minute: '2-digit', hour12: false, timeZone: 'Europe/Istanbul' }));
-            const v1 = toNum(data1[i].value);
-            const v2 = data2[j] ? toNum(data2[j].value) : null;
-            flow1Vals.push(v1);
-            flow2Vals.push(v2);
-            diffVals.push((v2 != null) ? (v1 - v2) : null);
-          }
-          // Update chart for flow-comparison
-          chart.data.labels = labelsArr;
-          chart.data.datasets = [
-            {
-              label: 'Flow 1',
-              data: flow1Vals,
-              borderColor: META.flowComparison.color1,
-              backgroundColor: META.flowComparison.backgroundColor1,
-              borderWidth: 2,
-              tension: 0.25,
-              fill: false,
-              pointRadius: 2
-            },
-            {
-              label: 'Flow 2',
-              data: flow2Vals,
-              borderColor: META.flowComparison.color2,
-              backgroundColor: META.flowComparison.backgroundColor2,
-              borderWidth: 2,
-              tension: 0.25,
-              fill: false,
-              pointRadius: 2
-            },
-            {
-              label: 'Fark (Flow1 - Flow2)',
-              data: diffVals,
-              borderColor: META.flowComparison.colorDiff,
-              backgroundColor: META.flowComparison.backgroundColorDiff,
-              borderWidth: 2,
-              tension: 0.25,
-              fill: false,
-              pointRadius: 2
-            }
-          ];
-          chart.update();
-          // Update sidebar value for flow-comparison (show last diff)
-          const lastDiff = diffVals.length ? diffVals[diffVals.length - 1] : null;
-          document.getElementById('val-flow-comparison').innerHTML = (lastDiff != null ? lastDiff.toFixed(2) : '--') + ' <span class="sensor-unit">m³/s</span>';
-          document.getElementById('stat-flow-comparison').textContent = lastDiff != null ? (Math.abs(lastDiff) > 1 ? 'FARK VAR' : 'Normal') : '—';
-          document.getElementById('stat-flow-comparison').style.background = lastDiff != null && Math.abs(lastDiff) > 1 ? 'var(--danger)' : 'var(--success)';
-          document.getElementById('time-flow-comparison').textContent = labelsArr.length ? `Son: ${labelsArr[labelsArr.length - 1]}` : '—';
-          return;
+          }));
+          
+          flow1Values.push(flow1Val);
+          flow2Values.push(flow2Val);
+          diffValues.push(flow1Val - flow2Val);
+          
+          j = closestFlow2Index + 1; // Move past this point in flow2 data
         }
-        // For temperature and tds
-        chart.data.datasets = [{
-          label: META[active]?.label || META.temperature.label,
-          data: values,
-          borderColor: META[active]?.color || META.temperature.color,
-          backgroundColor: META[active]?.backgroundColor || META.temperature.backgroundColor,
+      }
+      
+      // Update chart for flow comparison
+      chart.data.labels = labels;
+      chart.data.datasets = [
+        {
+          label: 'Flow 1',
+          data: flow1Values,
+          borderColor: META.flowComparison.color1,
+          backgroundColor: META.flowComparison.backgroundColor1,
           borderWidth: 2,
           tension: 0.25,
-          fill: true,
-          pointRadius: 2
-        }];
-        chart.data.labels = timestamps;
-        chart.update();
-
-        // Log for debugging
-        console.log(`Updating chart with ${data.length} points:`, {
-          sensor: active,
-          filter: useFilter ? 'date filter' : 'no filter',
-          dataPoints: data.length
+          fill: false,
+          pointRadius: 3
+        },
+        {
+          label: 'Flow 2',
+          data: flow2Values,
+          borderColor: META.flowComparison.color2,
+          backgroundColor: META.flowComparison.backgroundColor2,
+          borderWidth: 2,
+          tension: 0.25,
+          fill: false,
+          pointRadius: 3
+        },
+        {
+          label: 'Fark (Flow1 - Flow2)',
+          data: diffValues,
+          borderColor: META.flowComparison.colorDiff,
+          backgroundColor: META.flowComparison.backgroundColorDiff,
+          borderWidth: 2,
+          tension: 0.25,
+          fill: false,
+          pointRadius: 3
+        }
+      ];
+      
+      // Update legend
+      chart.options.plugins.legend = { display: true };
+      chart.update();
+      
+      // Update sidebar value for flow-comparison (show last diff)
+      if (diffValues.length > 0) {
+        const lastDiff = diffValues[diffValues.length - 1];
+        document.getElementById('val-flow-comparison').innerHTML = 
+          `${lastDiff.toFixed(2)} <span class="sensor-unit">${META.flowComparison.unit}</span>`;
+        
+        const [statusText, statusClass] = META.flowComparison.status(lastDiff);
+        const statusElement = document.getElementById('stat-flow-comparison');
+        statusElement.textContent = statusText;
+        statusElement.style.background = `var(--${statusClass})`;
+        
+        document.getElementById('time-flow-comparison').textContent = 
+          `Son: ${labels[labels.length - 1]}`;
+      }
+      
+      // Calculate and display 30-minute average for flow comparison
+      const now = Date.now();
+      const thirtyMinutesAgo = now - 30 * 60 * 1000;
+      const recentDiffs = diffValues
+        .filter((_, i) => {
+          const timestamp = new Date(filteredFlow1[i].timestamp).getTime();
+          return timestamp >= thirtyMinutesAgo;
         });
-
-      } catch (e) { console.error(e); }
+      
+      if (recentDiffs.length > 0) {
+        const avgDiff = recentDiffs.reduce((sum, val) => sum + val, 0) / recentDiffs.length;
+        document.getElementById('val-flow-comparison').innerHTML = 
+          `${avgDiff.toFixed(2)} <span class="sensor-unit">${META.flowComparison.unit}</span>`;
+        document.getElementById('time-flow-comparison').textContent = '30 dakika ortalaması';
+      }
     }
+
+    function updateSidebarValues(data) {
+      ['temperature', 'tds'].forEach(key => {
+        const avgData = calculate30MinAverage(data, key);
+        if (!avgData) return;
+
+        const v = avgData.average;
+        if (!Number.isFinite(v)) return;
+
+        // Update value display
+        document.getElementById('val-' + key).innerHTML =
+          `${v.toFixed(1)} <span class="sensor-unit">${META[key].unit}</span>`;
+
+        // Update status
+        const [txt, cls] = META[key].status(v);
+        const st = document.getElementById('stat-' + key);
+        st.textContent = txt;
+        st.style.background = `var(--${cls})`;
+
+        // Update timestamp
+        const timeElement = document.getElementById('time-' + key);
+        timeElement.textContent = `30 dakika ortalaması (${new Date(avgData.timestamp).toLocaleTimeString('tr-TR', {
+          hour: '2-digit',
+          minute: '2-digit',
+          hour12: false,
+          timeZone: 'Europe/Istanbul'
+        })})`;
+      });
+    }
+
+    function updateChart(data, sensorType, timeRange) {
+      // Format timestamps for display
+      const timestamps = data.map(r => {
+        const date = new Date(r.timestamp);
+        return date.toLocaleTimeString('tr-TR', {
+          hour: '2-digit',
+          minute: '2-digit',
+          hour12: false,
+          timeZone: 'Europe/Istanbul'
+        });
+      });
+
+      const values = data.map(r => toNum(r.value));
+
+      // Update chart
+      chart.data.labels = timestamps;
+      chart.data.datasets = [{
+        label: META[sensorType]?.label || 'Sensör',
+        data: values,
+        borderColor: META[sensorType]?.color || '#0066cc',
+        backgroundColor: META[sensorType]?.backgroundColor || 'rgba(0, 102, 204, 0.1)',
+        borderWidth: 2,
+        tension: 0.25,
+        fill: true,
+        pointRadius: 2
+      }];
+      
+      // Hide legend for single dataset
+      chart.options.plugins.legend = { display: false };
+      chart.update();
+
+      // Update chart title
+      document.getElementById('chartTitle').textContent = 
+        `${META[sensorType]?.label || 'Sensör'} (${timeRange})`;
+    }
+
+    // Initial refresh
     refresh();
     let refreshInterval = setInterval(refresh, 5000);
 
@@ -662,9 +745,11 @@
       inputs.style.display = inputs.style.display === 'none' ? 'flex' : 'none';
       if (inputs.style.display === 'flex') {
         document.getElementById('todayOnly').checked = false;
+        document.getElementById('lastHourOnly').checked = false;
       }
-      refresh();
-    });    document.getElementById('todayOnly').addEventListener('change', (e) => {
+    });
+
+    document.getElementById('todayOnly').addEventListener('change', (e) => {
       if (e.target.checked) {
         document.getElementById('dateFilterInputs').style.display = 'none';
         document.getElementById('lastHourOnly').checked = false;
@@ -689,7 +774,9 @@
       document.getElementById('lastHourOnly').checked = false;
       document.getElementById('dateFilterInputs').style.display = 'none';
       refresh();
-    });    /* Initialize date inputs with default range */
+    });
+
+    /* Initialize date inputs with default range */
     function formatDateTimeLocal(date) {
       const year = date.getFullYear();
       const month = String(date.getMonth() + 1).padStart(2, '0');
