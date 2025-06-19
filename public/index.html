@@ -490,7 +490,10 @@ header.scrolled .logo img {
     .testimonials {
       background: linear-gradient(135deg, var(--primary) 0%, var(--primary-dark) 100%);
       color: white;
-    }
+    
+  margin-top: 110px;    /* 80 px yerine 60-120 px arası istediğiniz değeri verin */
+}
+    
 
     .testimonials .section-title h2 {
       color: white;
@@ -547,15 +550,18 @@ header.scrolled .logo img {
       flex-direction: column;
       align-items: center;
     }
+/* Avatar’ları tam yuvarlak ve kesintisiz göster */
+/* CSS */
+.author-avatar{
+  width: 80px;
+  height: 80px;
+  border-radius: 50%;
+  object-fit: cover;     /* taşma yok, gerilme yok */
+  image-rendering: auto; /* “pixelated/crisp-edges” kullanma! */
+  display:block;
+}
 
-    .author-avatar {
-      width: 70px;
-      height: 70px;
-      border-radius: 50%;
-      object-fit: cover;
-      margin-bottom: 15px;
-      border: 3px solid rgba(255, 255, 255, 0.3);
-    }
+
 
     .author-name {
       font-weight: 600;
@@ -591,13 +597,9 @@ header.scrolled .logo img {
 
 
     .gallery-item {
-      position: relative;
-      border-radius: 16px;
-      overflow: hidden;
-      box-shadow: 0 8px 30px rgba(0, 0, 0, 0.1);
-      height: 280px;
-      transition: all 0.4s ease;
-    }
+  height: auto; /* Sabit yükseklik yerine esnek yapın */
+  aspect-ratio: 1/1; /* Örneğin kare container'lar için */
+}
 
     .gallery-item:hover {
       transform: scale(1.03);
@@ -608,8 +610,6 @@ header.scrolled .logo img {
   width: 100%;
   height: 100%;
   object-fit: contain;
-  display: block;
-  background-color: #f0f4f8; /* arka plan boşluk varsa temiz görünür */
 }
 
 
@@ -846,6 +846,34 @@ header.scrolled .logo img {
       font-size: 1.1rem;
     }
 
+    /* === Lightbox (tam ekran resim) =================================== */
+.lightbox{
+  position:fixed;
+  inset:0;                          /* top:0 right:0 bottom:0 left:0 */
+  background:rgba(0,0,0,.85);
+  display:none;                     /* başlangıçta gizli */
+  align-items:center;
+  justify-content:center;
+  z-index:2000;                     /* header & menu üstünde olsun */
+}
+
+.lightbox img{
+  max-width:90vw;
+  max-height:90vh;
+  border-radius:12px;
+  box-shadow:0 10px 40px rgba(0,0,0,.5);
+}
+
+.lightbox-close{
+  position:absolute;
+  top:30px;
+  right:40px;
+  font-size:2.8rem;
+  color:#fff;
+  cursor:pointer;
+  user-select:none;
+}
+
     .social-links a:hover {
       background: var(--accent);
       transform: translateY(-3px);
@@ -1077,7 +1105,7 @@ header.scrolled .logo img {
 
   <section class="hero" id="home">
     <video autoplay muted loop playsinline class="hero-video">
-      <source src="videos/hero.mp4" type="video/mp4">
+      <source src="videos/20250614_1255_Dancing Waves Serenity_storyboard_01jxpxtnncexstrxcfj1vfrbh1.mp4" type="video/mp4">
       Tarayıcınız video etiketini desteklemiyor.
     </video>
   <div class="hero-content">
@@ -1222,7 +1250,7 @@ header.scrolled .logo img {
   <div class="container">
     <div class="gallery">
       <div class="gallery-item">
-       <img src="images/sensor.png" alt="Gelişmiş su test ekipmanı" style="width: 100%; height: 100%; object-fit: cover;">
+       <img src="images/sensor.jpg" alt="Gelişmiş su test ekipmanı" style="width: 100%; height: 100%; object-fit: cover;">
 
         <div class="gallery-caption">
           <h4>Çok Parametreli Sistem</h4>
@@ -1230,7 +1258,7 @@ header.scrolled .logo img {
         </div>
       </div>
       <div class="gallery-item">
-        <img src="https://images.unsplash.com/photo-1654776944281-cc604dc2b07b" alt="Su drone'u eylem halinde">
+        <img src="images/balık.jpg">
         <div class="gallery-caption">
           <h4>Uzun Ömürlü Sistem</h4>
           <p>Ulaşılması zor lokasyonlar için uzun ömürlü sistem.</p>
@@ -1238,7 +1266,7 @@ header.scrolled .logo img {
       </div>
      
       <div class="gallery-item">
-        <img src="https://images.unsplash.com/photo-1551288049-bebda4e38f71" alt="Veri görselleştirme">
+        <img src="images/DASH2.png">
         <div class="gallery-caption">
           <h4>Veri Görselleştirme</h4>
           <p>Harekete geçirilebilir öngörüler için etkileşimli panolar</p>
@@ -1257,10 +1285,10 @@ header.scrolled .logo img {
         <div class="swiper-wrapper">
           <div class="testimonial-slide swiper-slide">
             <div class="testimonial-content">
-             Katma değer sağlayanilecek yenilikçi bir projeye sahibiz.
+            “ Katma değer sağlayanilecek yenilikçi bir projeye sahibiz.”
             </div>
           <div class="testimonial-author">
-            <img src="images/ben2.png" alt="eren erten" class="author-avatar">
+            <img src="images/ben3.png" alt="eren erten" class="author-avatar">
             </div>
 
 
@@ -1270,20 +1298,20 @@ header.scrolled .logo img {
           </div>
           <div class="testimonial-slide swiper-slide">
             <div class="testimonial-content">
-              SuKaliteX'i uyguladığımızdan beri uyum maliyetlerimizi %40 azalttık. Otomatik raporlama yılda yüzlerce saat tasarruf sağlıyor ve destek ekibimizin ihtiyaçlarına inanılmaz derecede duyarlı.
+          “Ekip arkadaşlarımla beraber geliştirdiğimiz, keyif veren bir proje.”
             </div>
             <div class="testimonial-author">
-              <img src="https://randomuser.me/api/portraits/men/32.jpg" alt="Michael Chen" class="author-avatar">
+               <img src="images/alaaddin.png" alt="alad" class="author-avatar">
               <div class="author-name">Alaaddin Can Gürsoy</div>
               <div class="author-position">Proje Yürütücüsü,AEK</div>
             </div>
           </div>
           <div class="testimonial-slide swiper-slide">
             <div class="testimonial-content">
-              Belediye su sağlayıcısı olarak güvenilirlik çok önemlidir. SuKaliteX'in sistemi 3 yıldır kusursuz çalışıyor, su kalitesi verilerimizde bize güven veriyor ve toplumumuza daha iyi hizmet etmemize yardımcı oluyor.
+              “Suyun yapısını ve hayati değerini ortaya koyan heyecan verici bir proje.”
             </div>
             <div class="testimonial-author">
-              <img src="https://randomuser.me/api/portraits/women/68.jpg" alt="Elena Rodriguez" class="author-avatar">
+              <img src="images/alios.png" alt="alios" class="author-avatar">
               <div class="author-name">Ali Osman Dalkılıç</div>
               <div class="author-position">Proje Yürütücüsü,AEK</div>
             </div>
@@ -1392,7 +1420,7 @@ header.scrolled .logo img {
           <a href="#" class="footer-logo">
             <i class="fas fa-tint"></i> AEA
           </a>
-          <p>2018'den beri akıllı su kalitesi izleme çözümlerinin önde gelen sağlayıcısı. Misyonumuz yenilikçi teknolojiyle temiz, güvenli su sağlamaktır.</p>
+          <p> Misyonumuz yenilikçi teknolojiyle temiz, güvenli su sağlamaktır.</p>
           <div class="social-links">
             <a href="#"><i class="fab fa-linkedin-in"></i></a>
             <a href="#"><i class="fab fa-twitter"></i></a>
@@ -1436,6 +1464,13 @@ header.scrolled .logo img {
       </div>
     </div>
   </footer>
+
+  <!-- Lightbox -->
+<div id="lightbox" class="lightbox">
+  <span class="lightbox-close">&times;</span>
+  <img id="lightboxImg" alt="">
+</div>
+
 
   <!-- JavaScript kodu aynı kalıyor -->
   <script>
@@ -1665,6 +1700,36 @@ header.scrolled .logo img {
     // Yükleme sırasında bir kez çalıştır
     animateOnScroll();
     
+    /* === Galeri Lightbox ============================================ */
+const lightbox      = document.getElementById('lightbox');
+const lightboxImg   = document.getElementById('lightboxImg');
+const lightboxClose = document.querySelector('.lightbox-close');
+
+// Galerideki tüm img elemanlarını seç
+document.querySelectorAll('.gallery-item img').forEach(img => {
+  img.addEventListener('click', () => {
+    lightboxImg.src = img.src;          // büyük resim
+    lightbox.style.display = 'flex';    // göster
+    document.body.style.overflow = 'hidden'; // arka plan kaymasın
+  });
+});
+
+// Kapatma: X ikonuna veya boş alana tıklama
+lightbox.addEventListener('click', (e) => {
+  if (e.target === lightbox || e.target === lightboxClose) {
+    lightbox.style.display = 'none';
+    document.body.style.overflow = '';  // kaydırmayı geri aç
+  }
+});
+
+// ESC tuşu ile kapat
+document.addEventListener('keydown', (e) => {
+  if (e.key === 'Escape' && lightbox.style.display === 'flex') {
+    lightbox.style.display = 'none';
+    document.body.style.overflow = '';
+  }
+});
+
     // Sonra scroll sırasında çalıştır
     window.addEventListener('scroll', animateOnScroll);
   </script>
