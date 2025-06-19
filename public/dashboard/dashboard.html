@@ -215,6 +215,7 @@
       new Date().toLocaleTimeString('tr-TR', {
         hour:'2-digit',
         minute:'2-digit',
+        hour12: false,
         timeZone: 'Europe/Istanbul'
       });
     },1000);
@@ -418,9 +419,10 @@
           const timeElement = document.getElementById('time-' + key);          timeElement.textContent = `30 dakika ortalaması (${new Date(avgData.timestamp).toLocaleTimeString('tr-TR', { 
             hour: '2-digit', 
             minute: '2-digit',
+            hour12: false,
             timeZone: 'Europe/Istanbul'
           })})`;
-        });        /* chart data for ACTIVE sensor */        let data = rows;
+        });/* chart data for ACTIVE sensor */        let data = rows;
         
         // Filter for the active sensor type
         if (!useFilter) {
@@ -432,13 +434,12 @@
         data = data
           .filter(r => r.value != null)
           .sort((a, b) => new Date(a.timestamp) - new Date(b.timestamp));        // Format timestamps and update chart
-        const timestamps = data.map(r => {
-          const date = new Date(r.timestamp);
+        const timestamps = data.map(r => {          const date = new Date(r.timestamp);
           return date.toLocaleTimeString('tr-TR', {
-            hour12: false,
-            timeZone: 'Europe/Istanbul',
             hour: '2-digit',
-            minute: '2-digit'
+            minute: '2-digit',
+            hour12: false,
+            timeZone: 'Europe/Istanbul'
           });
         });
 
