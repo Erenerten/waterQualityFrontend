@@ -526,6 +526,25 @@
       }
     }
 
+    function calculate30MinAverage(rows, sensorType) {
+      const now = Date.now();
+      const thirtyMinutesAgo = now - 30 * 60 * 1000;
+      // Filter data for the specific sensor type and last 30 minutes
+      const recentData = rows
+        .filter(r => r.type === sensorType && r.value != null && new Date(r.timestamp).getTime() >= thirtyMinutesAgo)
+        .map(r => ({ value: toNum(r.value), timestamp: new Date(r.timestamp).getTime() }));
+      if (recentData.length === 0) return null;
+      // Calculate average
+      const sum = recentData.reduce((acc, curr) => acc + curr.value, 0);
+      const average = sum / recentData.length;
+      // Find the most recent timestamp
+      const latestTimestamp = Math.max(...recentData.map(r => r.timestamp));
+      return {
+        average: average,
+        timestamp: latestTimestamp
+      };
+    }
+
     function updateSidebarValues(data) {
       ['temperature', 'tds'].forEach(key => {
         const avgData = calculate30MinAverage(data, key);
