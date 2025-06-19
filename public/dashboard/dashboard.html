@@ -42,13 +42,31 @@
     .map-wrap{flex:1.1;min-width:360px}
     #map{width:100%;height:100%}
     .chart-wrap{flex:1;padding:18px 20px;background:#fff;display:flex;flex-direction:column}
-    .chart-title{font-size:1.1rem;margin-bottom:8px}
+    .chart-header{display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:8px}
+    .chart-title{font-size:1.1rem}
+    .date-filter{display:flex;flex-direction:column;gap:8px}
+    .filter-toggle{display:flex;align-items:center;gap:12px}
+    .date-inputs{display:flex;align-items:center;gap:8px}
+    .date-input{padding:6px;border:1px solid #ddd;border-radius:4px;font-family:inherit}
+    .filter-btn{padding:6px 12px;border:none;border-radius:4px;background:var(--accent);
+                color:#fff;cursor:pointer;font-family:inherit}
+    .filter-btn.secondary{background:#6c757d}
+    .filter-btn:hover{opacity:0.9}
     .chart-box{flex:1;position:relative;min-height:240px}
     #sensorChart{flex:1}
     /* slider */
     .slider-wrap{margin-top:18px;display:flex;flex-direction:column;gap:8px}
     .slider-wrap input{width:100%}
     .slider-label{text-align:center;font-size:.9rem;color:#555}
+
+    /* date filter */
+    .date-filter{display:flex;align-items:center;gap:8px}
+    .date-inputs{display:flex;align-items:center;gap:4px}
+    .date-input{padding:8px;border:1px solid #ccc;border-radius:4px;width:120px}
+    .filter-btn{padding:8px 12px;border:none;border-radius:4px;cursor:pointer;
+                background:var(--accent);color:#fff;font-size:.9rem;transition:.2s}
+    .filter-btn.secondary{background:#f39c12}
+    .filter-toggle{display:flex;align-items:center;gap:4px}
   </style>
 </head>
 
@@ -93,7 +111,24 @@
       <div class="map-wrap"><div id="map"></div></div>
 
       <div class="chart-wrap">
-        <div class="chart-title" id="chartTitle">Su Sıcaklığı (son 10 dakika)</div>
+        <div class="chart-header">
+          <div class="chart-title" id="chartTitle">Su Sıcaklığı (son 10 dakika)</div>
+          <div class="date-filter">
+            <div class="filter-toggle">
+              <label>
+                <input type="checkbox" id="todayOnly"> Sadece Bugün
+              </label>
+              <button id="toggleDateFilter" class="filter-btn">Tarih Filtresi</button>
+            </div>
+            <div id="dateFilterInputs" class="date-inputs" style="display: none;">
+              <input type="datetime-local" id="startDate" class="date-input">
+              <span>-</span>
+              <input type="datetime-local" id="endDate" class="date-input">
+              <button id="applyFilter" class="filter-btn">Uygula</button>
+              <button id="resetFilter" class="filter-btn secondary">Sıfırla</button>
+            </div>
+          </div>
+        </div>
         <div class="chart-box"><canvas id="sensorChart"></canvas></div>
 
         <!-- slider -->
@@ -195,54 +230,109 @@
     }
 
     /* ─────────── fetch & redraw ─────────── */
-    async function refresh(){
-      try{
-        const res = await fetch('/api/sensor-data',
-          {headers:{Authorization:'Bearer '+TOKEN}});
-        if(!res.ok) throw new Error('HTTP '+res.status);
+    async function refresh() {
+      try {
+        let url = '/api/sensor-data';
+        const dateFilterVisible = document.getElementById('dateFilterInputs').style.display !== 'none';
+        const todayOnly = document.getElementById('todayOnly').checked;
+        
+        if (todayOnly || dateFilterVisible) {
+          let startDate, endDate;
+          
+          if (todayOnly) {
+            startDate = new Date();
+            startDate.setHours(0, 0, 0, 0);
+            endDate = new Date();
+            endDate.setHours(23, 59, 59, 999);
+          } else {
+            startDate = document.getElementById('startDate').value ? new Date(document.getElementById('startDate').value) : null;
+            endDate = document.getElementById('endDate').value ? new Date(document.getElementById('endDate').value) : null;
+          }
+          
+          if (startDate && endDate) {
+            url = `/api/sensor-data/filter?type=${active}&startDate=${startDate.toISOString()}&endDate=${endDate.toISOString()}`;
+          }
+        }
+
+        const res = await fetch(url, { headers: { Authorization: 'Bearer ' + TOKEN } });
+        if (!res.ok) throw new Error('HTTP ' + res.status);
         const rows = await res.json();
 
         /* update sidebar tiles with 30-minute averages */
-        ['temperature','turbidity','tds'].forEach(key=>{
+        ['temperature', 'turbidity', 'tds'].forEach(key => {
           const avgData = calculate30MinAverage(rows, key);
-          if(!avgData) return;
-          
+          if (!avgData) return;
+
           const v = avgData.average;
-          if(!Number.isFinite(v)) return;
-          
+          if (!Number.isFinite(v)) return;
+
           // Update value display
-          document.getElementById('val-'+key).innerHTML =
+          document.getElementById('val-' + key).innerHTML =
             `${v.toFixed(1)} <span class="sensor-unit">${META[key].unit}</span>`;
-            
+
           // Update status
-          const [txt,cls] = META[key].status(v);
-          const st = document.getElementById('stat-'+key);
+          const [txt, cls] = META[key].status(v);
+          const st = document.getElementById('stat-' + key);
           st.textContent = txt;
           st.style.background = `var(--${cls})`;
-          
+
           // Update timestamp
-          const timeElement = document.getElementById('time-'+key);
-          timeElement.textContent = `30 dakika ortalaması (${new Date(avgData.timestamp).toLocaleTimeString('tr-TR', {hour:'2-digit', minute:'2-digit'})})`;
+          const timeElement = document.getElementById('time-' + key);
+          timeElement.textContent = `30 dakika ortalaması (${new Date(avgData.timestamp).toLocaleTimeString('tr-TR', { hour: '2-digit', minute: '2-digit' })})`;
         });
 
         /* chart data for ACTIVE sensor within slider window */
         const now = Date.now();
         const winMin = minutes[slider.value];
-        const cutoff = winMin===Infinity ? 0 : now - winMin*60*1000;
+        const cutoff = winMin === Infinity ? 0 : now - winMin * 60 * 1000;
 
         const data = rows
-          .filter(r=>r.type===active && r.value!=null &&
-            new Date(r.timestamp).getTime() >= cutoff)
-          .sort((a,b)=>new Date(a.timestamp)-new Date(b.timestamp));
+          .filter(r => r.type === active && r.value != null &&
+            (!dateFilterVisible || todayOnly || new Date(r.timestamp).getTime() >= cutoff))
+          .sort((a, b) => new Date(a.timestamp) - new Date(b.timestamp));
 
-        chart.data.labels = data.map(r=>
-          new Date(r.timestamp).toLocaleTimeString('tr-TR',{hour12:false}));
-        chart.data.datasets[0].data = data.map(r=>toNum(r.value));
+        chart.data.labels = data.map(r =>
+          new Date(r.timestamp).toLocaleTimeString('tr-TR', { hour12: false }));
+        chart.data.datasets[0].data = data.map(r => toNum(r.value));
         chart.update();
 
-      }catch(e){console.error(e);}
+      } catch (e) { console.error(e); }
     }
-    refresh(); setInterval(refresh,5000);
+    refresh(); 
+    let refreshInterval = setInterval(refresh, 5000);
+
+    /* ─────────── date filter handlers ─────────── */
+    document.getElementById('toggleDateFilter').addEventListener('click', () => {
+      const inputs = document.getElementById('dateFilterInputs');
+      inputs.style.display = inputs.style.display === 'none' ? 'flex' : 'none';
+      if (inputs.style.display === 'flex') {
+        document.getElementById('todayOnly').checked = false;
+      }
+      refresh();
+    });
+
+    document.getElementById('todayOnly').addEventListener('change', (e) => {
+      if (e.target.checked) {
+        document.getElementById('dateFilterInputs').style.display = 'none';
+      }
+      refresh();
+    });
+
+    document.getElementById('applyFilter').addEventListener('click', refresh);
+
+    document.getElementById('resetFilter').addEventListener('click', () => {
+      document.getElementById('startDate').value = '';
+      document.getElementById('endDate').value = '';
+      document.getElementById('todayOnly').checked = false;
+      refresh();
+    });
+
+    /* Initialize date inputs with default range */
+    const now = new Date();
+    const yesterday = new Date(now);
+    yesterday.setDate(yesterday.getDate() - 1);
+    document.getElementById('startDate').value = yesterday.toISOString().slice(0, 16);
+    document.getElementById('endDate').value = now.toISOString().slice(0, 16);
   </script>
 </body>
 </html>
