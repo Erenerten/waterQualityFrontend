@@ -12,7 +12,7 @@
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/swiper@9/swiper-bundle.min.css">
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-  --> <script src="https://cdn.jsdelivr.net/npm/swiper@9/swiper-bundle.min.js"></script>
+   <script src="https://cdn.jsdelivr.net/npm/swiper@9/swiper-bundle.min.js"></script>
 
 <!-- Eğer favicon PNG formatında ve images klasöründeyse -->
 <link rel="icon" type="image/png" href="images/favico.png">
@@ -622,61 +622,52 @@ header.scrolled .logo img {
     }
 
     /* Gallery Section */
-    .gallery {
-      display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
-      gap: 25px;
-      margin: 60px auto;
-    }
-
-
-    .gallery-item {
-  height: auto; /* Sabit yükseklik yerine esnek yapın */
-  aspect-ratio: 1/1; /* Örneğin kare container'lar için */
+   /* ===== GALLERY – düzeltilmiş ===== */
+.gallery {
+  display:grid;
+  grid-template-columns:repeat(auto-fit,minmax(280px,1fr));
+  gap:25px;
+  margin:60px auto;
 }
 
-    .gallery-item:hover {
-      transform: scale(1.03);
-      box-shadow: 0 15px 50px rgba(0, 0, 0, 0.2);
-    }
-
-  .gallery-item img {
-  width: 100%;
-  height: 100%;
-  object-fit: contain;
+/* Her kutu */
+.gallery-item{
+  position:relative;
+  border-radius:16px;
+  overflow:hidden;          /* ← taşmayı keser */
+  aspect-ratio:1/1;
+  transition:transform .35s ease,box-shadow .35s ease;
+  cursor:pointer;           /* isteğe bağlı */
+}
+.gallery-item:hover{
+  transform:scale(1.03);
+  box-shadow:0 15px 50px rgba(0,0,0,.2);
 }
 
+/* Görsel */
+.gallery-item img{
+  position:absolute; inset:0;      /* aspect-ratio ile tam örtüşsün */
+  width:100%; height:100%;
+  object-fit:cover;                /* contain → cover */
+  transition:transform .35s ease;
+}
+.gallery-item:hover img{ transform:scale(1.1); }
 
+/* Caption */
+.gallery-caption{
+  position:absolute;
+  bottom:0; left:0; right:0;
+  background:linear-gradient(to top,rgba(0,0,0,.8),transparent);
+  color:#fff;
+  padding:25px;
+  transform:translateY(100%);
+  transition:transform .4s ease;
+  pointer-events:none;             /* ← klik engelini kaldırır */
+}
+.gallery-item:hover .gallery-caption{ transform:translateY(0); }
 
-    .gallery-item:hover img {
-      transform: scale(1.1);
-    }
-
-    .gallery-caption {
-      position: absolute;
-      bottom: 0;
-      left: 0;
-      right: 0;
-      background: linear-gradient(to top, rgba(0, 0, 0, 0.8), transparent);
-      color: white;
-      padding: 25px;
-      transform: translateY(100%);
-      transition: transform 0.4s ease;
-    }
-
-    .gallery-item:hover .gallery-caption {
-      transform: translateY(0);
-    }
-
-    .gallery-caption h4 {
-      margin-bottom: 8px;
-      font-size: 1.3rem;
-    }
-
-    .gallery-caption p {
-      opacity: 0.9;
-      font-size: 0.9rem;
-    }
+.gallery-caption h4{margin-bottom:8px;font-size:1.3rem;}
+.gallery-caption p {opacity:.9;font-size:.9rem;}
 
     /* CTA Section */
     .cta {
@@ -881,33 +872,39 @@ header.scrolled .logo img {
     }
 
     /* === Lightbox (tam ekran resim) =================================== */
-.lightbox{
-  position:fixed;
-  inset:0;                          /* top:0 right:0 bottom:0 left:0 */
-  background:rgba(0,0,0,.85);
-  display:none;                     /* başlangıçta gizli */
-  align-items:center;
-  justify-content:center;
-  z-index:2000;                     /* header & menu üstünde olsun */
+/* Lightbox Stilleri */
+   /* === Lightbox (tam ekran resim) =================================== */
+/* Lightbox Styles */
+.lightbox {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background-color: rgba(0, 0, 0, 0.9);
+  display: none;
+  align-items: center;
+  justify-content: center;
+  z-index: 2000;
+  cursor: pointer;
 }
 
-.lightbox img{
-  max-width:90vw;
-  max-height:90vh;
-  border-radius:12px;
-  box-shadow:0 10px 40px rgba(0,0,0,.5);
+.lightbox img {
+  max-width: 90%;
+  max-height: 90%;
+  object-fit: contain;
+  cursor: default;
 }
 
-.lightbox-close{
-  position:absolute;
-  top:30px;
-  right:40px;
-  font-size:2.8rem;
-  color:#fff;
-  cursor:pointer;
-  user-select:none;
+.lightbox-close {
+  position: absolute;
+  top: 30px;
+  right: 30px;
+  color: white;
+  font-size: 2.5rem;
+  cursor: pointer;
+  z-index: 2001;
 }
-
     .social-links a:hover {
       background: var(--accent);
       transform: translateY(-3px);
@@ -1472,68 +1469,65 @@ header.scrolled .logo img {
   <!-- Lightbox -->
 <div id="lightbox" class="lightbox">
   <span class="lightbox-close">&times;</span>
-  <img id="lightboxImg" alt="">
+  <img id="lightboxImg" alt="Enlarged view">
 </div>
 
-
   <!-- JavaScript kodu aynı kalıyor -->
-  <script>
-    // Mobil menü toggle
-    const mobileMenuBtn = document.getElementById('mobileMenuBtn');
-    const navLinks = document.getElementById('navLinks');
-    
+ 
+<script>
+document.addEventListener('DOMContentLoaded', () => {
+  /* === MOBİL MENÜ === */
+  const mobileMenuBtn = document.getElementById('mobileMenuBtn');
+  const navLinks       = document.getElementById('navLinks');
+
+  if (mobileMenuBtn && navLinks) {
     mobileMenuBtn.addEventListener('click', () => {
       navLinks.classList.toggle('active');
-      mobileMenuBtn.innerHTML = navLinks.classList.contains('active') 
-        ? '<i class="fas fa-times"></i>' 
+      mobileMenuBtn.innerHTML = navLinks.classList.contains('active')
+        ? '<i class="fas fa-times"></i>'
         : '<i class="fas fa-bars"></i>';
     });
-    
-    // Başlık scroll efekti
-    const header = document.getElementById('header');
+  }
+
+  /* === HEADER SCROLL EFFECT === */
+  const header = document.getElementById('header');
+  if (header) {
     window.addEventListener('scroll', () => {
-      if (window.scrollY > 100) {
-        header.classList.add('scrolled');
-      } else {
-        header.classList.remove('scrolled');
+      header.classList.toggle('scrolled', window.scrollY > 100);
+    });
+  }
+
+  /* === DÜZGÜN ANCHOR KAYDIRMA === */
+  document.querySelectorAll('a[href^="#"]').forEach(anchor => {
+    anchor.addEventListener('click', e => {
+      // sayfa içi linkler için default davranışı iptal et
+      e.preventDefault();
+
+      // mobil menü açıksa kapat
+      if (navLinks?.classList.contains('active')) {
+        navLinks.classList.remove('active');
+        mobileMenuBtn.innerHTML = '<i class="fas fa-bars"></i>';
+      }
+
+      const target = document.querySelector(anchor.getAttribute('href'));
+      if (target) {
+        window.scrollTo({ top: target.offsetTop - 80, behavior: 'smooth' });
       }
     });
-    
-    // Anchor linkler için smooth scrolling
-    document.querySelectorAll('a[href^="#"]').forEach(anchor => {
-      anchor.addEventListener('click', function(e) {
-        e.preventDefault();
-        
-        if (navLinks.classList.contains('active')) {
-          navLinks.classList.remove('active');
-          mobileMenuBtn.innerHTML = '<i class="fas fa-bars"></i>';
-        }
-        
-        const target = document.querySelector(this.getAttribute('href'));
-        if (target) {
-          window.scrollTo({
-            top: target.offsetTop - 80,
-            behavior: 'smooth'
-          });
-        }
-      });
-    });
-    
-    // Referans slider'ını başlat
-    const testimonialSwiper = new Swiper('.testimonial-slider', {
+  });
+
+  /* === SWIPER === */
+  if (document.querySelector('.testimonial-slider')) {
+    new Swiper('.testimonial-slider', {
       loop: true,
-      autoplay: {
-        delay: 8000,
-        disableOnInteraction: false,
-      },
-      pagination: {
-        el: '.swiper-pagination',
-        clickable: true,
-      },
+      autoplay: { delay: 8000, disableOnInteraction: false },
+      pagination: { el: '.swiper-pagination', clickable: true }
     });
-    
-    // Grafik uygulaması
-    const ctx = document.getElementById('phChart');
+  }
+
+  /* === CHART === */
+  const ctx = document.getElementById('phChart');
+  if (ctx) {
     new Chart(ctx, {
       type: 'line',
       data: {
@@ -1541,33 +1535,33 @@ header.scrolled .logo img {
         datasets: [
           {
             label: 'TDS Seviyesi',
-            data: [7.2, 7.1, 7.0, 6.9, 6.8, 6.9, 7.0, 7.1, 7.2, 7.3, 7.4, 7.3, 7.2, 7.1, 7.0, 6.9, 6.8, 6.7, 6.6, 6.7, 6.8, 6.9, 7.0, 7.1],
+            data: [7.2,7.1,7.0,6.9,6.8,6.9,7.0,7.1,7.2,7.3,7.4,7.3,7.2,7.1,7.0,6.9,6.8,6.7,6.6,6.7,6.8,6.9,7.0,7.1],
             borderColor: '#2a9d8f',
-            backgroundColor: 'rgba(42, 157, 143, 0.1)',
+            backgroundColor: 'rgba(42,157,143,.1)',
             borderWidth: 3,
-            tension: 0.4,
+            tension: .4,
             fill: true,
             pointRadius: 0,
             pointHoverRadius: 6
           },
           {
             label: 'Bulanıklık (NTU)',
-            data: [1.0, 0.9, 0.8, 0.9, 1.0, 1.2, 1.5, 1.8, 2.0, 1.9, 1.7, 1.5, 1.3, 1.2, 1.3, 1.5, 1.7, 1.9, 2.1, 2.3, 2.5, 2.7, 2.9, 3.1],
+            data: [1.0,0.9,0.8,0.9,1.0,1.2,1.5,1.8,2.0,1.9,1.7,1.5,1.3,1.2,1.3,1.5,1.7,1.9,2.1,2.3,2.5,2.7,2.9,3.1],
             borderColor: '#005f73',
-            backgroundColor: 'rgba(0, 95, 115, 0.1)',
+            backgroundColor: 'rgba(0,95,115,.1)',
             borderWidth: 3,
-            tension: 0.4,
+            tension: .4,
             fill: true,
             pointRadius: 0,
             pointHoverRadius: 6
           },
           {
             label: 'Sıcaklık (mg/L)',
-            data: [8.2, 8.1, 8.0, 7.9, 7.8, 7.7, 7.6, 7.5, 7.6, 7.7, 7.8, 7.9, 8.0, 8.1, 8.2, 8.3, 8.4, 8.5, 8.6, 8.7, 8.8, 8.9, 9.0, 9.1],
+            data: [8.2,8.1,8.0,7.9,7.8,7.7,7.6,7.5,7.6,7.7,7.8,7.9,8.0,8.1,8.2,8.3,8.4,8.5,8.6,8.7,8.8,8.9,9.0,9.1],
             borderColor: '#e9c46a',
-            backgroundColor: 'rgba(233, 196, 106, 0.1)',
+            backgroundColor: 'rgba(233,196,106,.1)',
             borderWidth: 3,
-            tension: 0.4,
+            tension: .4,
             fill: true,
             pointRadius: 0,
             pointHoverRadius: 6
@@ -1577,165 +1571,96 @@ header.scrolled .logo img {
       options: {
         responsive: true,
         maintainAspectRatio: true,
+        interaction: { mode: 'nearest', axis: 'x', intersect: false },
         plugins: {
-          legend: {
-            position: 'top',
-            labels: {
-              font: {
-                family: 'Poppins',
-                size: 13
-              },
-              padding: 20,
-              usePointStyle: true,
-              pointStyle: 'circle'
-            }
-          },
-          tooltip: {
-            mode: 'index',
-            intersect: false,
-            backgroundColor: 'rgba(0, 0, 0, 0.8)',
-            titleFont: {
-              family: 'Poppins',
-              size: 14,
-              weight: 'bold'
-            },
-            bodyFont: {
-              family: 'Poppins',
-              size: 13
-            },
-            padding: 12,
-            cornerRadius: 8
-          }
+          legend: { position: 'top', labels: { font: { family: 'Poppins', size: 13 }, padding: 20, usePointStyle: true, pointStyle: 'circle' } },
+          tooltip: { mode: 'index', intersect: false }
         },
         scales: {
-          y: {
-            beginAtZero: false,
-            title: {
-              display: true,
-              text: 'Ölçüm Değerleri',
-              font: {
-                family: 'Poppins',
-                size: 13,
-                weight: '500'
-              }
-            },
-            grid: {
-              color: 'rgba(0, 0, 0, 0.05)'
-            }
-          },
-          x: {
-            title: {
-              display: true,
-              text: 'Saat (24h)',
-              font: {
-                family: 'Poppins',
-                size: 13,
-                weight: '500'
-              }
-            },
-            grid: {
-              display: false
-            }
-          }
-        },
-        interaction: {
-          mode: 'nearest',
-          axis: 'x',
-          intersect: false
+          y: { beginAtZero: false, grid: { color: 'rgba(0,0,0,.05)' } },
+          x: { grid: { display: false } }
         }
       }
     });
-    
-    // Form gönderimi
-    const contactForm = document.getElementById('contactForm');
-    contactForm.addEventListener('submit', (e) => {
+  }
+
+  /* === FORM === */
+  const contactForm = document.getElementById('contactForm');
+  if (contactForm) {
+    contactForm.addEventListener('submit', e => {
       e.preventDefault();
-      
-      // Form gönderimini simüle et
-      const submitBtn = contactForm.querySelector('button[type="submit"]');
-      const originalText = submitBtn.innerHTML;
-      
-      submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Gönderiliyor...';
-      submitBtn.disabled = true;
-      
+      const submitBtn   = contactForm.querySelector('button[type="submit"]');
+      const originalTxt = submitBtn.innerHTML;
+      submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Gönderiliyor…';
+      submitBtn.disabled  = true;
+
       setTimeout(() => {
         submitBtn.innerHTML = '<i class="fas fa-check"></i> Mesaj Gönderildi!';
-        
-        // Başarı mesajını göster
-        const successMessage = document.createElement('div');
-        successMessage.style.color = '#2a9d8f';
-        successMessage.style.marginTop = '20px';
-        successMessage.style.fontWeight = '500';
-        successMessage.innerHTML = 'Mesajınız için teşekkürler! Ekibimiz en kısa sürede sizinle iletişime geçecektir.';
-        contactForm.appendChild(successMessage);
-        
-        // Gecikmeden sonra formu sıfırla
+        const msg = document.createElement('div');
+        msg.textContent = 'Mesajınız için teşekkürler! Ekibimiz en kısa sürede sizinle iletişime geçecektir.';
+        msg.style.cssText = 'color:#2a9d8f;margin-top:20px;font-weight:500';
+        contactForm.appendChild(msg);
+
         setTimeout(() => {
           contactForm.reset();
-          submitBtn.innerHTML = originalText;
-          submitBtn.disabled = false;
-          successMessage.remove();
+          submitBtn.innerHTML = originalTxt;
+          submitBtn.disabled  = false;
+          msg.remove();
         }, 3000);
       }, 1500);
     });
-    
-    // Görünüm alanına girdiklerinde elementleri canlandır
-    const animateOnScroll = () => {
-      const elements = document.querySelectorAll('.card, .feature-item, .kpi-item, .gallery-item');
-      
-      elements.forEach(element => {
-        const elementPosition = element.getBoundingClientRect().top;
-        const windowHeight = window.innerHeight;
-        
-        if (elementPosition < windowHeight - 100) {
-          element.style.opacity = '1';
-          element.style.transform = 'translateY(0)';
-        }
-      });
-    };
-    
-    // Animasyonlu elementler için başlangıç durumunu ayarla
-    document.querySelectorAll('.card, .feature-item, .kpi-item, .gallery-item').forEach(element => {
-      element.style.opacity = '0';
-      element.style.transform = 'translateY(30px)';
-      element.style.transition = 'all 0.6s cubic-bezier(0.165, 0.84, 0.44, 1)';
-    });
-    
-    // Yükleme sırasında bir kez çalıştır
-    animateOnScroll();
-    
-    /* === Galeri Lightbox ============================================ */
-const lightbox      = document.getElementById('lightbox');
-const lightboxImg   = document.getElementById('lightboxImg');
-const lightboxClose = document.querySelector('.lightbox-close');
+  }
 
-// Galerideki tüm img elemanlarını seç
-document.querySelectorAll('.gallery-item img').forEach(img => {
-  img.addEventListener('click', () => {
-    lightboxImg.src = img.src;          // büyük resim
-    lightbox.style.display = 'flex';    // göster
-    document.body.style.overflow = 'hidden'; // arka plan kaymasın
+  /* === SCROLL ANIMATIONS === */
+  const animated = document.querySelectorAll('.card, .feature-item, .kpi-item, .gallery-item');
+  animated.forEach(el => {
+    el.style.opacity    = '0';
+    el.style.transform  = 'translateY(30px)';
+    el.style.transition = 'all .6s cubic-bezier(.165,.84,.44,1)';
   });
-});
 
-// Kapatma: X ikonuna veya boş alana tıklama
-lightbox.addEventListener('click', (e) => {
-  if (e.target === lightbox || e.target === lightboxClose) {
-    lightbox.style.display = 'none';
-    document.body.style.overflow = '';  // kaydırmayı geri aç
+  const reveal = () => {
+    animated.forEach(el => {
+      if (el.getBoundingClientRect().top < innerHeight - 100) {
+        el.style.opacity   = '1';
+        el.style.transform = 'translateY(0)';
+      }
+    });
+  };
+  reveal();
+  window.addEventListener('scroll', reveal);
+
+  /* === LIGHTBOX === */
+  const gallery     = document.querySelector('.gallery');
+  const lightbox    = document.getElementById('lightbox');
+  const lightboxImg = document.getElementById('lightboxImg');
+  const closeBtn    = document.querySelector('.lightbox-close');
+
+  if (gallery && lightbox && lightboxImg && closeBtn) {
+    const hide = () => {
+      lightbox.style.display = 'none';
+      document.body.style.overflow = '';
+    };
+
+    gallery.addEventListener('click', e => {
+      const item = e.target.closest('.gallery-item');
+      if (!item) return;
+      const img = item.querySelector('img');
+      if (!img) return;
+      lightboxImg.src = img.src;
+      lightboxImg.alt = img.alt || 'Enlarged view';
+      lightbox.style.display = 'flex';
+      document.body.style.overflow = 'hidden';
+    });
+
+    closeBtn.addEventListener('click', hide);
+    lightbox.addEventListener('click', e => { if (e.target === lightbox) hide(); });
+    document.addEventListener('keydown', e => { if (e.key === 'Escape') hide(); });
   }
-});
 
-// ESC tuşu ile kapat
-document.addEventListener('keydown', (e) => {
-  if (e.key === 'Escape' && lightbox.style.display === 'flex') {
-    lightbox.style.display = 'none';
-    document.body.style.overflow = '';
-  }
-});
+}); // DOMContentLoaded
+</script>
 
-    // Sonra scroll sırasında çalıştır
-    window.addEventListener('scroll', animateOnScroll);
-  </script>
+
 </body>
 </html>
