@@ -211,10 +211,13 @@
   <script>
     /* ─────────── auth guard & helpers ─────────── */
     const TOKEN = localStorage.getItem('token');
-    if (!TOKEN) location.href = '/dashboard/login.html';
-
-    setInterval(()=>{document.getElementById('clock').textContent =
-      new Date().toLocaleTimeString('tr-TR',{hour:'2-digit',minute:'2-digit'});},1000);
+    if (!TOKEN) location.href = '/dashboard/login.html';    setInterval(()=>{document.getElementById('clock').textContent =
+      new Date().toLocaleTimeString('tr-TR', {
+        hour:'2-digit',
+        minute:'2-digit',
+        timeZone: 'Europe/Istanbul'
+      });
+    },1000);
 
     const toNum = x => typeof x==='number' ? x :
       parseFloat(String(x).replace(',','.'));
@@ -320,7 +323,6 @@
       };
     }    /* ─────────── fetch & redraw ─────────── */    async function refresh() {
       try {
-        let url = '/api/sensor-data';
         const dateFilterVisible = document.getElementById('dateFilterInputs').style.display !== 'none';
         const todayOnly = document.getElementById('todayOnly').checked;
         const lastHourOnly = document.getElementById('lastHourOnly').checked;
@@ -328,7 +330,43 @@
           document.getElementById('startDate').value && 
           document.getElementById('endDate').value;
         
-        const hasFilter = todayOnly || lastHourOnly || customDateFilter;
+        // Determine which filter is active
+        let startDate, endDate;
+        let useFilter = false;
+        let titleDate;
+        
+        if (todayOnly) {
+          // Today filter
+          startDate = new Date();
+          startDate.setHours(0, 0, 0, 0);
+          endDate = new Date();
+          endDate.setHours(23, 59, 59, 999);
+          useFilter = true;
+          titleDate = 'Bugün';
+        } else if (lastHourOnly) {
+          // Last hour filter
+          endDate = new Date();
+          startDate = new Date(endDate - 60 * 60 * 1000);
+          useFilter = true;
+          titleDate = 'Son 1 Saat';
+        } else if (customDateFilter) {
+          // Custom date range filter
+          startDate = new Date(document.getElementById('startDate').value);
+          endDate = new Date(document.getElementById('endDate').value);
+          useFilter = true;
+          const formatDate = d => d.toLocaleDateString('tr-TR', { timeZone: 'Europe/Istanbul' });
+          titleDate = `${formatDate(startDate)} - ${formatDate(endDate)}`;
+        } else {
+          // Slider based filtering
+          const now = new Date();
+          const winMin = minutes[slider.value];
+          if (winMin !== Infinity) {
+            endDate = now;
+            startDate = new Date(now - winMin * 60 * 1000);
+            useFilter = true;
+          }
+          titleDate = labels[slider.value];
+        }
         
         // Reset other filters when one is selected
         if (todayOnly) {
@@ -342,43 +380,17 @@
           document.getElementById('lastHourOnly').checked = false;
         }
         
-        // Update slider visibility based on filters
-        document.querySelector('.slider-wrap').style.display = hasFilter ? 'none' : 'flex';
+        // Update slider visibility
+        document.querySelector('.slider-wrap').style.display = 
+          (todayOnly || lastHourOnly || customDateFilter) ? 'none' : 'flex';
         
-        if (hasFilter) {
-          let startDate, endDate;
+        // Construct URL based on filter state
+        const url = useFilter 
+          ? `/api/sensor-data/filter?type=${active}&startDate=${startDate.toISOString()}&endDate=${endDate.toISOString()}`
+          : '/api/sensor-data';
           
-          if (todayOnly) {
-            startDate = new Date();
-            startDate.setHours(0, 0, 0, 0);
-            endDate = new Date();
-            endDate.setHours(23, 59, 59, 999);
-          } else if (lastHourOnly) {
-            endDate = new Date();
-            startDate = new Date(endDate - 60 * 60 * 1000); // 1 hour ago
-          } else {
-            startDate = new Date(document.getElementById('startDate').value);
-            endDate = new Date(document.getElementById('endDate').value);
-          }
-          
-          url = `/api/sensor-data/filter?type=${active}&startDate=${startDate.toISOString()}&endDate=${endDate.toISOString()}`;
-          
-          // Update chart title for filter
-          let titleDate;
-          if (todayOnly) {
-            titleDate = 'Bugün';
-          } else if (lastHourOnly) {
-            titleDate = 'Son 1 Saat';
-          } else {
-            const formatDate = d => d.toLocaleDateString('tr-TR');
-            titleDate = `${formatDate(startDate)} - ${formatDate(endDate)}`;
-          }
-          document.getElementById('chartTitle').textContent = `${META[active].title} (${titleDate})`;
-        } else {
-          // Update title for slider view
-          document.getElementById('chartTitle').textContent =
-            `${META[active].title} (${labels[slider.value]})`;
-        }
+        // Update chart title
+        document.getElementById('chartTitle').textContent = `${META[active].title} (${titleDate})`;
 
         const res = await fetch(url, { headers: { Authorization: 'Bearer ' + TOKEN } });
         if (!res.ok) throw new Error('HTTP ' + res.status);
@@ -403,8 +415,11 @@
           st.style.background = `var(--${cls})`;
 
           // Update timestamp
-          const timeElement = document.getElementById('time-' + key);
-          timeElement.textContent = `30 dakika ortalaması (${new Date(avgData.timestamp).toLocaleTimeString('tr-TR', { hour: '2-digit', minute: '2-digit' })})`;
+          const timeElement = document.getElementById('time-' + key);          timeElement.textContent = `30 dakika ortalaması (${new Date(avgData.timestamp).toLocaleTimeString('tr-TR', { 
+            hour: '2-digit', 
+            minute: '2-digit',
+            timeZone: 'Europe/Istanbul'
+          })})`;
         });        /* chart data for ACTIVE sensor */
         const now = Date.now();
         const winMin = minutes[slider.value];
@@ -417,10 +432,13 @@
           data = data.filter(r => new Date(r.timestamp).getTime() >= cutoff);
         }
         
-        data = data.sort((a, b) => new Date(a.timestamp) - new Date(b.timestamp));
-
-        chart.data.labels = data.map(r =>
-          new Date(r.timestamp).toLocaleTimeString('tr-TR', { hour12: false }));
+        data = data.sort((a, b) => new Date(a.timestamp) - new Date(b.timestamp));        chart.data.labels = data.map(r =>
+          new Date(r.timestamp).toLocaleTimeString('tr-TR', { 
+            hour12: false,
+            timeZone: 'Europe/Istanbul',
+            hour: '2-digit',
+            minute: '2-digit'
+          }));
         chart.data.datasets[0].data = data.map(r => toNum(r.value));
         chart.update();
 
