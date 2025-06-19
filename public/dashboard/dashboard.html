@@ -125,6 +125,26 @@
       border-top:1px solid #eee;
       padding-top:16px;
     }
+
+    .sensor-box[data-sensor="flow1"] .sensor-status.normal {
+      background-color: #9966FF;
+    }
+    .sensor-box[data-sensor="flow2"] .sensor-status.normal {
+      background-color: #FF9F40;
+    }
+
+    .sensor-box[data-sensor="flow1"],
+    .sensor-box[data-sensor="flow2"] {
+      border-left: 4px solid;
+    }
+
+    .sensor-box[data-sensor="flow1"] {
+      border-color: #9966FF;
+    }
+
+    .sensor-box[data-sensor="flow2"] {
+      border-color: #FF9F40;
+    }
   </style>
 </head>
 
@@ -158,6 +178,24 @@
       </div>
       <div class="sensor-value" id="val-tds">-- <span class="sensor-unit">ppm</span></div>
       <div class="sensor-time" id="time-tds">30 dakika ortalaması</div>
+    </div>
+
+    <div class="sensor-box" data-sensor="flow1">
+      <div class="sensor-header">
+        <h4>Su Akış 1</h4>
+        <span class="sensor-status" id="stat-flow1">—</span>
+      </div>
+      <div class="sensor-value" id="val-flow1">-- <span class="sensor-unit">m³/s</span></div>
+      <div class="sensor-time" id="time-flow1">30 dakika ortalaması</div>
+    </div>
+
+    <div class="sensor-box" data-sensor="flow2">
+      <div class="sensor-header">
+        <h4>Su Akış 2</h4>
+        <span class="sensor-status" id="stat-flow2">—</span>
+      </div>
+      <div class="sensor-value" id="val-flow2">-- <span class="sensor-unit">m³/s</span></div>
+      <div class="sensor-time" id="time-flow2">30 dakika ortalaması</div>
     </div>
   </aside>
 
@@ -223,6 +261,11 @@
     const toNum = x => typeof x==='number' ? x :
       parseFloat(String(x).replace(',','.'));
 
+    /* ─────────── date helpers ─────────── */
+    function formatDateForAPI(date) {
+      return date.toISOString().slice(0, 19); // YYYY-MM-DDTHH:mm:ss
+    }
+
     /* ─────────── map ─────────── */
     const map = L.map('map').setView([41.03,28.89],15);
     L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',
@@ -262,12 +305,46 @@
 
     /* ─────────── sensor meta ─────────── */
     const META = {
-      temperature:{unit:'°C', title:'Su Sıcaklığı', status:v=>
-        v>26?['Tehlikeli','danger']:v>24?['Yüksek','warning']:['Normal','success'] },
-      turbidity  :{unit:'NTU',title:'Bulanıklık',status:v=>
-        v>5?['Yüksek','warning']:['Normal','success'] },
-      tds        :{unit:'ppm',title:'TDS / İletkenlik',status:v=>
-        v>1000?['Yüksek','warning']:['Normal','success'] }
+      temperature: {
+        label: "Sıcaklık",
+        unit: "°C",
+        color: "#FF6384",
+        backgroundColor: "rgba(255, 99, 132, 0.2)",
+        warningThreshold: 30,
+        criticalThreshold: 35,
+      },
+      turbidity: {
+        label: "Bulanıklık",
+        unit: "NTU",
+        color: "#36A2EB",
+        backgroundColor: "rgba(54, 162, 235, 0.2)",
+        warningThreshold: 5,
+        criticalThreshold: 10,
+      },
+      tds: {
+        label: "TDS",
+        unit: "ppm",
+        color: "#4BC0C0",
+        backgroundColor: "rgba(75, 192, 192, 0.2)",
+        warningThreshold: 500,
+        criticalThreshold: 1000,
+      },
+      flow1: {
+        label: "Su Akış 1",
+        unit: "m³/s",
+        color: "#9966FF",
+        backgroundColor: "rgba(153, 102, 255, 0.2)",
+        warningThreshold: 20,
+        criticalThreshold: 30,
+      },
+      flow2: {
+        label: "Su Akış 2",
+        unit: "m³/s",
+        color: "#FF9F40",
+        backgroundColor: "rgba(255, 159, 64, 0.2)",
+        warningThreshold: 20,
+        criticalThreshold: 30,
+      }
     };
 
     /* ─────────── time-range slider ─────────── */
@@ -334,31 +411,30 @@
         // Determine which filter is active
         let startDate, endDate;
         let useFilter = false;
-        let titleDate;
-        
-        if (todayOnly) {
+        let titleDate;          if (todayOnly) {
           // Today filter
-          startDate = new Date();
+          const now = new Date();
+          startDate = new Date(now);
           startDate.setHours(0, 0, 0, 0);
-          endDate = new Date();
-          endDate.setHours(23, 59, 59, 999);
+          endDate = new Date(now);
+          endDate.setHours(23, 59, 59, 0);
           useFilter = true;
           titleDate = 'Bugün';
         } else if (lastHourOnly) {
-          // Last hour filter
+          // Last hour filter - using local time
           endDate = new Date();
           startDate = new Date(endDate - 60 * 60 * 1000);
           useFilter = true;
           titleDate = 'Son 1 Saat';
         } else if (customDateFilter) {
-          // Custom date range filter
+          // Custom date range filter - already in local time from input
           startDate = new Date(document.getElementById('startDate').value);
           endDate = new Date(document.getElementById('endDate').value);
           useFilter = true;
           const formatDate = d => d.toLocaleDateString('tr-TR', { timeZone: 'Europe/Istanbul' });
           titleDate = `${formatDate(startDate)} - ${formatDate(endDate)}`;
         } else {
-          // Slider based filtering
+          // Slider based filtering - using local time
           const now = new Date();
           const winMin = minutes[slider.value];
           if (winMin !== Infinity) {
@@ -384,11 +460,10 @@
         // Update slider visibility
         document.querySelector('.slider-wrap').style.display = 
           (todayOnly || lastHourOnly || customDateFilter) ? 'none' : 'flex';
-        
-        // Construct URL based on filter state
+          // Construct URL based on filter state
         const url = useFilter 
-          ? `/api/sensor-data/filter?type=${active}&startDate=${startDate.toISOString()}&endDate=${endDate.toISOString()}`
-          : '/api/sensor-data';
+          ? `/api/sensor-data/filter?type=${active}&startDate=${formatDateForAPI(startDate)}&endDate=${formatDateForAPI(endDate)}`
+          : `/api/sensor-data/filter?type=${active}`;
           
         // Update chart title
         document.getElementById('chartTitle').textContent = `${META[active].title} (${titleDate})`;
@@ -398,7 +473,7 @@
         const rows = await res.json();
 
         /* update sidebar tiles with 30-minute averages */
-        ['temperature', 'turbidity', 'tds'].forEach(key => {
+        ['temperature', 'turbidity', 'tds', 'flow1', 'flow2'].forEach(key => {
           const avgData = calculate30MinAverage(rows, key);
           if (!avgData) return;
 
@@ -502,14 +577,21 @@
       document.getElementById('lastHourOnly').checked = false;
       document.getElementById('dateFilterInputs').style.display = 'none';
       refresh();
-    });
+    });    /* Initialize date inputs with default range */
+    function formatDateTimeLocal(date) {
+      const year = date.getFullYear();
+      const month = String(date.getMonth() + 1).padStart(2, '0');
+      const day = String(date.getDate()).padStart(2, '0');
+      const hours = String(date.getHours()).padStart(2, '0');
+      const minutes = String(date.getMinutes()).padStart(2, '0');
+      return `${year}-${month}-${day}T${hours}:${minutes}`;
+    }
 
-    /* Initialize date inputs with default range */
     const now = new Date();
     const yesterday = new Date(now);
     yesterday.setDate(yesterday.getDate() - 1);
-    document.getElementById('startDate').value = yesterday.toISOString().slice(0, 16);
-    document.getElementById('endDate').value = now.toISOString().slice(0, 16);
+    document.getElementById('startDate').value = formatDateTimeLocal(yesterday);
+    document.getElementById('endDate').value = formatDateTimeLocal(now);
   </script>
 </body>
 </html>
