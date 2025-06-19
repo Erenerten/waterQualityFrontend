@@ -162,14 +162,14 @@
       <div class="sensor-time" id="time-temperature">30 dakika ortalaması</div>
     </div>
 
-    <div class="sensor-box" data-sensor="turbidity">
+    <!-- <div class="sensor-box" data-sensor="turbidity">
       <div class="sensor-header">
         <h4>Bulanıklık</h4>
         <span class="sensor-status" id="stat-turbidity">—</span>
       </div>
       <div class="sensor-value" id="val-turbidity">-- <span class="sensor-unit">NTU</span></div>
       <div class="sensor-time" id="time-turbidity">30 dakika ortalaması</div>
-    </div>
+    </div> -->
 
     <div class="sensor-box" data-sensor="tds">
       <div class="sensor-header">
@@ -180,7 +180,7 @@
       <div class="sensor-time" id="time-tds">30 dakika ortalaması</div>
     </div>
 
-    <div class="sensor-box" data-sensor="flow1">
+    <!-- <div class="sensor-box" data-sensor="flow1">
       <div class="sensor-header">
         <h4>Su Akış 1</h4>
         <span class="sensor-status" id="stat-flow1">—</span>
@@ -196,6 +196,15 @@
       </div>
       <div class="sensor-value" id="val-flow2">-- <span class="sensor-unit">m³/s</span></div>
       <div class="sensor-time" id="time-flow2">30 dakika ortalaması</div>
+    </div> -->
+
+    <div class="sensor-box" data-sensor="flow-comparison">
+      <div class="sensor-header">
+        <h4>Akış Karşılaştırma</h4>
+        <span class="sensor-status" id="stat-flow-comparison">—</span>
+      </div>
+      <div class="sensor-value" id="val-flow-comparison">-- <span class="sensor-unit">m³/s</span></div>
+      <div class="sensor-time" id="time-flow-comparison">30 dakika ortalaması</div>
     </div>
   </aside>
 
@@ -344,6 +353,16 @@
         backgroundColor: "rgba(255, 159, 64, 0.2)",
         warningThreshold: 20,
         criticalThreshold: 30,
+      },
+      flowComparison: {
+        label: "Akış Karşılaştırma",
+        unit: "m³/s",
+        color1: "#9966FF",
+        color2: "#FF9F40",
+        colorDiff: "#e74c3c",
+        backgroundColor1: "rgba(153, 102, 255, 0.1)",
+        backgroundColor2: "rgba(255, 159, 64, 0.1)",
+        backgroundColorDiff: "rgba(231, 76, 60, 0.08)",
       }
     };
 
@@ -473,7 +492,8 @@
         const rows = await res.json();
 
         /* update sidebar tiles with 30-minute averages */
-        ['temperature', 'turbidity', 'tds', 'flow1', 'flow2'].forEach(key => {
+        ['temperature', 'tds', 'flow-comparison'].forEach(key => {
+          if (key === 'flow-comparison') return; // handled in flow-comparison logic
           const avgData = calculate30MinAverage(rows, key);
           if (!avgData) return;
 
@@ -485,19 +505,48 @@
             `${v.toFixed(1)} <span class="sensor-unit">${META[key].unit}</span>`;
 
           // Update status
-          const [txt, cls] = META[key].status(v);
+          const [txt, cls] = META[key].status ? META[key].status(v) : ['Normal', 'success'];
           const st = document.getElementById('stat-' + key);
           st.textContent = txt;
           st.style.background = `var(--${cls})`;
 
           // Update timestamp
-          const timeElement = document.getElementById('time-' + key);          timeElement.textContent = `30 dakika ortalaması (${new Date(avgData.timestamp).toLocaleTimeString('tr-TR', { 
+          const timeElement = document.getElementById('time-' + key);
+          timeElement.textContent = `30 dakika ortalaması (${new Date(avgData.timestamp).toLocaleTimeString('tr-TR', { 
             hour: '2-digit', 
             minute: '2-digit',
             hour12: false,
             timeZone: 'Europe/Istanbul'
           })})`;
-        });/* chart data for ACTIVE sensor */        let data = rows;
+        });
+        /* special handling for flow-comparison */
+        const avgDataFlowComp = calculate30MinAverage(rows, 'flow-comparison');
+        if (avgDataFlowComp) {
+          const v = avgDataFlowComp.average;
+          document.getElementById('val-flow-comparison').innerHTML =
+            `${v.toFixed(1)} <span class="sensor-unit">${META['flowComparison'].unit}</span>`;
+
+          // Update status - custom logic for flow comparison
+          const flow1Latest = rows.find(r => r.type === 'flow1');
+          const flow2Latest = rows.find(r => r.type === 'flow2');
+          const diff = flow1Latest && flow2Latest ? toNum(flow1Latest.value) - toNum(flow2Latest.value) : 0;
+          const statusClass = diff > 0 ? 'success' : diff < 0 ? 'danger' : 'warning';
+          const statusText = diff > 0 ? 'Daha Fazla' : diff < 0 ? 'Daha Az' : 'Eşit';
+          const st = document.getElementById('stat-flow-comparison');
+          st.textContent = statusText;
+          st.style.background = `var(--${statusClass})`;
+
+          // Update timestamp
+          const timeElement = document.getElementById('time-flow-comparison');
+          timeElement.textContent = `30 dakika ortalaması (${new Date(avgDataFlowComp.timestamp).toLocaleTimeString('tr-TR', { 
+            hour: '2-digit', 
+            minute: '2-digit',
+            hour12: false,
+            timeZone: 'Europe/Istanbul'
+          })})`;
+        }
+
+        /* chart data for ACTIVE sensor */        let data = rows;
         
         // Filter for the active sensor type
         if (!useFilter) {
