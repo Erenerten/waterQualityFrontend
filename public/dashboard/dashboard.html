@@ -420,27 +420,41 @@
             minute: '2-digit',
             timeZone: 'Europe/Istanbul'
           })})`;
-        });        /* chart data for ACTIVE sensor */
-        const now = Date.now();
-        const winMin = minutes[slider.value];
-        const cutoff = winMin === Infinity ? 0 : now - winMin * 60 * 1000;
-
-        let data = rows.filter(r => r.type === active && r.value != null);
+        });        /* chart data for ACTIVE sensor */        let data = rows;
         
-        // Apply time filtering only if no date filter is active
-        if (!hasDateFilter) {
-          data = data.filter(r => new Date(r.timestamp).getTime() >= cutoff);
+        // Filter for the active sensor type
+        if (!useFilter) {
+          // If not using date filter endpoint, first filter by sensor type
+          data = data.filter(r => r.type === active);
         }
         
-        data = data.sort((a, b) => new Date(a.timestamp) - new Date(b.timestamp));        chart.data.labels = data.map(r =>
-          new Date(r.timestamp).toLocaleTimeString('tr-TR', { 
+        // Filter out null values and sort by timestamp
+        data = data
+          .filter(r => r.value != null)
+          .sort((a, b) => new Date(a.timestamp) - new Date(b.timestamp));        // Format timestamps and update chart
+        const timestamps = data.map(r => {
+          const date = new Date(r.timestamp);
+          return date.toLocaleTimeString('tr-TR', {
             hour12: false,
             timeZone: 'Europe/Istanbul',
             hour: '2-digit',
             minute: '2-digit'
-          }));
-        chart.data.datasets[0].data = data.map(r => toNum(r.value));
+          });
+        });
+
+        const values = data.map(r => toNum(r.value));
+
+        // Update chart with new data
+        chart.data.labels = timestamps;
+        chart.data.datasets[0].data = values;
         chart.update();
+
+        // Log for debugging
+        console.log(`Updating chart with ${data.length} points:`, {
+          sensor: active,
+          filter: useFilter ? 'date filter' : 'no filter',
+          dataPoints: data.length
+        });
 
       } catch (e) { console.error(e); }
     }    refresh();
