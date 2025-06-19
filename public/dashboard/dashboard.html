@@ -105,6 +105,21 @@
     .filter-btn.secondary{background:#6c757d}
     .filter-btn:hover{opacity:0.9}
     
+    /* polling control */
+    .polling-control {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      font-size: 0.9rem;
+    }
+    .polling-control select {
+      padding: 4px 8px;
+      border: 1px solid #ddd;
+      border-radius: 4px;
+      font-family: inherit;
+      background: white;
+    }
+    
     /* Make sure slider appears below date filter */
     .slider-wrap{
       border-top:1px solid #eee;
@@ -147,8 +162,17 @@
   </aside>
 
   <!-- ─── Main layout ─────────────────────────────────────── -->
-  <section class="main">
-    <div class="top-bar"><span id="clock">--:--</span></div>
+  <section class="main">    <div class="top-bar">
+      <span id="clock">--:--</span>
+      <div class="polling-control">
+        <label>Güncelleme Hızı:</label>
+        <select id="pollingRate">
+          <option value="5000">5 saniye</option>
+          <option value="10000">10 saniye</option>
+          <option value="30000">30 saniye</option>
+        </select>
+      </div>
+    </div>
 
     <div class="content">
       <div class="map-wrap"><div id="map"></div></div>      <div class="chart-wrap">
@@ -202,11 +226,34 @@
     L.marker([41.03,28.89]).addTo(map).bindPopup('Ölçüm Noktası');
 
     /* ─────────── chart ─────────── */
-    const ctx = document.getElementById('sensorChart').getContext('2d');
-    const chart = new Chart(ctx,{type:'line',
-      data:{labels:[],datasets:[{data:[],borderColor:'#0066cc',borderWidth:2,tension:.25,
-                                fill:false,pointRadius:2}]},
-      options:{plugins:{legend:{display:false}},scales:{x:{grid:{display:false}}}}
+    const ctx = document.getElementById('sensorChart').getContext('2d');    const chart = new Chart(ctx, {
+      type: 'line',
+      data: {
+        labels: [],
+        datasets: [{
+          data: [],
+          borderColor: '#0066cc',
+          backgroundColor: 'rgba(0, 102, 204, 0.1)',
+          borderWidth: 2,
+          tension: 0.25,
+          fill: true,
+          pointRadius: 2
+        }]
+      },
+      options: {
+        plugins: {
+          legend: {display: false}
+        },
+        scales: {
+          x: {grid: {display: false}},
+          y: {
+            beginAtZero: true,
+            grid: {
+              color: 'rgba(0, 0, 0, 0.05)'
+            }
+          }
+        }
+      }
     });
 
     /* ─────────── sensor meta ─────────── */
@@ -378,9 +425,16 @@
         chart.update();
 
       } catch (e) { console.error(e); }
-    }
-    refresh(); 
+    }    refresh();
     let refreshInterval = setInterval(refresh, 5000);
+
+    /* ─────────── polling rate control ─────────── */
+    document.getElementById('pollingRate').addEventListener('change', (e) => {
+      clearInterval(refreshInterval);
+      const rate = parseInt(e.target.value);
+      refreshInterval = setInterval(refresh, rate);
+      refresh(); // Immediate refresh on rate change
+    });
 
     /* ─────────── date filter handlers ─────────── */
     document.getElementById('toggleDateFilter').addEventListener('click', () => {
