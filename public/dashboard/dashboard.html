@@ -424,10 +424,11 @@
         if (todayOnly) {
           const now = new Date();
           startDate = new Date(now); startDate.setHours(0, 0, 0, 0);
-          endDate = new Date(now); endDate.setHours(23, 59, 59, 999);
+          endDate = new Date(now); endDate.setHours(23, 59, 59, 999); // ensure ms=999
           useFilter = true; titleDate = 'Bugün';
         } else if (lastHourOnly) {
-          endDate = new Date(); startDate = new Date(endDate.getTime() - 60 * 60 * 1000);
+          endDate = new Date(); endDate.setMilliseconds(999); // ensure ms=999
+          startDate = new Date(endDate.getTime() - 60 * 60 * 1000);
           useFilter = true; titleDate = 'Son 1 Saat';
         } else if (customDateFilter) {
           // Parse as local time (Europe/Istanbul)
@@ -435,6 +436,7 @@
           const endVal = document.getElementById('endDate').value;
           startDate = parseLocalDateTime(startVal);
           endDate = parseLocalDateTime(endVal);
+          if (endDate) endDate.setMilliseconds(999); // ensure ms=999
           useFilter = true;
           const formatDate = d => d.toLocaleDateString('tr-TR', { timeZone: 'Europe/Istanbul' });
           titleDate = `${formatDate(startDate)} - ${formatDate(endDate)}`;
@@ -442,7 +444,8 @@
           const now = new Date();
           const winMin = minutes[slider.value];
           if (winMin !== Infinity) {
-            endDate = now; startDate = new Date(now.getTime() - winMin * 60 * 1000);
+            endDate = now; endDate.setMilliseconds(999); // ensure ms=999
+            startDate = new Date(now.getTime() - winMin * 60 * 1000);
             useFilter = true;
           }
           titleDate = labels[slider.value];
