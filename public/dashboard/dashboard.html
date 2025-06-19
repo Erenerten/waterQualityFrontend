@@ -57,16 +57,54 @@
     /* slider */
     .slider-wrap{margin-top:18px;display:flex;flex-direction:column;gap:8px}
     .slider-wrap input{width:100%}
-    .slider-label{text-align:center;font-size:.9rem;color:#555}
-
-    /* date filter */
-    .date-filter{display:flex;align-items:center;gap:8px}
-    .date-inputs{display:flex;align-items:center;gap:4px}
-    .date-input{padding:8px;border:1px solid #ccc;border-radius:4px;width:120px}
-    .filter-btn{padding:8px 12px;border:none;border-radius:4px;cursor:pointer;
-                background:var(--accent);color:#fff;font-size:.9rem;transition:.2s}
-    .filter-btn.secondary{background:#f39c12}
-    .filter-toggle{display:flex;align-items:center;gap:4px}
+    .slider-label{text-align:center;font-size:.9rem;color:#555}    /* date filter */
+    .date-filter{
+      display:flex;
+      flex-direction:column;
+      gap:12px;
+      padding:16px 0;
+      border-top:1px solid #eee;
+      margin-top:auto;
+    }
+    .filter-toggle{
+      display:flex;
+      align-items:center;
+      justify-content:space-between;
+      gap:12px;
+    }
+    .date-inputs{
+      display:flex;
+      align-items:center;
+      gap:8px;
+      flex-wrap:wrap;
+    }
+    .date-input{
+      padding:8px;
+      border:1px solid #ddd;
+      border-radius:4px;
+      font-family:inherit;
+      flex:1;
+      min-width:200px;
+    }
+    .filter-btn{
+      padding:8px 16px;
+      border:none;
+      border-radius:4px;
+      cursor:pointer;
+      background:var(--accent);
+      color:#fff;
+      font-size:.9rem;
+      transition:.2s;
+      white-space:nowrap;
+    }
+    .filter-btn.secondary{background:#6c757d}
+    .filter-btn:hover{opacity:0.9}
+    
+    /* Make sure slider appears below date filter */
+    .slider-wrap{
+      border-top:1px solid #eee;
+      padding-top:16px;
+    }
   </style>
 </head>
 
@@ -108,28 +146,27 @@
     <div class="top-bar"><span id="clock">--:--</span></div>
 
     <div class="content">
-      <div class="map-wrap"><div id="map"></div></div>
-
-      <div class="chart-wrap">
+      <div class="map-wrap"><div id="map"></div></div>      <div class="chart-wrap">
         <div class="chart-header">
           <div class="chart-title" id="chartTitle">Su Sıcaklığı (son 10 dakika)</div>
-          <div class="date-filter">
-            <div class="filter-toggle">
-              <label>
-                <input type="checkbox" id="todayOnly"> Sadece Bugün
-              </label>
-              <button id="toggleDateFilter" class="filter-btn">Tarih Filtresi</button>
-            </div>
-            <div id="dateFilterInputs" class="date-inputs" style="display: none;">
-              <input type="datetime-local" id="startDate" class="date-input">
-              <span>-</span>
-              <input type="datetime-local" id="endDate" class="date-input">
-              <button id="applyFilter" class="filter-btn">Uygula</button>
-              <button id="resetFilter" class="filter-btn secondary">Sıfırla</button>
-            </div>
-          </div>
         </div>
         <div class="chart-box"><canvas id="sensorChart"></canvas></div>
+
+        <div class="date-filter">
+          <div class="filter-toggle">
+            <label>
+              <input type="checkbox" id="todayOnly"> Sadece Bugün
+            </label>
+            <button id="toggleDateFilter" class="filter-btn">Tarih Filtresi</button>
+          </div>
+          <div id="dateFilterInputs" class="date-inputs" style="display: none;">
+            <input type="datetime-local" id="startDate" class="date-input">
+            <span>-</span>
+            <input type="datetime-local" id="endDate" class="date-input">
+            <button id="applyFilter" class="filter-btn">Uygula</button>
+            <button id="resetFilter" class="filter-btn secondary">Sıfırla</button>
+          </div>
+        </div>
 
         <!-- slider -->
         <div class="slider-wrap">
@@ -227,16 +264,20 @@
         average: average,
         timestamp: latestTimestamp
       };
-    }
-
-    /* ─────────── fetch & redraw ─────────── */
+    }    /* ─────────── fetch & redraw ─────────── */
     async function refresh() {
       try {
         let url = '/api/sensor-data';
         const dateFilterVisible = document.getElementById('dateFilterInputs').style.display !== 'none';
         const todayOnly = document.getElementById('todayOnly').checked;
+        const hasDateFilter = (dateFilterVisible && 
+          document.getElementById('startDate').value && 
+          document.getElementById('endDate').value) || todayOnly;
         
-        if (todayOnly || dateFilterVisible) {
+        // Update slider visibility based on date filter
+        document.querySelector('.slider-wrap').style.display = hasDateFilter ? 'none' : 'flex';
+        
+        if (hasDateFilter) {
           let startDate, endDate;
           
           if (todayOnly) {
@@ -245,13 +286,16 @@
             endDate = new Date();
             endDate.setHours(23, 59, 59, 999);
           } else {
-            startDate = document.getElementById('startDate').value ? new Date(document.getElementById('startDate').value) : null;
-            endDate = document.getElementById('endDate').value ? new Date(document.getElementById('endDate').value) : null;
+            startDate = new Date(document.getElementById('startDate').value);
+            endDate = new Date(document.getElementById('endDate').value);
           }
           
-          if (startDate && endDate) {
-            url = `/api/sensor-data/filter?type=${active}&startDate=${startDate.toISOString()}&endDate=${endDate.toISOString()}`;
-          }
+          url = `/api/sensor-data/filter?type=${active}&startDate=${startDate.toISOString()}&endDate=${endDate.toISOString()}`;
+          
+          // Update chart title for date filter
+          const formatDate = d => d.toLocaleDateString('tr-TR');
+          document.getElementById('chartTitle').textContent = 
+            `${META[active].title} (${formatDate(startDate)} - ${formatDate(endDate)})`;
         }
 
         const res = await fetch(url, { headers: { Authorization: 'Bearer ' + TOKEN } });
@@ -279,17 +323,19 @@
           // Update timestamp
           const timeElement = document.getElementById('time-' + key);
           timeElement.textContent = `30 dakika ortalaması (${new Date(avgData.timestamp).toLocaleTimeString('tr-TR', { hour: '2-digit', minute: '2-digit' })})`;
-        });
-
-        /* chart data for ACTIVE sensor within slider window */
+        });        /* chart data for ACTIVE sensor */
         const now = Date.now();
         const winMin = minutes[slider.value];
         const cutoff = winMin === Infinity ? 0 : now - winMin * 60 * 1000;
 
-        const data = rows
-          .filter(r => r.type === active && r.value != null &&
-            (!dateFilterVisible || todayOnly || new Date(r.timestamp).getTime() >= cutoff))
-          .sort((a, b) => new Date(a.timestamp) - new Date(b.timestamp));
+        let data = rows.filter(r => r.type === active && r.value != null);
+        
+        // Apply time filtering only if no date filter is active
+        if (!hasDateFilter) {
+          data = data.filter(r => new Date(r.timestamp).getTime() >= cutoff);
+        }
+        
+        data = data.sort((a, b) => new Date(a.timestamp) - new Date(b.timestamp));
 
         chart.data.labels = data.map(r =>
           new Date(r.timestamp).toLocaleTimeString('tr-TR', { hour12: false }));
