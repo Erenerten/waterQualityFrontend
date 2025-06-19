@@ -65,12 +65,17 @@
       padding:16px 0;
       border-top:1px solid #eee;
       margin-top:auto;
-    }
-    .filter-toggle{
+    }    .filter-toggle{
       display:flex;
       align-items:center;
-      justify-content:space-between;
-      gap:12px;
+      gap:16px;
+      flex-wrap:wrap;
+    }
+    .filter-toggle label {
+      display: flex;
+      align-items: center;
+      gap: 4px;
+      white-space: nowrap;
     }
     .date-inputs{
       display:flex;
@@ -152,10 +157,12 @@
         </div>
         <div class="chart-box"><canvas id="sensorChart"></canvas></div>
 
-        <div class="date-filter">
-          <div class="filter-toggle">
+        <div class="date-filter">          <div class="filter-toggle">
             <label>
               <input type="checkbox" id="todayOnly"> Sadece Bugün
+            </label>
+            <label>
+              <input type="checkbox" id="lastHourOnly"> Son 1 Saat
             </label>
             <button id="toggleDateFilter" class="filter-btn">Tarih Filtresi</button>
           </div>
@@ -264,20 +271,34 @@
         average: average,
         timestamp: latestTimestamp
       };
-    }    /* ─────────── fetch & redraw ─────────── */
-    async function refresh() {
+    }    /* ─────────── fetch & redraw ─────────── */    async function refresh() {
       try {
         let url = '/api/sensor-data';
         const dateFilterVisible = document.getElementById('dateFilterInputs').style.display !== 'none';
         const todayOnly = document.getElementById('todayOnly').checked;
-        const hasDateFilter = (dateFilterVisible && 
+        const lastHourOnly = document.getElementById('lastHourOnly').checked;
+        const customDateFilter = dateFilterVisible && 
           document.getElementById('startDate').value && 
-          document.getElementById('endDate').value) || todayOnly;
+          document.getElementById('endDate').value;
         
-        // Update slider visibility based on date filter
-        document.querySelector('.slider-wrap').style.display = hasDateFilter ? 'none' : 'flex';
+        const hasFilter = todayOnly || lastHourOnly || customDateFilter;
         
-        if (hasDateFilter) {
+        // Reset other filters when one is selected
+        if (todayOnly) {
+          document.getElementById('lastHourOnly').checked = false;
+          document.getElementById('dateFilterInputs').style.display = 'none';
+        } else if (lastHourOnly) {
+          document.getElementById('todayOnly').checked = false;
+          document.getElementById('dateFilterInputs').style.display = 'none';
+        } else if (customDateFilter) {
+          document.getElementById('todayOnly').checked = false;
+          document.getElementById('lastHourOnly').checked = false;
+        }
+        
+        // Update slider visibility based on filters
+        document.querySelector('.slider-wrap').style.display = hasFilter ? 'none' : 'flex';
+        
+        if (hasFilter) {
           let startDate, endDate;
           
           if (todayOnly) {
@@ -285,6 +306,9 @@
             startDate.setHours(0, 0, 0, 0);
             endDate = new Date();
             endDate.setHours(23, 59, 59, 999);
+          } else if (lastHourOnly) {
+            endDate = new Date();
+            startDate = new Date(endDate - 60 * 60 * 1000); // 1 hour ago
           } else {
             startDate = new Date(document.getElementById('startDate').value);
             endDate = new Date(document.getElementById('endDate').value);
@@ -292,10 +316,21 @@
           
           url = `/api/sensor-data/filter?type=${active}&startDate=${startDate.toISOString()}&endDate=${endDate.toISOString()}`;
           
-          // Update chart title for date filter
-          const formatDate = d => d.toLocaleDateString('tr-TR');
-          document.getElementById('chartTitle').textContent = 
-            `${META[active].title} (${formatDate(startDate)} - ${formatDate(endDate)})`;
+          // Update chart title for filter
+          let titleDate;
+          if (todayOnly) {
+            titleDate = 'Bugün';
+          } else if (lastHourOnly) {
+            titleDate = 'Son 1 Saat';
+          } else {
+            const formatDate = d => d.toLocaleDateString('tr-TR');
+            titleDate = `${formatDate(startDate)} - ${formatDate(endDate)}`;
+          }
+          document.getElementById('chartTitle').textContent = `${META[active].title} (${titleDate})`;
+        } else {
+          // Update title for slider view
+          document.getElementById('chartTitle').textContent =
+            `${META[active].title} (${labels[slider.value]})`;
         }
 
         const res = await fetch(url, { headers: { Authorization: 'Bearer ' + TOKEN } });
@@ -355,11 +390,18 @@
         document.getElementById('todayOnly').checked = false;
       }
       refresh();
-    });
-
-    document.getElementById('todayOnly').addEventListener('change', (e) => {
+    });    document.getElementById('todayOnly').addEventListener('change', (e) => {
       if (e.target.checked) {
         document.getElementById('dateFilterInputs').style.display = 'none';
+        document.getElementById('lastHourOnly').checked = false;
+      }
+      refresh();
+    });
+
+    document.getElementById('lastHourOnly').addEventListener('change', (e) => {
+      if (e.target.checked) {
+        document.getElementById('dateFilterInputs').style.display = 'none';
+        document.getElementById('todayOnly').checked = false;
       }
       refresh();
     });
@@ -370,6 +412,8 @@
       document.getElementById('startDate').value = '';
       document.getElementById('endDate').value = '';
       document.getElementById('todayOnly').checked = false;
+      document.getElementById('lastHourOnly').checked = false;
+      document.getElementById('dateFilterInputs').style.display = 'none';
       refresh();
     });
 
