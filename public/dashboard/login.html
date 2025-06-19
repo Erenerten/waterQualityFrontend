@@ -47,6 +47,15 @@
       background:var(--accent);color:#fff;font-size:1rem;cursor:pointer;
       transition:background .3s
     }
+     .video-bg {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      z-index: -1;
+    }
     .btn-login:hover{background:var(--primary)}
     .login-footer{margin-top:20px;text-align:center;font-size:.9rem}
     .login-footer a{color:var(--accent);text-decoration:none}
@@ -57,13 +66,13 @@
 <body>
   <!-- background video (forward-slashes!! ) -->
   <video autoplay muted loop class="video-bg">
-    <source src="videos/hero.mp4" type="video/mp4">
-    Tarayıcınız video etiketini desteklemiyor.
+    <source src="videos\hero.mp4" type="video/mp4">
+    Your browser does not support the video tag.
   </video>
 
   <div class="center-wrapper">
     <div class="login-box">
-      <h2>SuKaliteX&nbsp;Giriş</h2>
+      <h2>AEA&nbsp;Giriş</h2>
 
       <!-- ===== login form ===== -->
       <form id="login-form">
