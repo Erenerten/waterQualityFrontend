@@ -12,7 +12,7 @@
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/swiper@9/swiper-bundle.min.css">
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-  <script src="https://cdn.jsdelivr.net/npm/swiper@9/swiper-bundle.min.js"></script>
+  --> <script src="https://cdn.jsdelivr.net/npm/swiper@9/swiper-bundle.min.js"></script>
 
 <!-- Eğer favicon PNG formatında ve images klasöründeyse -->
 <link rel="icon" type="image/png" href="images/favico.png">
@@ -494,6 +494,40 @@ header.scrolled .logo img {
   margin-top: 110px;    /* 80 px yerine 60-120 px arası istediğiniz değeri verin */
 }
     
+  .testimonial{
+  position:relative;          /* ikonun mutlak konumlanabilmesi için */
+  background:#1570d1;
+  color:#fff;
+  padding:40px 60px;
+  border-radius:12px;
+}
+
+.linkedin-btn{
+  position:absolute;
+  bottom:30px;   /* kareyi tam nereye çizdiyseniz ona göre ayarla */
+  right:40px;
+  width:30px;
+  height:30px;
+  border-radius:8px;
+  background:#fff;            /* beyaz zeminli kare */
+  display:flex;
+  justify-content:center;
+  align-items:center;
+  text-decoration:none;
+  transition:transform .2s ease, box-shadow .2s ease;
+}
+
+/* ikon rengi */
+.linkedin-btn i{
+  font-size:24px;
+  color:#0A66C2;              /* LinkedIn kurumsal rengi */
+}
+
+/* hover efekti */
+.linkedin-btn:hover{
+  transform:scale(1.05);
+  box-shadow:0 4px 12px rgba(0,0,0,.25);
+}
 
     .testimonials .section-title h2 {
       color: white;
@@ -1239,7 +1273,7 @@ header.scrolled .logo img {
       </div>
       <div class="chart-container">
         <div class="chart-title">
-          <h3>Canlı Su Kalitesi Panosu</h3>
+          <h3>Canlı Su Kalitesi Panosu (Örnek Veri)</h3>
           <p>Kritik parametrelerin gerçek zamanlı izlenmesi </p>
         </div>
         <canvas id="phChart"></canvas>
@@ -1281,39 +1315,53 @@ header.scrolled .logo img {
         <h2></h2>
         <p>Proje yürütücülerimiz ne diyor?</p>
       </div>
-      <div class="testimonial-slider swiper">
+      <div class="testimonial-slide">
         <div class="swiper-wrapper">
-          <div class="testimonial-slide swiper-slide">
+          <div class="testimonial-slide">
             <div class="testimonial-content">
-            “ Katma değer sağlayanilecek yenilikçi bir projeye sahibiz.”
+            “ Katma değer sağlayabilecek yenilikçi bir projeye sahibiz.”
             </div>
           <div class="testimonial-author">
             <img src="images/ben3.png" alt="eren erten" class="author-avatar">
-            </div>
-
+      <div> <a class="linkedin-btn"
+     href="https://www.linkedin.com/in/eren-erten/"
+     target="_blank" rel="noopener">
+     <i class="fa-brands fa-linkedin-in"></i>
+  </a></div>
 
               <div class="author-name">Eren Erten</div>
-              <div class="author-position">Proje Yürütücüsü,AEK</div>
+              <div class="author-position">Proje Yürütücüsü, AEA</div>
             </div>
           </div>
-          <div class="testimonial-slide swiper-slide">
+          <div class="testimonial-slide">
+            
             <div class="testimonial-content">
           “Ekip arkadaşlarımla beraber geliştirdiğimiz, keyif veren bir proje.”
             </div>
             <div class="testimonial-author">
                <img src="images/alaaddin.png" alt="alad" class="author-avatar">
+               <div> <a class="linkedin-btn"
+     href="https://www.linkedin.com/in/alaaddin-can-gürsoy-b861b21b2/"
+     target="_blank" rel="noopener">
+     <i class="fa-brands fa-linkedin-in"></i>
+  </a></div>
               <div class="author-name">Alaaddin Can Gürsoy</div>
-              <div class="author-position">Proje Yürütücüsü,AEK</div>
+              <div class="author-position">Proje Yürütücüsü, AEA</div>
             </div>
           </div>
-          <div class="testimonial-slide swiper-slide">
+          <div class="testimonial-slide">
             <div class="testimonial-content">
               “Suyun yapısını ve hayati değerini ortaya koyan heyecan verici bir proje.”
             </div>
             <div class="testimonial-author">
               <img src="images/alios.png" alt="alios" class="author-avatar">
+                     <div> <a class="linkedin-btn"
+     href="https://www.linkedin.com/in/ali-osman-dalkiliç-33444a253/"
+     target="_blank" rel="noopener">
+     <i class="fa-brands fa-linkedin-in"></i>
+  </a></div>
               <div class="author-name">Ali Osman Dalkılıç</div>
-              <div class="author-position">Proje Yürütücüsü,AEK</div>
+              <div class="author-position">Proje Yürütücüsü, AEA</div>
             </div>
           </div>
         </div>
@@ -1338,7 +1386,7 @@ header.scrolled .logo img {
       </div>
       <div class="contact-grid">
         <div class="contact-info">
-          <h3>Su Kalitesi Hakkında Konuşalım</h3>
+          <h3>Projemiz Hakkında Konuşalım</h3>
           <div class="contact-details">
             <div class="contact-item">
               <div class="contact-icon">
@@ -1346,7 +1394,7 @@ header.scrolled .logo img {
               </div>
               <div class="contact-text">
                 <h4>Genel Merkez</h4>
-                <p>123 Su Kenarı Caddesi<br>İstanbul, Türkiye 34000</p>
+                <p>Yıldız Teknik Üniversitesi Elektronik ve Haberleşme Mühendisliği Bölümü<br>İstanbul, Türkiye 34000</p>
               </div>
             </div>
             <div class="contact-item">
@@ -1355,7 +1403,7 @@ header.scrolled .logo img {
               </div>
               <div class="contact-text">
                 <h4>Telefon</h4>
-                <p><a href="tel:+902125551212">+90 212 555 1212</a></p>
+                <p><a href="tel:+902125551212">+90 536 262 7790</a></p>
               </div>
             </div>
             <div class="contact-item">
@@ -1364,7 +1412,7 @@ header.scrolled .logo img {
               </div>
               <div class="contact-text">
                 <h4>E-posta</h4>
-                <p><a href="mailto:info@sukalitex.com">info@sukalitex.com</a></p>
+                <p><a href="mailto:info@sukalitex.com">erteneren073@gmail.com</a></p>
               </div>
             </div>
             <div class="contact-item">
@@ -1373,44 +1421,12 @@ header.scrolled .logo img {
               </div>
               <div class="contact-text">
                 <h4>Çalışma Saatleri</h4>
-                <p>Pazartesi - Cuma: 8:00 - 18:00<br>7/24 Acil Destek</p>
+                <p>7/24<br></p>
               </div>
             </div>
           </div>
-          <div class="social-links">
-            <a href="#"><i class="fab fa-linkedin-in"></i></a>
-            <a href="#"><i class="fab fa-twitter"></i></a>
-            <a href="#"><i class="fab fa-facebook-f"></i></a>
-            <a href="#"><i class="fab fa-youtube"></i></a>
-          </div>
-        </div>
-        <div class="contact-form">
-          <form id="contactForm">
-            <div class="form-group">
-              <label for="name">Tam Adınız</label>
-              <input type="text" id="name" class="form-control" required>
-            </div>
-            <div class="form-group">
-              <label for="email">E-posta Adresiniz</label>
-              <input type="email" id="email" class="form-control" required>
-            </div>
-            <div class="form-group">
-              <label for="company">Kuruluş</label>
-              <input type="text" id="company" class="form-control">
-            </div>
-            <div class="form-group">
-              <label for="phone">Telefon Numarası</label>
-              <input type="tel" id="phone" class="form-control">
-            </div>
-            <div class="form-group">
-              <label for="message">Size Nasıl Yardımcı Olabiliriz?</label>
-              <textarea id="message" class="form-control" required></textarea>
-            </div>
-            <button type="submit" class="btn btn-primary">Mesaj Gönder <i class="fas fa-paper-plane"></i></button>
-          </form>
-        </div>
-      </div>
-    </div>
+       
+       
   </section>
 
   <footer>
@@ -1421,46 +1437,34 @@ header.scrolled .logo img {
             <i class="fas fa-tint"></i> AEA
           </a>
           <p> Misyonumuz yenilikçi teknolojiyle temiz, güvenli su sağlamaktır.</p>
-          <div class="social-links">
-            <a href="#"><i class="fab fa-linkedin-in"></i></a>
-            <a href="#"><i class="fab fa-twitter"></i></a>
-            <a href="#"><i class="fab fa-facebook-f"></i></a>
-            <a href="#"><i class="fab fa-instagram"></i></a>
-          </div>
+         
         </div>
         <div class="footer-column">
-          <h3>Çözümler</h3>
-          <ul class="footer-links">
-            <li><a href="#">Belediye Suları</a></li>
-            <li><a href="#">Endüstriyel Atık Sular</a></li>
-            <li><a href="#">Çevresel İzleme</a></li>
-            <li><a href="#">Su Ürünleri Yetiştiriciliği</a></li>
-            <li><a href="#">Araştırma Kurumları</a></li>
+     
           </ul>
         </div>
         <div class="footer-column">
-          <h3>Şirket</h3>
+          <h3>Proje</h3>
           <ul class="footer-links">
-            <li><a href="#">Hakkımızda</a></li>
-            <li><a href="#">Teknolojimiz</a></li>
-            <li><a href="#">Vaka Çalışmaları</a></li>
-            <li><a href="#">Kariyer</a></li>
-            <li><a href="#">Haberler & Etkinlikler</a></li>
+            <li>
+  <a href="/hakk.html">Hakkımızda</a>
+</li>
+
+           
+            
           </ul>
         </div>
         <div class="footer-column footer-newsletter">
-          <h3>Bülten</h3>
-          <p>Su kalitesi yenilikleri ve şirket haberleri hakkında güncellemeler almak için abone olun.</p>
+         
+          
           <form class="newsletter-form">
-            <input type="email" placeholder="E-postanız" class="newsletter-input" required>
-            <button type="submit" class="newsletter-btn">
-              <i class="fas fa-paper-plane"></i>
+         
             </button>
           </form>
         </div>
       </div>
       <div class="copyright">
-        <p>&copy; 2025 SuKaliteX Teknolojileri. Tüm hakları saklıdır. | <a href="#">Gizlilik Politikası</a> | <a href="#">Hizmet Şartları</a></p>
+        <p>&copy; 2025 AEA Teknolojileri. Tüm hakları saklıdır. | <a href="#">Gizlilik Politikası</a> | <a href="#">Hizmet Şartları</a></p>
       </div>
     </div>
   </footer>
