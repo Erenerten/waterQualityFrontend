@@ -358,14 +358,17 @@
     });
 
     /* ─────────── active sensor ─────────── */
+    const VALID_SENSORS = ['temperature', 'tds', 'flow-comparison'];
     let active = 'temperature';
     document.querySelectorAll('.sensor-box').forEach(box => {
       box.addEventListener('click', () => {
         document.querySelectorAll('.sensor-box').forEach(b => b.classList.remove('active'));
         box.classList.add('active');
-        active = box.dataset.sensor;
+        let sensor = box.dataset.sensor;
+        if (!VALID_SENSORS.includes(sensor)) sensor = 'temperature';
+        active = sensor;
         // Use correct label for flow-comparison
-        const title = active === 'flow-comparison' ? META.flowComparison.label : META[active].label;
+        const title = active === 'flow-comparison' ? META.flowComparison.label : META[active]?.label || META.temperature.label;
         document.getElementById('chartTitle').textContent = `${title} (${labels[slider.value]})`;
         refresh();
       });
@@ -397,6 +400,7 @@
       };
     }    /* ─────────── fetch & redraw ─────────── */    async function refresh() {
       try {
+        if (!VALID_SENSORS.includes(active)) active = 'temperature';
         const dateFilterVisible = document.getElementById('dateFilterInputs').style.display !== 'none';
         const todayOnly = document.getElementById('todayOnly').checked;
         const lastHourOnly = document.getElementById('lastHourOnly').checked;
@@ -461,8 +465,9 @@
           ? `/api/sensor-data/filter?type=${active}&startDate=${formatDateForAPI(startDate)}&endDate=${formatDateForAPI(endDate)}`
           : `/api/sensor-data/filter?type=${active}`;
           
-        // Update chart title
-        document.getElementById('chartTitle').textContent = `${META[active].title} (${titleDate})`;
+        // Update chart title safely
+        const chartTitle = isFlowComparison ? META.flowComparison.label : META[active]?.label || META.temperature.label;
+        document.getElementById('chartTitle').textContent = `${chartTitle} (${titleDate})`;
 
         const res = await fetch(url, { headers: { Authorization: 'Bearer ' + TOKEN } });
         if (!res.ok) throw new Error('HTTP ' + res.status);
@@ -547,7 +552,8 @@
         const values = data.map(r => toNum(r.value));
 
         // Update chart with new data
-        if (active === 'flow-comparison') {
+        let isFlowComparison = (active === 'flow-comparison');
+        if (isFlowComparison) {
           // Fetch flow1 and flow2 data
           const rows1 = await fetch(url, { headers: { Authorization: 'Bearer ' + TOKEN } }).then(r => r.json());
           let url2 = url.replace('flow1', 'flow2');
@@ -618,10 +624,10 @@
         }
         // For temperature and tds
         chart.data.datasets = [{
-          label: META[active].label,
+          label: META[active]?.label || META.temperature.label,
           data: values,
-          borderColor: META[active].color,
-          backgroundColor: META[active].backgroundColor,
+          borderColor: META[active]?.color || META.temperature.color,
+          backgroundColor: META[active]?.backgroundColor || META.temperature.backgroundColor,
           borderWidth: 2,
           tension: 0.25,
           fill: true,
