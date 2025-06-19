@@ -575,6 +575,8 @@
     }
 
     function updateChart(data, sensorType, timeRange) {
+      // Sort by timestamp ascending (oldest first)
+      data = data.slice().sort((a, b) => new Date(a.timestamp) - new Date(b.timestamp));
       const timestamps = data.map(r => {
         const date = new Date(r.timestamp);
         return date.toLocaleTimeString('tr-TR', { hour: '2-digit', minute: '2-digit', hour12: false, timeZone: 'Europe/Istanbul' });
