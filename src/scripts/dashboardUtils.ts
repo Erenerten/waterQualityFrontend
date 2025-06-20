@@ -253,14 +253,39 @@ export const fetchSensorData = async (
   }
 
   try {
+    // Special handling for flow-comparison: fetch both flow1 and flow2
+    if (type === 'flow-comparison') {
+      const [flow1Data, flow2Data] = await Promise.all([
+        fetchSensorData('flow1', startDate, endDate),
+        fetchSensorData('flow2', startDate, endDate)
+      ]);
+
+      // Combine timestamps from both datasets
+      const timestamps = [...new Set([
+        ...flow1Data.map(d => d.timestamp),
+        ...flow2Data.map(d => d.timestamp)
+      ])].sort();
+
+      // Create combined dataset
+      return timestamps.map(timestamp => {
+        const flow1 = flow1Data.find(d => d.timestamp === timestamp)?.value;
+        const flow2 = flow2Data.find(d => d.timestamp === timestamp)?.value;
+        return {
+          type: 'flow-comparison',
+          timestamp,
+          value: flow1 != null && flow2 != null ? flow1 - flow2 : 0,
+          flow1: flow1 ?? undefined,
+          flow2: flow2 ?? undefined
+        };
+      });
+    }
+
     const params = new URLSearchParams();
     if (type) params.append('type', type);
     if (startDate) params.append('startDate', startDate.toISOString());
     if (endDate) params.append('endDate', endDate.toISOString());
 
-    const url = type ? 
-      `/api/sensor-data/filter?${params.toString()}` : 
-      '/api/sensor-data';
+    const url = `/api/sensor-data/filter?${params.toString()}`;
 
     const res = await fetch(url, {
       headers: {
