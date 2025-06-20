@@ -1,11 +1,13 @@
 import type { Chart } from 'chart.js';
 
-export type SensorType = 'temperature' | 'turbidity' | 'tds' | 'flow-comparison';
+export type SensorType = 'temperature' | 'turbidity' | 'tds' | 'flow1' | 'flow2' | 'flow-comparison';
 
 export interface SensorData {
   type: SensorType;
   value: number;
   timestamp: string;
+  flow1?: number;  // Added for flow comparison
+  flow2?: number;  // Added for flow comparison
 }
 
 export interface SensorMeta {

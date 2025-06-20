@@ -18,7 +18,7 @@ export const META: Record<SensorType, SensorMeta> = {
     unit: 'NTU',
     title: 'Bulanıklık',
     color: '#45B7D1',
-    backgroundColor: 'rgba(69, 183, 209, 0.2)',  
+    backgroundColor: 'rgba(69, 183, 209, 0.2)',
     status: v => v > 5 ? ['Yüksek', 'warning'] : ['Normal', 'success']
   },
   tds: {
@@ -30,9 +30,23 @@ export const META: Record<SensorType, SensorMeta> = {
             v > 500 ? ['Yüksek', 'warning'] :
             ['Normal', 'success']
   },
-  'flow-comparison': {
-    title: 'Akış Karşılaştırma',
+  flow1: {
     unit: 'm³/s',
+    title: 'Akış 1',
+    color: '#9966FF',
+    backgroundColor: 'rgba(153, 102, 255, 0.2)',
+    status: v => v > 10 ? ['Yüksek', 'warning'] : ['Normal', 'success']
+  },
+  flow2: {
+    unit: 'm³/s',
+    title: 'Akış 2',
+    color: '#FF9F40',
+    backgroundColor: 'rgba(255, 159, 64, 0.2)',
+    status: v => v > 10 ? ['Yüksek', 'warning'] : ['Normal', 'success']
+  },
+  'flow-comparison': {
+    unit: 'm³/s',
+    title: 'Akış Karşılaştırma',
     color: '#9966FF',
     backgroundColor: 'rgba(153, 102, 255, 0.2)',
     color1: '#9966FF',
@@ -52,6 +66,72 @@ export const createChart = (canvasId: string, sensorType: SensorType): Chart | n
   
   const meta = META[sensorType];
   
+  if (sensorType === 'flow-comparison') {
+    return new ChartJS(ctx, {
+      type: 'line',
+      data: {
+        labels: [],
+        datasets: [
+          {
+            label: 'Akış 1',
+            data: [],
+            borderColor: meta.color1,
+            backgroundColor: meta.backgroundColor1,
+            borderWidth: 2,
+            tension: 0.25,
+            fill: true,
+            pointRadius: 2
+          },
+          {
+            label: 'Akış 2',
+            data: [],
+            borderColor: meta.color2,
+            backgroundColor: meta.backgroundColor2,
+            borderWidth: 2,
+            tension: 0.25,
+            fill: true,
+            pointRadius: 2
+          },
+          {
+            label: 'Fark',
+            data: [],
+            borderColor: meta.colorDiff,
+            backgroundColor: meta.backgroundColorDiff,
+            borderWidth: 2,
+            tension: 0.25,
+            fill: true,
+            pointRadius: 2
+          }
+        ]
+      },
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        plugins: {
+          legend: { display: true },
+          tooltip: {
+            callbacks: {
+              label: function(context: any) {
+                const value = context.parsed.y;
+                const date = new Date(context.raw.timestamp);
+                return `${context.dataset.label}: ${value} ${meta.unit} (${date.toLocaleString('tr-TR')})`;
+              }
+            }
+          }
+        },
+        scales: {
+          x: { grid: { display: false } },
+          y: {
+            title: {
+              display: true,
+              text: `${meta.title} (${meta.unit})`
+            }
+          }
+        }
+      }
+    });
+  }
+
   return new ChartJS(ctx, {
     type: 'line',
     data: {
@@ -59,9 +139,10 @@ export const createChart = (canvasId: string, sensorType: SensorType): Chart | n
       datasets: [{
         data: [],
         borderColor: meta.color,
+        backgroundColor: meta.backgroundColor,
         borderWidth: 2,
         tension: 0.25,
-        fill: false,
+        fill: true,
         pointRadius: 2
       }]
     },
@@ -89,8 +170,7 @@ export const createChart = (canvasId: string, sensorType: SensorType): Chart | n
           }
         }
       }
-    }
-  });
+    });
 };
 
 export const updateChart = (chart: Chart, data: SensorData[], timeWindow: number): void => {
@@ -100,7 +180,7 @@ export const updateChart = (chart: Chart, data: SensorData[], timeWindow: number
   const filteredData = data
     .filter(r => new Date(r.timestamp).getTime() >= cutoff)
     .sort((a, b) => new Date(a.timestamp).getTime() - new Date(b.timestamp).getTime());
-  
+
   chart.data.labels = filteredData.map(r => 
     new Date(r.timestamp).toLocaleTimeString('tr-TR', {
       hour: '2-digit',
@@ -108,10 +188,27 @@ export const updateChart = (chart: Chart, data: SensorData[], timeWindow: number
     })
   );
   
-  chart.data.datasets[0].data = filteredData.map(r => ({
-    x: new Date(r.timestamp).getTime(),
-    y: typeof r.value === 'number' ? r.value : parseFloat(String(r.value).replace(',', '.'))
-  } as Point));
+  if (chart.data.datasets.length === 3) { // Flow comparison chart
+    chart.data.datasets[0].data = filteredData.map(r => ({
+      x: new Date(r.timestamp).getTime(),
+      y: r.flow1 ?? null
+    })) as Point[];
+    
+    chart.data.datasets[1].data = filteredData.map(r => ({
+      x: new Date(r.timestamp).getTime(),
+      y: r.flow2 ?? null
+    })) as Point[];
+    
+    chart.data.datasets[2].data = filteredData.map(r => ({
+      x: new Date(r.timestamp).getTime(),
+      y: (r.flow1 != null && r.flow2 != null) ? r.flow1 - r.flow2 : null
+    })) as Point[];
+  } else {
+    chart.data.datasets[0].data = filteredData.map(r => ({
+      x: new Date(r.timestamp).getTime(),
+      y: typeof r.value === 'number' ? r.value : parseFloat(String(r.value).replace(',', '.'))
+    })) as Point[];
+  }
   
   chart.update();
 };
@@ -167,7 +264,7 @@ export const fetchSensorData = async (
     const res = await fetch(url, {
       headers: {
         'Authorization': `Bearer ${token}`,
-        'Content-Type': 'application/json'
+        'Content-Type': 'application/json',
       }
     });
     
