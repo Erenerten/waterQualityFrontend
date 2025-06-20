@@ -1,38 +1,29 @@
 ---
-import Layout from "../layouts/MainLayout.astro"; // adjust depth
-export const prerender = true;                       // keeps “static” output explicit
+import MainLayout from "../layouts/MainLayout.astro";
+export const prerender = true;
 ---
-
-<!DOCTYPE html>
-<html lang="tr">
-<head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Hakkımızda</title>
-  <style>
-    /* Sayfayı ortalamak ve mobil-uyumlu yapmak için küçük stil */
-    body{
-      margin:0;
-      display:flex;
-      justify-content:center;
-      align-items:center;
-      min-height:100vh;
-      background:#111;
-    }
-    video{
-      max-width:100%;
-      height:auto;
-      border-radius:12px;
-    }
-  </style>
-</head>
-<body>
-
-  <!-- Video yalnızca bu etikette -->
-  <video src="videos/kovboy.mp4" controls preload="metadata"
-         playsinline><!-- iOS için -->
+<MainLayout title="AEA">
+  <slot name="head">
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Hakkımızda</title>
+    <style>
+      body{
+        margin:0;
+        display:flex;
+        justify-content:center;
+        align-items:center;
+        min-height:100vh;
+        background:#111;
+      }
+      video{
+        max-width:100%;
+        height:auto;
+        border-radius:12px;
+      }
+    </style>
+  </slot>
+  <video src="/videos/kovboy.mp4" controls preload="metadata" playsinline>
     Tarayıcınız video öğesini desteklemiyor.
   </video>
-
-</body>
-</html>
+</MainLayout>
