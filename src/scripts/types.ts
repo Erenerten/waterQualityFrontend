@@ -6,8 +6,8 @@ export interface SensorData {
   type: SensorType;
   value: number;
   timestamp: string;
-  flow1?: number;  // Added for flow comparison
-  flow2?: number;  // Added for flow comparison
+  flow1?: number | null;
+  flow2?: number | null;
 }
 
 export interface SensorMeta {
@@ -18,6 +18,7 @@ export interface SensorMeta {
   status: (v: number) => [string, string];
   warningThreshold?: number;
   criticalThreshold?: number;
+  // Flow comparison specific
   color1?: string;
   color2?: string;
   colorDiff?: string;

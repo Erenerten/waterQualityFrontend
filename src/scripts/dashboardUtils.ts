@@ -182,54 +182,63 @@ export const updateChart = (chart: Chart, data: SensorData[], timeWindow: number
     .filter(r => new Date(r.timestamp).getTime() >= cutoff)
     .sort((a, b) => new Date(a.timestamp).getTime() - new Date(b.timestamp).getTime());
 
-  chart.data.labels = filteredData.map(r => 
+  const labels = filteredData.map(r => 
     new Date(r.timestamp).toLocaleTimeString('tr-TR', {
       hour: '2-digit',
       minute: '2-digit'
     })
   );
-  
+
   if (chart.data.datasets.length === 3) { // Flow comparison chart
-    chart.data.datasets[0].data = filteredData.map(r => ({
-      x: new Date(r.timestamp).getTime(),
-      y: r.flow1 ?? null
-    })) as Point[];
-    
-    chart.data.datasets[1].data = filteredData.map(r => ({
-      x: new Date(r.timestamp).getTime(),
-      y: r.flow2 ?? null
-    })) as Point[];
-    
-    chart.data.datasets[2].data = filteredData.map(r => ({
-      x: new Date(r.timestamp).getTime(),
-      y: (r.flow1 != null && r.flow2 != null) ? r.flow1 - r.flow2 : null
-    })) as Point[];
+    const flow1Values = filteredData.map(r => r.flow1 ?? null);
+    const flow2Values = filteredData.map(r => r.flow2 ?? null);
+    const diffValues = filteredData.map(r => {
+      if (r.flow1 != null && r.flow2 != null) {
+        return r.flow1 - r.flow2;
+      }
+      return null;
+    });
+
+    chart.data.labels = labels;
+    chart.data.datasets[0].data = flow1Values;
+    chart.data.datasets[1].data = flow2Values;
+    chart.data.datasets[2].data = diffValues;
   } else {
+    chart.data.labels = labels;
     chart.data.datasets[0].data = filteredData.map(r => ({
       x: new Date(r.timestamp).getTime(),
       y: typeof r.value === 'number' ? r.value : parseFloat(String(r.value).replace(',', '.'))
-    })) as Point[];
+    }));
   }
   
   chart.update();
 };
 
-interface AverageResult {
-  average: number;
-  timestamp: number;
-}
-
-export const calculate30MinAverage = (data: SensorData[], sensorType: SensorType): AverageResult | null => {
+// Update calculate30MinAverage to handle flow comparison
+export const calculate30MinAverage = (data: SensorData[], sensorType: SensorType): { average: number; timestamp: number } | null => {
   const now = Date.now();
   const thirtyMinutesAgo = now - 30 * 60 * 1000;
   
   const recentData = data
-    .filter(r => r.type === sensorType && r.value != null && 
-            new Date(r.timestamp).getTime() >= thirtyMinutesAgo)
-    .map(r => ({
-      value: typeof r.value === 'number' ? r.value : parseFloat(String(r.value).replace(',', '.')),
-      timestamp: new Date(r.timestamp).getTime()
-    }));
+    .filter(r => {
+      const timestamp = new Date(r.timestamp).getTime();
+      if (sensorType === 'flow-comparison') {
+        return timestamp >= thirtyMinutesAgo && r.flow1 != null && r.flow2 != null;
+      }
+      return r.type === sensorType && r.value != null && timestamp >= thirtyMinutesAgo;
+    })
+    .map(r => {
+      if (sensorType === 'flow-comparison' && r.flow1 != null && r.flow2 != null) {
+        return {
+          value: r.flow1 - r.flow2,
+          timestamp: new Date(r.timestamp).getTime()
+        };
+      }
+      return {
+        value: typeof r.value === 'number' ? r.value : parseFloat(String(r.value).replace(',', '.')),
+        timestamp: new Date(r.timestamp).getTime()
+      };
+    });
   
   if (recentData.length === 0) return null;
   
