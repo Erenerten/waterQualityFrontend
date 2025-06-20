@@ -1,6 +1,8 @@
-export type SensorType = 'temperature' | 'turbidity' | 'tds';
+import type { Chart } from 'chart.js';
 
-export interface Sensor {
+export type SensorType = 'temperature' | 'turbidity' | 'tds' | 'flow-comparison';
+
+export interface SensorData {
   type: SensorType;
   value: number;
   timestamp: string;
@@ -10,14 +12,14 @@ export interface SensorMeta {
   unit: string;
   title: string;
   color: string;
-  status: (value: number) => [string, string]; // [status text, status class]
+  backgroundColor: string;
+  status: (v: number) => [string, string];
+  warningThreshold?: number;
+  criticalThreshold?: number;
+  color1?: string;
+  color2?: string;
+  colorDiff?: string;
+  backgroundColor1?: string;
+  backgroundColor2?: string;
+  backgroundColorDiff?: string;
 }
-
-export interface SensorAverage {
-  average: number;
-  timestamp: number;
-}
-
-export type SensorMetadata = {
-  [key in SensorType]: SensorMeta;
-};

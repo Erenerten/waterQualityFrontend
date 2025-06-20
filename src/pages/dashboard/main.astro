@@ -1,69 +1,50 @@
 ---
 import MainLayout from '../../layouts/MainLayout.astro';
+import Sidebar from '../../components/Sidebar.astro';
+import type { SensorType, SensorData } from '../../scripts/types';
 export const prerender = false;
 
-// Add client-side type declarations
-declare global {
-  interface Window {
-    L: any;
-    Chart: any;
-  }
+interface Props {
+  title?: string;
 }
+
+const { title = "AEA - Dashboard" } = Astro.props;
 ---
 
-<div class="dashboard-layout">
-  <!-- Sidebar -->
-  <aside class="sidebar">
-    <div class="logo"><img src="/images/logo.png" alt="logo"><span>SuKaliteX</span></div>
-
-    <div class="sensor-box active" data-sensor="temperature">
-      <div class="sensor-header">
-        <h4>Su&nbsp;Sıcaklığı</h4>
-        <span class="sensor-status" id="stat-temperature">—</span>
-      </div>
-      <div class="sensor-value" id="val-temperature">-- <span class="sensor-unit">°C</span></div>
-      <div class="sensor-time" id="time-temperature">30 dakika ortalaması</div>
-    </div>
-
-    <div class="sensor-box" data-sensor="turbidity">
-      <div class="sensor-header">
-        <h4>Bulanıklık</h4>
-        <span class="sensor-status" id="stat-turbidity">—</span>
-      </div>
-      <div class="sensor-value" id="val-turbidity">-- <span class="sensor-unit">NTU</span></div>
-      <div class="sensor-time" id="time-turbidity">30 dakika ortalaması</div>
-    </div>
-
-    <div class="sensor-box" data-sensor="tds">
-      <div class="sensor-header">
-        <h4>TDS / İletkenlik</h4>
-        <span class="sensor-status" id="stat-tds">—</span>
-      </div>
-      <div class="sensor-value" id="val-tds">-- <span class="sensor-unit">ppm</span></div>
-      <div class="sensor-time" id="time-tds">30 dakika ortalaması</div>
-    </div>
-  </aside>
-
-  <!-- Main layout -->
-  <section class="main">
-    <div class="top-bar"><span id="clock">--:--</span></div>
-
-    <div class="content">
-      <div class="map-wrap"><div id="map"></div></div>
-
-      <div class="chart-wrap">
-        <div class="chart-title" id="chartTitle">Su Sıcaklığı (son 10 dakika)</div>
-        <div class="chart-box"><canvas id="sensorChart"></canvas></div>
-
-        <!-- slider -->
-        <div class="slider-wrap">
-          <input type="range" id="timeSlider" min="0" max="7" value="0">
-          <div class="slider-label" id="sliderLabel">Son 10 dakika</div>
+<MainLayout title={title}>
+  <div class="dashboard-layout">
+    <Sidebar />
+    
+    <!-- Main layout -->
+    <section class="main">
+      <div class="top-bar">
+        <span id="clock">--:--</span>
+        <div class="user-menu">
+          <i class="fas fa-user-circle"></i>
+          <span id="username">Admin</span>
         </div>
       </div>
-    </div>
-  </section>
-</div>
+
+      <div class="content">
+        <div class="map-wrap">
+          <div id="map"></div>
+        </div>
+
+        <div class="chart-wrap">
+          <div class="chart-title" id="chartTitle">Su Sıcaklığı (son 10 dakika)</div>
+          <div class="chart-box">
+            <canvas id="sensorChart"></canvas>
+          </div>
+
+          <div class="slider-wrap">
+            <input type="range" id="timeSlider" min="0" max="7" value="0">
+            <div class="slider-label" id="sliderLabel">Son 10 dakika</div>
+          </div>
+        </div>
+      </div>
+    </section>
+  </div>
+</MainLayout>
 
 <style>
 :root {
@@ -94,67 +75,6 @@ body {
   height: 100vh;
 }
 
-/* sidebar */
-.sidebar {
-  width: 250px;
-  background: var(--dark);
-  color: #fff;
-  padding: 20px 16px;
-  display: flex;
-  flex-direction: column;
-  gap: 18px;
-}
-
-.logo {
-  display: flex;
-  align-items: center;
-  font-weight: 600;
-  font-size: 1.3rem;
-}
-
-.logo img {
-  height: 52px;
-  margin-right: 10px;
-}
-
-.sensor-box {
-  background: rgba(255,255,255,.08);
-  padding: 14px;
-  border-radius: 10px;
-  border-left: 3px solid var(--accent);
-  cursor: pointer;
-  transition: .2s;
-}
-
-.sensor-box.active {
-  border-left-color: #fff;
-}
-
-.sensor-value {
-  font-size: 1.25rem;
-  font-weight: 600;
-  margin: 4px 0;
-}
-
-.sensor-unit {
-  font-size: .75rem;
-  opacity: .8;
-}
-
-.sensor-status {
-  font-size: .65rem;
-  padding: 2px 6px;
-  border-radius: 14px;
-  background: var(--success);
-}
-
-.sensor-time {
-  font-size: .7rem;
-  opacity: .7;
-  margin-top: 4px;
-}
-
-/* main */
 .main {
   flex: 1;
   display: flex;
@@ -167,17 +87,37 @@ body {
   box-shadow: 0 2px 5px rgba(0,0,0,.05);
   display: flex;
   justify-content: space-between;
+  align-items: center;
+}
+
+.user-menu {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  color: var(--text);
+  font-size: 0.9rem;
+}
+
+.user-menu i {
+  font-size: 1.5rem;
+  color: var(--accent);
 }
 
 .content {
   flex: 1;
   display: flex;
   overflow: hidden;
+  padding: 20px;
+  gap: 20px;
 }
 
 .map-wrap {
   flex: 1.1;
   min-width: 360px;
+  background: #fff;
+  border-radius: 12px;
+  overflow: hidden;
+  box-shadow: 0 2px 8px rgba(0,0,0,.08);
 }
 
 #map {
@@ -191,11 +131,14 @@ body {
   background: #fff;
   display: flex;
   flex-direction: column;
+  border-radius: 12px;
+  box-shadow: 0 2px 8px rgba(0,0,0,.08);
 }
 
 .chart-title {
   font-size: 1.1rem;
   margin-bottom: 8px;
+  color: var(--dark);
 }
 
 .chart-box {
@@ -205,10 +148,10 @@ body {
 }
 
 #sensorChart {
-  flex: 1;
+  width: 100%;
+  height: 100%;
 }
 
-/* slider */
 .slider-wrap {
   margin-top: 18px;
   display: flex;
@@ -225,245 +168,162 @@ body {
   font-size: .9rem;
   color: #555;
 }
+
+@media (max-width: 1200px) {
+  .content {
+    flex-direction: column;
+  }
+  
+  .map-wrap {
+    height: 300px;
+  }
+}
+
+@media (max-width: 768px) {
+  .dashboard-layout {
+    flex-direction: column;
+  }
+  
+  .sidebar {
+    width: 100%;
+    height: auto;
+  }
+}
 </style>
 
 <script>
-// Type definitions
-type SensorType = 'temperature' | 'turbidity' | 'tds';
+import { META, createChart, updateChart, calculate30MinAverage, fetchSensorData } from '../../scripts/dashboardUtils';
+import type { SensorType, SensorData } from '../../scripts/types';
+import { initMap } from '../../scripts/mapUtils';
 
-interface SensorData {
-  type: SensorType;
-  value: number;
-  timestamp: string;
-}
-
-interface SensorMeta {
-  unit: string;
-  title: string;
-  status: (v: number) => [string, string];
-}
-
-type SensorMetadata = {
-  [K in SensorType]: SensorMeta;
-}
-
-interface ChartContext {
-  parsed: { y: number };
-  raw: { timestamp: string };
-}
-
-/* ─────────── auth guard & helpers ─────────── */
+// Check authentication
 const TOKEN = localStorage.getItem('token');
-if (!TOKEN) location.href = '/dashboard/login';
+if (!TOKEN) {
+  window.location.href = '/dashboard/login';
+}
 
+// Initialize clock
 setInterval(() => {
   const clock = document.getElementById('clock');
-  if (clock) clock.textContent = new Date().toLocaleTimeString('tr-TR', {
-    hour:'2-digit',
-    minute:'2-digit'
-  });
+  if (clock) {
+    clock.textContent = new Date().toLocaleTimeString('tr-TR', {
+      hour: '2-digit',
+      minute: '2-digit'
+    });
+  }
 }, 1000);
 
-const toNum = (x: string | number): number => 
-  typeof x === 'number' ? x : parseFloat(String(x).replace(',','.'));
+// Initialize map
+const map = initMap('map', [41.03, 28.89]);
 
-/* ─────────── map ─────────── */
-const mapEl = document.getElementById('map');
-if (mapEl) {
-  const L = window.L;
-  const map = L.map('map').setView([41.03,28.89], 15);
-  L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',
-    {attribution: '© OpenStreetMap'}).addTo(map);
-  L.marker([41.03,28.89]).addTo(map).bindPopup('Ölçüm Noktası');
-}
+// Initialize chart
+let activeSensor: SensorType = 'temperature';
+const chart = createChart('sensorChart', activeSensor);
 
-/* ─────────── chart ─────────── */
-const canvas = document.getElementById('sensorChart') as HTMLCanvasElement;
-const ctx = canvas?.getContext('2d');
-const Chart = window.Chart;
-const chart = new Chart(ctx, {
-  type: 'line',
-  data: {
-    labels: [],
-    datasets: [{
-      data: [],
-      borderColor: '#0066cc',
-      borderWidth: 2,
-      tension: 0.25,
-      fill: false,
-      pointRadius: 2
-    }]
-  },
-  options: {
-    responsive: true,
-    maintainAspectRatio: false,
-    plugins: {
-      legend: {display: false},
-      tooltip: {
-        callbacks: {
-          label: function(context: ChartContext) {
-            const value = context.parsed.y;
-            const timestamp = context.raw.timestamp;
-            return `${value} ${META[active].unit} (${new Date(timestamp).toLocaleString('tr-TR')})`;
-          }
-        }
-      }
-    },
-    scales: {x: {grid: {display: false}}}
-  }
-});
+// Time window handling
+const timeLabels = [
+  'Son 10 dakika', 'Son 30 dakika', 'Son 1 saat', 'Son 4 saat',
+  'Son 1 gün', 'Son 3 gün', 'Son 1 hafta', 'Tüm veri'
+] as const;
+const timeMinutes = [10, 30, 60, 240, 1440, 4320, 10080, Infinity] as const;
 
-/* ─────────── sensor meta ─────────── */
-const META: SensorMetadata = {
-  temperature: {
-    unit: '°C',
-    title: 'Su Sıcaklığı',
-    status: (v: number): [string, string] => v > 26 ? ['Tehlikeli','danger'] :
-            v > 24 ? ['Yüksek','warning'] : ['Normal','success']
-  },
-  turbidity: {
-    unit: 'NTU',
-    title: 'Bulanıklık',
-    status: (v: number): [string, string] => v > 5 ? ['Yüksek','warning'] : ['Normal','success']
-  },
-  tds: {
-    unit: 'ppm',
-    title: 'TDS / İletkenlik',
-    status: (v: number): [string, string] => v > 1000 ? ['Yüksek','warning'] : ['Normal','success']
-  }
-} as const;
-
-/* ─────────── time-range slider ─────────── */
 const slider = document.getElementById('timeSlider') as HTMLInputElement;
 const sliderLabel = document.getElementById('sliderLabel');
-const labels = [
-  'Son 10 dakika','Son 30 dakika','Son 1 saat','Son 4 saat',
-  'Son 1 gün','Son 3 gün','Son 1 hafta','Tüm veri'
-];
-const minutes = [10,30,60,240,1440,4320,10080,Infinity];
 
 slider?.addEventListener('input', () => {
-  if (sliderLabel && slider) {
-    sliderLabel.textContent = labels[slider.valueAsNumber];
-    const chartTitle = document.getElementById('chartTitle');
-    if (chartTitle) {
-      chartTitle.textContent = `${META[active].title} (${labels[slider.valueAsNumber]})`;
-    }
-    refresh();
+  if (!slider || !sliderLabel) return;
+  
+  const value = parseInt(slider.value);
+  sliderLabel.textContent = timeLabels[value];
+  
+  const chartTitle = document.getElementById('chartTitle');
+  if (chartTitle) {
+    chartTitle.textContent = `${META[activeSensor].title} (${timeLabels[value]})`;
   }
+  
+  refresh();
 });
 
-/* ─────────── active sensor ─────────── */
-let active: SensorType = 'temperature';
-document.querySelectorAll('.sensor-box').forEach((box: Element) => {
+// Sensor box click handlers
+document.querySelectorAll('.sensor-box').forEach(box => {
   box.addEventListener('click', () => {
     const sensorType = (box as HTMLElement).dataset.sensor as SensorType;
-    if (sensorType) {
-      document.querySelectorAll('.sensor-box').forEach(b => b.classList.remove('active'));
-      box.classList.add('active');
-      active = sensorType;
-      const chartTitle = document.getElementById('chartTitle');
-      if (chartTitle && slider) {
-        chartTitle.textContent = `${META[active].title} (${labels[slider.valueAsNumber]})`;
-      }
-      refresh();
+    if (!sensorType || !META[sensorType]) return;
+
+    document.querySelectorAll('.sensor-box').forEach(b => 
+      b.classList.remove('active')
+    );
+    box.classList.add('active');
+    
+    activeSensor = sensorType;
+    if (chart) {
+      chart.destroy();
+      createChart('sensorChart', activeSensor);
     }
+    
+    const chartTitle = document.getElementById('chartTitle');
+    if (chartTitle && slider) {
+      chartTitle.textContent = `${META[activeSensor].title} (${timeLabels[slider.valueAsNumber]})`;
+    }
+    
+    refresh();
   });
 });
 
-/* ─────────── calculate 30-minute average ─────────── */
-function calculate30MinAverage(rows: SensorData[], sensorType: SensorType) {
-  const now = Date.now();
-  const thirtyMinutesAgo = now - 30 * 60 * 1000;
-  
-  const recentData = rows
-    .filter(r => r.type === sensorType && r.value != null && 
-            new Date(r.timestamp).getTime() >= thirtyMinutesAgo)
-    .map(r => ({
-      value: toNum(r.value),
-      timestamp: new Date(r.timestamp).getTime()
-    }));
-  
-  if (recentData.length === 0) return null;
-  
-  const sum = recentData.reduce((acc: number, curr) => acc + curr.value, 0);
-  const average = sum / recentData.length;
-  const latestTimestamp = Math.max(...recentData.map(r => r.timestamp));
-  
-  return {
-    average,
-    timestamp: latestTimestamp
-  };
-}
-
-/* ─────────── fetch & redraw ─────────── */
+// Data refresh function
 async function refresh() {
   try {
-    const res = await fetch('/api/sensor-data',
-      {headers: {Authorization: `Bearer ${TOKEN}`}});
-    if (!res.ok) throw new Error('HTTP '+res.status);
-    const rows: SensorData[] = await res.json();
-
-    /* update sidebar tiles with 30-minute averages */
-    (Object.keys(META) as SensorType[]).forEach(key => {
-      const avgData = calculate30MinAverage(rows, key);
+    const data = await fetchSensorData();
+    
+    // Update sensor boxes
+    (Object.keys(META) as SensorType[]).forEach(sensorType => {
+      const avgData = calculate30MinAverage(data, sensorType);
       if (!avgData) return;
       
-      const v = avgData.average;
-      if (!Number.isFinite(v)) return;
+      const value = avgData.average;
+      if (!Number.isFinite(value)) return;
       
-      // Update value display
-      const valEl = document.getElementById(`val-${key}`);
+      // Update value
+      const valEl = document.getElementById(`val-${sensorType}`);
       if (valEl) {
-        valEl.innerHTML = `${v.toFixed(1)} <span class="sensor-unit">${META[key].unit}</span>`;
+        valEl.innerHTML = `${value.toFixed(1)} <span class="sensor-unit">${META[sensorType].unit}</span>`;
       }
-        
+      
       // Update status
-      const [txt,cls] = META[key].status(v);
-      const st = document.getElementById(`stat-${key}`);
-      if (st) {
-        st.textContent = txt;
-        st.style.background = `var(--${cls})`;
+      const [status, className] = META[sensorType].status(value);
+      const statusEl = document.getElementById(`stat-${sensorType}`);
+      if (statusEl) {
+        statusEl.textContent = status;
+        statusEl.className = `sensor-status ${className}`;
       }
       
       // Update timestamp
-      const timeEl = document.getElementById(`time-${key}`);
+      const timeEl = document.getElementById(`time-${sensorType}`);
       if (timeEl) {
-        timeEl.textContent = `30 dakika ortalaması (${
-          new Date(avgData.timestamp).toLocaleTimeString('tr-TR',
-            {hour:'2-digit', minute:'2-digit'})})`;
+        const time = new Date(avgData.timestamp).toLocaleTimeString('tr-TR', {
+          hour: '2-digit',
+          minute: '2-digit'
+        });
+        timeEl.textContent = `30 dakika ortalaması (${time})`;
       }
     });
-
-    /* chart data for ACTIVE sensor within slider window */
-    if (slider) {
-      const now = Date.now();
-      const winMin = minutes[slider.valueAsNumber];
-      const cutoff = winMin === Infinity ? 0 : now - winMin*60*1000;
-
-      const data = rows
-        .filter(r => r.type === active && r.value != null &&
-          new Date(r.timestamp).getTime() >= cutoff)
-        .sort((a, b) => new Date(a.timestamp).getTime() - new Date(b.timestamp).getTime());
-
-      chart.data.labels = data.map(r =>
-        new Date(r.timestamp).toLocaleTimeString('tr-TR',{hour12:false}));
-      chart.data.datasets[0].data = data.map(r => ({
-        y: toNum(r.value),
-        timestamp: r.timestamp
-      }));
-      chart.update();
+    
+    // Update chart
+    if (chart && slider) {
+      const timeWindow = timeMinutes[slider.valueAsNumber];
+      updateChart(chart, data.filter((d: SensorData) => d.type === activeSensor), timeWindow);
     }
-
-  } catch(e) {
-    console.error(e);
-    if (e instanceof Error && (e.message.includes('401') || e.message.includes('403'))) {
+    
+  } catch (error) {
+    console.error('Refresh error:', error);
+    if (error instanceof Error && (error.message.includes('401') || error.message.includes('403'))) {
       localStorage.removeItem('token');
       window.location.href = '/dashboard/login';
     }
   }
 }
 
+// Initial refresh and interval
 refresh();
 setInterval(refresh, 5000);
 </script>

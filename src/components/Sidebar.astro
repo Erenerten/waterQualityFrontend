@@ -1,30 +1,51 @@
 ---
+import type { SensorType } from '../scripts/types';
+
+const sensors: SensorType[] = ['temperature', 'turbidity', 'tds', 'flow-comparison'];
 const currentPath = Astro.url.pathname;
 
 const menuItems = [
-  { href: '/dashboard', icon: 'fa-chart-line', text: 'Panel' },
-  { href: '/dashboard/reports', icon: 'fa-file-alt', text: 'Raporlar' },
-  { href: '/dashboard/settings', icon: 'fa-cog', text: 'Ayarlar' },
-  { href: '/', icon: 'fa-home', text: 'Ana Sayfa' }
+  { href: '/dashboard', text: 'Panel', icon: 'chart-line' },
+  { href: '/dashboard/reports', text: 'Raporlar', icon: 'file-alt' },
+  { href: '/dashboard/settings', text: 'Ayarlar', icon: 'cog' },
+  { href: '/', text: 'Ana Sayfa', icon: 'home' }
 ];
 ---
 
 <aside class="sidebar">
-  <div class="sidebar-header">
-    <img src="/images/logo.png" alt="AEA Logo" />
-    <h2>AEA Panel</h2>
+  <div class="logo">
+    <img src="/images/logo.png" alt="logo">
+    <span>AEA</span>
   </div>
-  
-  <nav class="sidebar-nav">
+
+  <!-- Sensor boxes -->
+  {sensors.map(type => (
+    <div class={`sensor-box ${type === 'temperature' ? 'active' : ''}`} data-sensor={type}>
+      <div class="sensor-header">
+        <h4>{type === 'temperature' ? 'Su Sıcaklığı' : 
+            type === 'turbidity' ? 'Bulanıklık' :
+            type === 'tds' ? 'TDS / İletkenlik' : 
+            'Akış Karşılaştırma'}</h4>
+        <span class="sensor-status" id={`stat-${type}`}>—</span>
+      </div>
+      <div class="sensor-value" id={`val-${type}`}>-- <span class="sensor-unit">
+        {type === 'temperature' ? '°C' :
+         type === 'turbidity' ? 'NTU' :
+         type === 'tds' ? 'ppm' : 
+         'm³/s'}</span>
+      </div>
+      <div class="sensor-time" id={`time-${type}`}>30 dakika ortalaması</div>
+    </div>
+  ))}
+
+  <!-- Navigation -->
+  <nav class="nav-menu">
     {menuItems.map(item => (
       <a 
         href={item.href}
-        class:list={[
-          'nav-item',
-          { active: currentPath === item.href }
-        ]}
+        class:list={['nav-item', { active: currentPath === item.href }]}
       >
-        <i class={`fas ${item.icon}`}></i>
+        <i class={`fas fa-${item.icon}`}></i>
         <span>{item.text}</span>
       </a>
     ))}
@@ -32,65 +53,139 @@ const menuItems = [
 </aside>
 
 <style>
+.sidebar {
+  width: 250px;
+  background: var(--dark);
+  color: #fff;
+  padding: 20px 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+}
+
+.logo {
+  display: flex;
+  align-items: center;
+  font-weight: 600;
+  font-size: 1.3rem;
+}
+
+.logo img {
+  height: 52px;
+  margin-right: 10px;
+}
+
+.sensor-box {
+  background: rgba(255,255,255,.08);
+  padding: 14px;
+  border-radius: 10px;
+  border-left: 3px solid var(--accent);
+  cursor: pointer;
+  transition: .2s;
+}
+
+.sensor-box:hover {
+  background: rgba(255,255,255,.12);
+}
+
+.sensor-box.active {
+  border-left-color: #fff;
+}
+
+.sensor-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 6px;
+}
+
+.sensor-header h4 {
+  font-size: .85rem;
+  font-weight: 500;
+  font-family: 'Poppins', sans-serif;
+}
+
+.sensor-status {
+  font-size: .65rem;
+  padding: 2px 6px;
+  border-radius: 14px;
+  background: var(--success);
+}
+
+.sensor-status.warning {
+  background: var(--warning);
+}
+
+.sensor-status.danger {
+  background: var(--danger);
+}
+
+.sensor-value {
+  font-size: 1.25rem;
+  font-weight: 600;
+  margin: 4px 0;
+}
+
+.sensor-unit {
+  font-size: .75rem;
+  opacity: .8;
+}
+
+.sensor-time {
+  font-size: .7rem;
+  opacity: .7;
+  margin-top: 4px;
+}
+
+.nav-menu {
+  margin-top: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.nav-item {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 10px;
+  color: rgba(255,255,255,.8);
+  text-decoration: none;
+  border-radius: 8px;
+  transition: .2s;
+}
+
+.nav-item:hover {
+  background: rgba(255,255,255,.1);
+  color: #fff;
+}
+
+.nav-item.active {
+  background: var(--accent);
+  color: #fff;
+}
+
+.nav-item i {
+  width: 20px;
+  text-align: center;
+}
+
+@media (max-width: 768px) {
   .sidebar {
-    width: 250px;
-    height: 100vh;
-    background: var(--dark);
-    color: white;
-    padding: 1.5rem;
-    position: fixed;
-    left: 0;
-    top: 0;
+    width: 100%;
+    padding: 12px;
   }
-
-  .sidebar-header {
-    display: flex;
-    align-items: center;
-    gap: 1rem;
-    padding-bottom: 2rem;
-    border-bottom: 1px solid rgba(255,255,255,0.1);
+  
+  .nav-menu {
+    flex-direction: row;
+    flex-wrap: wrap;
+    justify-content: center;
   }
-
-  .sidebar-header img {
-    width: 40px;
-    height: auto;
-  }
-
-  .sidebar-header h2 {
-    font-size: 1.2rem;
-    margin: 0;
-  }
-
-  .sidebar-nav {
-    margin-top: 2rem;
-    display: flex;
-    flex-direction: column;
-    gap: 0.5rem;
-  }
-
+  
   .nav-item {
-    display: flex;
-    align-items: center;
-    gap: 1rem;
-    padding: 0.8rem 1rem;
-    color: rgba(255,255,255,0.8);
-    text-decoration: none;
-    border-radius: 8px;
-    transition: all 0.3s ease;
+    flex: 1;
+    min-width: 120px;
+    justify-content: center;
   }
-
-  .nav-item:hover {
-    background: rgba(255,255,255,0.1);
-    color: white;
-  }
-
-  .nav-item.active {
-    background: var(--primary);
-    color: white;
-  }
-
-  .nav-item i {
-    width: 20px;
-    text-align: center;
-  }
+}
 </style>
