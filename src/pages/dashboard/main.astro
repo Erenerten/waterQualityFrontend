@@ -40,6 +40,17 @@ const { title = "AEA - Dashboard" } = Astro.props;
             <input type="range" id="timeSlider" min="0" max="7" value="0">
             <div class="slider-label" id="sliderLabel">Son 10 dakika</div>
           </div>
+
+          <!-- Polling rate selector -->
+          <div class="polling-wrap">
+            <span class="polling-label">Güncelleme Aralığı:</span>
+            <select id="pollingRate" class="polling-select">
+              <option value="5000">5 saniye</option>
+              <option value="10000">10 saniye</option>
+              <option value="30000">30 saniye</option>
+              <option value="60000">1 dakika</option>
+            </select>
+          </div>
         </div>
       </div>
     </section>
@@ -169,6 +180,28 @@ body {
   color: #555;
 }
 
+/* Polling rate selector styles */
+.polling-wrap {
+  margin-top: 12px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  justify-content: center;
+}
+
+.polling-label {
+  font-size: 0.9rem;
+  color: #555;
+}
+
+.polling-select {
+  padding: 4px 8px;
+  border-radius: 4px;
+  border: 1px solid #ddd;
+  background: #fff;
+  color: #333;
+}
+
 @media (max-width: 1200px) {
   .content {
     flex-direction: column;
@@ -218,7 +251,8 @@ const map = initMap('map', [41.03, 28.89]);
 
 // Initialize chart
 let activeSensor: SensorType = 'temperature';
-const chart = createChart('sensorChart', activeSensor);
+let chartRefreshInterval = 5000;
+let chart = createChart('sensorChart', activeSensor);
 
 // Time window handling
 const timeLabels = [
@@ -244,6 +278,17 @@ slider?.addEventListener('input', () => {
   refresh();
 });
 
+// Polling rate change handler
+const pollingRateSelect = document.getElementById('pollingRate') as HTMLSelectElement;
+pollingRateSelect.addEventListener('change', () => {
+  const value = parseInt(pollingRateSelect.value);
+  chartRefreshInterval = value;
+
+  // Restart the refresh interval with the new value
+  clearInterval(refreshInterval);
+  refreshInterval = setInterval(refresh, chartRefreshInterval);
+});
+
 // Sensor box click handlers
 document.querySelectorAll('.sensor-box').forEach(box => {
   box.addEventListener('click', () => {
@@ -258,15 +303,17 @@ document.querySelectorAll('.sensor-box').forEach(box => {
     activeSensor = sensorType;
     if (chart) {
       chart.destroy();
-      createChart('sensorChart', activeSensor);
+      const newChart = createChart('sensorChart', activeSensor);
+      if (newChart) {
+        chart = newChart;
+        refresh(); // Refresh immediately with new chart
+      }
     }
     
     const chartTitle = document.getElementById('chartTitle');
     if (chartTitle && slider) {
       chartTitle.textContent = `${META[activeSensor].title} (${timeLabels[slider.valueAsNumber]})`;
     }
-    
-    refresh();
   });
 });
 
@@ -328,5 +375,5 @@ async function refresh() {
 
 // Initial refresh and interval
 refresh();
-setInterval(refresh, 5000);
+let refreshInterval = setInterval(refresh, chartRefreshInterval);
 </script>
