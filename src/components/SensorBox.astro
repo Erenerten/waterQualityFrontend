@@ -1,0 +1,12 @@
+---
+// SensorBox.astro
+const { sensor, label, unit, id } = Astro.props;
+---
+<div class={"sensor-box" + (sensor === 'temperature' ? ' active' : '')} data-sensor={sensor}>
+  <div class="sensor-header">
+    <h4>{label}</h4>
+    <span class="sensor-status" id={`stat-${id}`}>—</span>
+  </div>
+  <div class="sensor-value" id={`val-${id}`}>-- <span class="sensor-unit">{unit}</span></div>
+  <div class="sensor-time" id={`time-${id}`}>30 dakika ortalaması</div>
+</div>

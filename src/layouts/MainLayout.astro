@@ -1,0 +1,17 @@
+---
+/* Put page-level <head> defaults and <nav> here */
+import "../styles/global.css";
+---
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+  <meta charset="utf-8" />
+  <title>{Astro.props.title || 'AEA'}</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <!-- any other common meta / links -->
+  <slot name="head" />     <!-- page-specific head bits -->
+</head>
+<body>
+  <slot />                 <!-- page body -->
+</body>
+</html>

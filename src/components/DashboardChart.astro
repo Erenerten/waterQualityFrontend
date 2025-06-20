@@ -1,0 +1,30 @@
+---
+// DashboardChart.astro
+// Placeholder for the dashboard chart. Chart.js logic will be added with client:load in the next step.
+---
+<div class="chart-header">
+  <div class="chart-title" id="chartTitle">Su Sıcaklığı (son 10 dakika)</div>
+</div>
+<div class="chart-box"><canvas id="sensorChart"></canvas></div>
+<div class="date-filter">
+  <div class="filter-toggle">
+    <label>
+      <input type="checkbox" id="todayOnly" /> Sadece Bugün
+    </label>
+    <label>
+      <input type="checkbox" id="lastHourOnly" /> Son 1 Saat
+    </label>
+    <button id="toggleDateFilter" class="filter-btn">Tarih Filtresi</button>
+  </div>
+  <div id="dateFilterInputs" class="date-inputs" style="display: none;">
+    <input type="datetime-local" id="startDate" class="date-input" />
+    <span>-</span>
+    <input type="datetime-local" id="endDate" class="date-input" />
+    <button id="applyFilter" class="filter-btn">Uygula</button>
+    <button id="resetFilter" class="filter-btn secondary">Sıfırla</button>
+  </div>
+</div>
+<div class="slider-wrap">
+  <input type="range" id="timeSlider" min="0" max="7" value="0" />
+  <div class="slider-label" id="sliderLabel">Son 10 dakika</div>
+</div>
