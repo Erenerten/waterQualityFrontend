@@ -1,230 +1,449 @@
 ---
 import MainLayout from '../../layouts/MainLayout.astro';
-import type { Sensor, SensorType, SensorAverage } from '../../scripts/types';
-import { META } from '../../scripts/dashboardUtils';
 export const prerender = false;
+
+// Add client-side type declarations
+declare global {
+  interface Window {
+    L: any;
+  }
+}
 ---
 
-<MainLayout title="AEA - Su Kalitesi İzleme">
-  <div class="dashboard">
-    <h1>Su Kalitesi İzleme Paneli</h1>
-    
-    <div class="sensors-grid">
-      {Object.entries(META).map(([type, meta]) => (
-        <div class="sensor-card">
-          <h3>{meta.title}</h3>
-          <div class="chart-container">
-            <canvas id={`${type}Chart`}></canvas>
-          </div>
-          <div class="current-value">
-            <div id={`${type}-value`}>-- {meta.unit}</div>
-            <div id={`${type}-status`}>--</div>
-          </div>
-        </div>
-      ))}
+<div class="dashboard-layout">
+  <!-- Sidebar -->
+  <aside class="sidebar">
+    <div class="logo"><img src="/images/logo.png" alt="logo"><span>SuKaliteX</span></div>
+
+    <div class="sensor-box active" data-sensor="temperature">
+      <div class="sensor-header">
+        <h4>Su&nbsp;Sıcaklığı</h4>
+        <span class="sensor-status" id="stat-temperature">—</span>
+      </div>
+      <div class="sensor-value" id="val-temperature">-- <span class="sensor-unit">°C</span></div>
+      <div class="sensor-time" id="time-temperature">30 dakika ortalaması</div>
     </div>
 
-    <div class="slider-container">
-      <input type="range" id="timeSlider" min="0" max="6" value="0">
-      <div id="sliderLabel">Son 10 dakika</div>
+    <div class="sensor-box" data-sensor="turbidity">
+      <div class="sensor-header">
+        <h4>Bulanıklık</h4>
+        <span class="sensor-status" id="stat-turbidity">—</span>
+      </div>
+      <div class="sensor-value" id="val-turbidity">-- <span class="sensor-unit">NTU</span></div>
+      <div class="sensor-time" id="time-turbidity">30 dakika ortalaması</div>
     </div>
-    
-    <div id="last-updated" class="last-updated">Son güncelleme: --:--</div>
-  </div>
-</MainLayout>
+
+    <div class="sensor-box" data-sensor="tds">
+      <div class="sensor-header">
+        <h4>TDS / İletkenlik</h4>
+        <span class="sensor-status" id="stat-tds">—</span>
+      </div>
+      <div class="sensor-value" id="val-tds">-- <span class="sensor-unit">ppm</span></div>
+      <div class="sensor-time" id="time-tds">30 dakika ortalaması</div>
+    </div>
+  </aside>
+
+  <!-- Main layout -->
+  <section class="main">
+    <div class="top-bar"><span id="clock">--:--</span></div>
+
+    <div class="content">
+      <div class="map-wrap"><div id="map"></div></div>
+
+      <div class="chart-wrap">
+        <div class="chart-title" id="chartTitle">Su Sıcaklığı (son 10 dakika)</div>
+        <div class="chart-box"><canvas id="sensorChart"></canvas></div>
+
+        <!-- slider -->
+        <div class="slider-wrap">
+          <input type="range" id="timeSlider" min="0" max="7" value="0">
+          <div class="slider-label" id="sliderLabel">Son 10 dakika</div>
+        </div>
+      </div>
+    </div>
+  </section>
+</div>
 
 <style>
-.dashboard {
-  max-width: 1400px;
-  margin: 2rem auto;
-  padding: 0 1rem;
+:root {
+  --dark:#0a2342;
+  --gray:#f8fafc;
+  --text:#223;
+  --accent:#00b4d8;
+  --success:#2ecc71;
+  --warning:#f39c12;
+  --danger:#e74c3c;
 }
 
-h1 {
-  color: var(--dark);
-  margin-bottom: 2rem;
-  text-align: center;
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
 }
 
-.sensors-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
-  gap: 1.5rem;
-  margin-bottom: 2rem;
-}
-
-.sensor-card {
-  background: white;
-  padding: 1.5rem;
-  border-radius: 12px;
-  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
-}
-
-.chart-container {
-  height: 250px;
-  margin: 1rem 0;
-}
-
-.current-value {
-  text-align: center;
-  margin-top: 1rem;
-}
-
-#temperature-value, [id$="-value"] {
-  font-size: 1.5rem;
-  font-weight: bold;
-  color: var(--primary);
-  margin: 0.5rem 0;
-}
-
-#temperature-status, [id$="-status"] {
-  display: inline-block;
-  padding: 0.25rem 1rem;
-  border-radius: 1rem;
-  font-size: 0.9rem;
-  margin: 0.5rem 0;
-}
-
-.slider-container {
-  text-align: center;
-  margin: 1.5rem 0;
-  background: white;
-  padding: 1rem;
-  border-radius: 12px;
-  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
-}
-
-#timeSlider {
-  width: 100%;
-  max-width: 500px;
-  margin: 0.5rem 0;
-}
-
-#sliderLabel {
+body {
+  font-family: Poppins, sans-serif;
+  background: var(--gray);
   color: var(--text);
-  font-size: 0.9rem;
+  overflow: hidden;
 }
 
-.last-updated {
+.dashboard-layout {
+  display: flex;
+  height: 100vh;
+}
+
+/* sidebar */
+.sidebar {
+  width: 250px;
+  background: var(--dark);
+  color: #fff;
+  padding: 20px 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+}
+
+.logo {
+  display: flex;
+  align-items: center;
+  font-weight: 600;
+  font-size: 1.3rem;
+}
+
+.logo img {
+  height: 52px;
+  margin-right: 10px;
+}
+
+.sensor-box {
+  background: rgba(255,255,255,.08);
+  padding: 14px;
+  border-radius: 10px;
+  border-left: 3px solid var(--accent);
+  cursor: pointer;
+  transition: .2s;
+}
+
+.sensor-box.active {
+  border-left-color: #fff;
+}
+
+.sensor-value {
+  font-size: 1.25rem;
+  font-weight: 600;
+  margin: 4px 0;
+}
+
+.sensor-unit {
+  font-size: .75rem;
+  opacity: .8;
+}
+
+.sensor-status {
+  font-size: .65rem;
+  padding: 2px 6px;
+  border-radius: 14px;
+  background: var(--success);
+}
+
+.sensor-time {
+  font-size: .7rem;
+  opacity: .7;
+  margin-top: 4px;
+}
+
+/* main */
+.main {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+}
+
+.top-bar {
+  padding: 10px 20px;
+  background: #fff;
+  box-shadow: 0 2px 5px rgba(0,0,0,.05);
+  display: flex;
+  justify-content: space-between;
+}
+
+.content {
+  flex: 1;
+  display: flex;
+  overflow: hidden;
+}
+
+.map-wrap {
+  flex: 1.1;
+  min-width: 360px;
+}
+
+#map {
+  width: 100%;
+  height: 100%;
+}
+
+.chart-wrap {
+  flex: 1;
+  padding: 18px 20px;
+  background: #fff;
+  display: flex;
+  flex-direction: column;
+}
+
+.chart-title {
+  font-size: 1.1rem;
+  margin-bottom: 8px;
+}
+
+.chart-box {
+  flex: 1;
+  position: relative;
+  min-height: 240px;
+}
+
+#sensorChart {
+  flex: 1;
+}
+
+/* slider */
+.slider-wrap {
+  margin-top: 18px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.slider-wrap input {
+  width: 100%;
+}
+
+.slider-label {
   text-align: center;
-  font-size: 0.9rem;
-  color: var(--text-light);
+  font-size: .9rem;
+  color: #555;
 }
-
-.status-danger { background: #ffebee; color: #d32f2f; }
-.status-warning { background: #fff3e0; color: #f57c00; }
-.status-success { background: #e8f5e9; color: #388e3c; }
 </style>
 
 <script>
+import type { Chart as ChartType, ChartConfiguration } from 'chart.js';
 import Chart from 'chart.js/auto';
-import type { ChartConfiguration, Chart as ChartType } from 'chart.js';
-import { isAuthenticated, getAuthToken } from '../../scripts/authUtils';
-import { createChart, updateChart, calculate30MinAverage, META, fetchSensorData } from '../../scripts/dashboardUtils';
-import type { Sensor, SensorType } from '../../scripts/types';
 
-// Check authentication
-if (!isAuthenticated()) {
-  window.location.href = '/dashboard/login';
+interface SensorData {
+  type: 'temperature' | 'turbidity' | 'tds';
+  value: number;
+  timestamp: string;
 }
 
-const TOKEN = getAuthToken();
-if (!TOKEN || TOKEN.split('.').length !== 3) {
-  localStorage.removeItem('token');
-  window.location.href = '/dashboard/login';
+interface SensorMeta {
+  unit: string;
+  title: string;
+  status: (v: number) => [string, string];
 }
 
-// Time windows in minutes
-const timeWindows = [10, 30, 60, 240, 1440, 4320, 10080];
-const timeLabels = [
-  'Son 10 dakika',
-  'Son 30 dakika', 
-  'Son 1 saat',
-  'Son 4 saat',
-  'Son 1 gün',
-  'Son 3 gün',
-  'Son 1 hafta'
-];
-
-// Initialize charts
-const charts: Record<SensorType, ChartType | null> = {
-  temperature: null,
-  turbidity: null,
-  tds: null
+type SensorMetadata = {
+  [K in SensorData['type']]: SensorMeta;
 };
 
-Object.keys(META).forEach((type) => {
-  charts[type as SensorType] = createChart(`${type}Chart`, type as SensorType);
-});
+/* ─────────── auth guard & helpers ─────────── */
+const TOKEN = localStorage.getItem('token');
+if (!TOKEN) location.href = '/dashboard/login';
 
-// Time slider handler
-const slider = document.getElementById('timeSlider') as HTMLInputElement;
-const sliderLabel = document.getElementById('sliderLabel');
-
-slider?.addEventListener('input', (e: Event) => {
-  const target = e.target as HTMLInputElement;
-  const idx = Number(target.value);
-  if (sliderLabel) {
-    sliderLabel.textContent = timeLabels[idx];
+setInterval(() => {
+  const clockEl = document.getElementById('clock');
+  if (clockEl) {
+    clockEl.textContent = new Date().toLocaleTimeString('tr-TR', {
+      hour: '2-digit',
+      minute: '2-digit'
+    });
   }
-  refresh();
-});
+}, 1000);
 
-function updateSensorDisplay(type: SensorType, data: Sensor[]) {
-  const avgData = calculate30MinAverage(data, type);
-  if (!avgData) return;
+const toNum = (x: string | number): number => 
+  typeof x === 'number' ? x : parseFloat(String(x).replace(',','.'));
 
-  const valueEl = document.getElementById(`${type}-value`);
-  const statusEl = document.getElementById(`${type}-status`);
-  
-  const value = avgData.average.toFixed(1);
-  const sensorMeta = META[type];
-  const [status, cls] = sensorMeta.status(avgData.average);
-
-  if (valueEl) valueEl.textContent = `${value} ${sensorMeta.unit}`;
-  if (statusEl) {
-    statusEl.textContent = status;
-    statusEl.className = `status-${cls}`;
-  }
+/* ─────────── map ─────────── */
+const mapEl = document.getElementById('map');
+if (mapEl) {
+  const L = window.L;
+  const map = L.map('map').setView([41.03,28.89], 15);
+  L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',
+    {attribution: '© OpenStreetMap'}).addTo(map);
+  L.marker([41.03,28.89]).addTo(map).bindPopup('Ölçüm Noktası');
 }
 
+/* ─────────── chart ─────────── */
+const chartCanvas = document.getElementById('sensorChart') as HTMLCanvasElement;
+const ctx = chartCanvas?.getContext('2d');
+const chart: ChartType = new Chart(ctx!, {
+  type: 'line',
+  data: {
+    labels: [],
+    datasets: [{
+      data: [],
+      borderColor: '#0066cc',
+      borderWidth: 2,
+      tension: 0.25,
+      fill: false,
+      pointRadius: 2
+    }]
+  },
+  options: {
+    plugins: {legend: {display: false}},
+    scales: {x: {grid: {display: false}}}
+  }
+});
+
+/* ─────────── sensor meta ─────────── */
+const META: SensorMetadata = {
+  temperature: {
+    unit: '°C',
+    title: 'Su Sıcaklığı',
+    status: (v: number): [string, string] => v > 26 ? ['Tehlikeli','danger'] :
+            v > 24 ? ['Yüksek','warning'] : ['Normal','success']
+  },
+  turbidity: {
+    unit: 'NTU',
+    title: 'Bulanıklık',
+    status: (v: number): [string, string] => v > 5 ? ['Yüksek','warning'] : ['Normal','success']
+  },
+  tds: {
+    unit: 'ppm',
+    title: 'TDS / İletkenlik',
+    status: (v: number): [string, string] => v > 1000 ? ['Yüksek','warning'] : ['Normal','success']
+  }
+} as const;
+
+/* ─────────── time-range slider ─────────── */
+const slider = document.getElementById('timeSlider') as HTMLInputElement;
+const sliderLabel = document.getElementById('sliderLabel');
+const labels = [
+  'Son 10 dakika','Son 30 dakika','Son 1 saat','Son 4 saat',
+  'Son 1 gün','Son 3 gün','Son 1 hafta','Tüm veri'
+];
+const minutes = [10,30,60,240,1440,4320,10080,Infinity];
+
+slider?.addEventListener('input', () => {
+  if (sliderLabel && slider) {
+    sliderLabel.textContent = labels[slider.valueAsNumber];
+    const chartTitle = document.getElementById('chartTitle');
+    if (chartTitle && META[active as keyof typeof META]) {
+      chartTitle.textContent = `${META[active as keyof typeof META].title} (${labels[slider.valueAsNumber]})`;
+    }
+    refresh();
+  }
+});
+
+/* ─────────── active sensor ─────────── */
+let active: keyof typeof META = 'temperature';
+document.querySelectorAll('.sensor-box').forEach((box: Element) => {
+  box.addEventListener('click', () => {
+    const sensorType = (box as HTMLElement).dataset.sensor as keyof typeof META;
+    if (sensorType) {
+      document.querySelectorAll('.sensor-box').forEach(b => b.classList.remove('active'));
+      box.classList.add('active');
+      active = sensorType;
+      const chartTitle = document.getElementById('chartTitle');
+      if (chartTitle && slider) {
+        chartTitle.textContent = `${META[active].title} (${labels[slider.valueAsNumber]})`;
+      }
+      refresh();
+    }
+  });
+});
+
+/* ─────────── calculate 30-minute average ─────────── */
+function calculate30MinAverage(rows: SensorData[], sensorType: keyof typeof META) {
+  const now = Date.now();
+  const thirtyMinutesAgo = now - 30 * 60 * 1000;
+  
+  const recentData = rows
+    .filter(r => r.type === sensorType && r.value != null && 
+            new Date(r.timestamp).getTime() >= thirtyMinutesAgo)
+    .map(r => ({
+      value: toNum(r.value),
+      timestamp: new Date(r.timestamp).getTime()
+    }));
+  
+  if (recentData.length === 0) return null;
+  
+  const sum = recentData.reduce((acc: number, curr) => acc + curr.value, 0);
+  const average = sum / recentData.length;
+  const latestTimestamp = Math.max(...recentData.map(r => r.timestamp));
+  
+  return {
+    average,
+    timestamp: latestTimestamp
+  };
+}
+
+/* ─────────── fetch & redraw ─────────── */
 async function refresh() {
   try {
-    const rows = await fetchSensorData();
-    
-    const sliderValue = Number(slider?.value || 0);
-    const windowMinutes = timeWindows[sliderValue];
+    const res = await fetch('/api/sensor-data', {
+      headers: {Authorization: `Bearer ${TOKEN}`}
+    });
+    if (!res.ok) throw new Error(`HTTP ${res.status}`);
+    const rows: SensorData[] = await res.json();
 
-    // Update each sensor's chart and display
-    (Object.keys(META) as SensorType[]).forEach(type => {
-      const sensorData = rows.filter((r: Sensor) => r.type === type);
-      const chart = charts[type];
-      if (chart) {
-        updateChart(chart, sensorData, windowMinutes);
+    /* update sidebar tiles with 30-minute averages */
+    (Object.keys(META) as Array<keyof typeof META>).forEach(key => {
+      const avgData = calculate30MinAverage(rows, key);
+      if (!avgData) return;
+      
+      const v = avgData.average;
+      if (!Number.isFinite(v)) return;
+      
+      // Update value display
+      const valEl = document.getElementById(`val-${key}`);
+      if (valEl) {
+        valEl.innerHTML = `${v.toFixed(1)} <span class="sensor-unit">${META[key].unit}</span>`;
       }
-      updateSensorDisplay(type, sensorData);
+        
+      // Update status
+      const [txt, cls] = META[key].status(v);
+      const st = document.getElementById(`stat-${key}`);
+      if (st) {
+        st.textContent = txt;
+        st.style.background = `var(--${cls})`;
+      }
+      
+      // Update timestamp
+      const timeEl = document.getElementById(`time-${key}`);
+      if (timeEl) {
+        timeEl.textContent = `30 dakika ortalaması (${
+          new Date(avgData.timestamp).toLocaleTimeString('tr-TR',
+            {hour:'2-digit', minute:'2-digit'})})`;
+      }
     });
 
-    // Update last refresh time
-    const lastUpdated = document.getElementById('last-updated');
-    if (lastUpdated) {
-      const time = new Date().toLocaleTimeString('tr-TR', {
-        hour: '2-digit',
-        minute: '2-digit'
-      });
-      lastUpdated.textContent = `Son güncelleme: ${time}`;
+    /* chart data for ACTIVE sensor within slider window */
+    if (slider) {
+      const now = Date.now();
+      const winMin = minutes[slider.valueAsNumber];
+      const cutoff = winMin === Infinity ? 0 : now - winMin*60*1000;
+
+      const data = rows
+        .filter(r => r.type === active && r.value != null &&
+          new Date(r.timestamp).getTime() >= cutoff)
+        .sort((a,b) => new Date(a.timestamp).getTime() - new Date(b.timestamp).getTime());
+
+      chart.data.labels = data.map(r =>
+        new Date(r.timestamp).toLocaleTimeString('tr-TR',{hour12:false}));
+      chart.data.datasets[0].data = data.map(r => toNum(r.value));
+      chart.update();
     }
 
-  } catch (err: unknown) {
-    console.error('Refresh error:', err);
-    if (err instanceof Error && (err.message.includes('401') || err.message.includes('403'))) {
+  } catch(e) {
+    console.error(e);
+    if (e instanceof Error && (e.message.includes('401') || e.message.includes('403'))) {
       localStorage.removeItem('token');
       window.location.href = '/dashboard/login';
     }
   }
 }
 
-// Initial load and polling
 refresh();
 setInterval(refresh, 5000);
 </script>
