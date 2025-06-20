@@ -1,34 +1,41 @@
 ---
 import MainLayout from '../../layouts/MainLayout.astro';
-import type { Sensor, SensorAverage } from '../../scripts/types';
+import type { Sensor, SensorType, SensorAverage } from '../../scripts/types';
+import { META } from '../../scripts/dashboardUtils';
 export const prerender = false;
 ---
 
-<MainLayout title="AEA - Sıcaklık İzleme">
+<MainLayout title="AEA - Su Kalitesi İzleme">
   <div class="dashboard">
-    <h1>Sıcaklık İzleme Paneli</h1>
+    <h1>Su Kalitesi İzleme Paneli</h1>
     
-    <div class="chart-container">
-      <canvas id="temperatureChart"></canvas>
+    <div class="sensors-grid">
+      {Object.entries(META).map(([type, meta]) => (
+        <div class="sensor-card">
+          <h3>{meta.title}</h3>
+          <div class="chart-container">
+            <canvas id={`${type}Chart`}></canvas>
+          </div>
+          <div class="current-value">
+            <div id={`${type}-value`}>-- {meta.unit}</div>
+            <div id={`${type}-status`}>--</div>
+          </div>
+        </div>
+      ))}
     </div>
 
     <div class="slider-container">
       <input type="range" id="timeSlider" min="0" max="6" value="0">
       <div id="sliderLabel">Son 10 dakika</div>
     </div>
-
-    <div class="current-temp">
-      <h3>Güncel Sıcaklık</h3>
-      <div id="temperature-value">-- °C</div>
-      <div id="temperature-status">--</div>
-      <div id="last-updated">Son güncelleme: --:--</div>
-    </div>
+    
+    <div id="last-updated" class="last-updated">Son güncelleme: --:--</div>
   </div>
 </MainLayout>
 
 <style>
 .dashboard {
-  max-width: 1200px;
+  max-width: 1400px;
   margin: 2rem auto;
   padding: 0 1rem;
 }
@@ -39,18 +46,52 @@ h1 {
   text-align: center;
 }
 
-.chart-container {
+.sensors-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+  gap: 1.5rem;
+  margin-bottom: 2rem;
+}
+
+.sensor-card {
   background: white;
   padding: 1.5rem;
   border-radius: 12px;
   box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
-  margin-bottom: 1.5rem;
-  height: 400px;
+}
+
+.chart-container {
+  height: 250px;
+  margin: 1rem 0;
+}
+
+.current-value {
+  text-align: center;
+  margin-top: 1rem;
+}
+
+#temperature-value, [id$="-value"] {
+  font-size: 1.5rem;
+  font-weight: bold;
+  color: var(--primary);
+  margin: 0.5rem 0;
+}
+
+#temperature-status, [id$="-status"] {
+  display: inline-block;
+  padding: 0.25rem 1rem;
+  border-radius: 1rem;
+  font-size: 0.9rem;
+  margin: 0.5rem 0;
 }
 
 .slider-container {
   text-align: center;
   margin: 1.5rem 0;
+  background: white;
+  padding: 1rem;
+  border-radius: 12px;
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
 }
 
 #timeSlider {
@@ -64,47 +105,29 @@ h1 {
   font-size: 0.9rem;
 }
 
-.current-temp {
-  background: white;
-  padding: 1.5rem;
-  border-radius: 12px;
-  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+.last-updated {
   text-align: center;
-}
-
-#temperature-value {
-  font-size: 2rem;
-  font-weight: bold;
-  color: var(--primary);
-  margin: 0.5rem 0;
-}
-
-#temperature-status {
-  display: inline-block;
-  padding: 0.25rem 1rem;
-  border-radius: 1rem;
   font-size: 0.9rem;
-  margin: 0.5rem 0;
-}
-
-#last-updated {
-  font-size: 0.8rem;
   color: var(--text-light);
 }
+
+.status-danger { background: #ffebee; color: #d32f2f; }
+.status-warning { background: #fff3e0; color: #f57c00; }
+.status-success { background: #e8f5e9; color: #388e3c; }
 </style>
 
 <script>
 import Chart from 'chart.js/auto';
-import type { ChartConfiguration } from 'chart.js';
-import type { Sensor } from '../../scripts/types';
+import type { ChartConfiguration, Chart as ChartType } from 'chart.js';
 import { isAuthenticated, getAuthToken } from '../../scripts/authUtils';
+import { createChart, updateChart, calculate30MinAverage, META, fetchSensorData } from '../../scripts/dashboardUtils';
+import type { Sensor, SensorType } from '../../scripts/types';
 
-// Check authentication immediately
+// Check authentication
 if (!isAuthenticated()) {
   window.location.href = '/dashboard/login';
 }
 
-// Get token and verify format
 const TOKEN = getAuthToken();
 if (!TOKEN || TOKEN.split('.').length !== 3) {
   localStorage.removeItem('token');
@@ -123,38 +146,16 @@ const timeLabels = [
   'Son 1 hafta'
 ];
 
-// Initialize chart
-const ctx = document.getElementById('temperatureChart') as HTMLCanvasElement;
-const chartConfig: ChartConfiguration = {
-  type: 'line',
-  data: {
-    labels: [],
-    datasets: [{
-      label: 'Sıcaklık (°C)',
-      data: [],
-      borderColor: '#0066cc',
-      tension: 0.4
-    }]
-  },
-  options: {
-    responsive: true,
-    maintainAspectRatio: false,
-    plugins: {
-      legend: { display: false }
-    },
-    scales: {
-      y: {
-        beginAtZero: false,
-        title: {
-          display: true,
-          text: 'Sıcaklık (°C)'
-        }
-      }
-    }
-  }
+// Initialize charts
+const charts: Record<SensorType, ChartType | null> = {
+  temperature: null,
+  turbidity: null,
+  tds: null
 };
 
-const chart = new Chart(ctx, chartConfig);
+Object.keys(META).forEach((type) => {
+  charts[type as SensorType] = createChart(`${type}Chart`, type as SensorType);
+});
 
 // Time slider handler
 const slider = document.getElementById('timeSlider') as HTMLInputElement;
@@ -169,93 +170,50 @@ slider?.addEventListener('input', (e: Event) => {
   refresh();
 });
 
-function getStatus(temp: number): [string, string] {
-  if (temp > 26) return ['Tehlikeli', 'danger'];
-  if (temp > 24) return ['Yüksek', 'warning'];
-  return ['Normal', 'success'];
-}
+function updateSensorDisplay(type: SensorType, data: Sensor[]) {
+  const avgData = calculate30MinAverage(data, type);
+  if (!avgData) return;
 
-function calculate30MinAverage(data: Sensor[]) {
-  const now = Date.now();
-  const cutoff = now - 30 * 60 * 1000;
+  const valueEl = document.getElementById(`${type}-value`);
+  const statusEl = document.getElementById(`${type}-status`);
   
-  const recentData = data
-    .filter(r => r.type === 'temperature' && r.value != null &&
-            new Date(r.timestamp).getTime() >= cutoff)
-    .map(r => ({
-      value: typeof r.value === 'number' ? r.value : parseFloat(String(r.value)),
-      timestamp: new Date(r.timestamp).getTime()
-    }));
-  
-  if (recentData.length === 0) return null;
-  
-  const sum = recentData.reduce((acc: number, curr) => acc + curr.value, 0);
-  const avg = sum / recentData.length;
-  const latest = Math.max(...recentData.map(r => r.timestamp));
-  
-  return { average: avg, timestamp: latest };
+  const value = avgData.average.toFixed(1);
+  const sensorMeta = META[type];
+  const [status, cls] = sensorMeta.status(avgData.average);
+
+  if (valueEl) valueEl.textContent = `${value} ${sensorMeta.unit}`;
+  if (statusEl) {
+    statusEl.textContent = status;
+    statusEl.className = `status-${cls}`;
+  }
 }
 
 async function refresh() {
   try {
-    const res = await fetch('/api/sensor-data', {
-      headers: { 
-        'Authorization': `Bearer ${TOKEN}`,
-        'Accept': 'application/json',
-        'Content-Type': 'application/json'
+    const rows = await fetchSensorData();
+    
+    const sliderValue = Number(slider?.value || 0);
+    const windowMinutes = timeWindows[sliderValue];
+
+    // Update each sensor's chart and display
+    (Object.keys(META) as SensorType[]).forEach(type => {
+      const sensorData = rows.filter((r: Sensor) => r.type === type);
+      const chart = charts[type];
+      if (chart) {
+        updateChart(chart, sensorData, windowMinutes);
       }
+      updateSensorDisplay(type, sensorData);
     });
 
-    // Handle unauthorized access
-    if (res.status === 401 || res.status === 403) {
-      localStorage.removeItem('token');
-      window.location.href = '/dashboard/login';
-      return;
-    }
-
-    if (!res.ok) throw new Error('HTTP ' + res.status);
-    const rows = (await res.json()) as Sensor[];
-
-    // Update current temperature display
-    const avgData = calculate30MinAverage(rows);
-    if (avgData) {
-      const tempValue = document.getElementById('temperature-value');
-      const tempStatus = document.getElementById('temperature-status');
-      const lastUpdated = document.getElementById('last-updated');
-      
-      const value = avgData.average.toFixed(1);
-      const [status, cls] = getStatus(avgData.average);
-      const time = new Date(avgData.timestamp).toLocaleTimeString('tr-TR', {
+    // Update last refresh time
+    const lastUpdated = document.getElementById('last-updated');
+    if (lastUpdated) {
+      const time = new Date().toLocaleTimeString('tr-TR', {
         hour: '2-digit',
         minute: '2-digit'
       });
-
-      if (tempValue) tempValue.textContent = `${value} °C`;
-      if (tempStatus) {
-        tempStatus.textContent = status;
-        tempStatus.className = `status-${cls}`;
-      }
-      if (lastUpdated) lastUpdated.textContent = `Son güncelleme: ${time}`;
+      lastUpdated.textContent = `Son güncelleme: ${time}`;
     }
-
-    // Update chart based on selected time window
-    const sliderValue = Number(slider?.value || 0);
-    const windowMinutes = timeWindows[sliderValue];
-    const now = Date.now();
-    const cutoff = now - windowMinutes * 60 * 1000;
-
-    const data = rows
-      .filter(r => r.type === 'temperature' && r.value != null &&
-              new Date(r.timestamp).getTime() >= cutoff)
-      .sort((a, b) => new Date(a.timestamp).getTime() - new Date(b.timestamp).getTime());
-
-    chart.data.labels = data.map(r => 
-      new Date(r.timestamp).toLocaleTimeString('tr-TR', {hour12: false})
-    );
-    chart.data.datasets[0].data = data.map(r => 
-      typeof r.value === 'number' ? r.value : parseFloat(String(r.value))
-    );
-    chart.update();
 
   } catch (err: unknown) {
     console.error('Refresh error:', err);
