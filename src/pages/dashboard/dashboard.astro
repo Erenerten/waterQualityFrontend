@@ -1,31 +1,162 @@
 ---
-import MainLayout from "../../layouts/MainLayout.astro";
-import Sidebar from "../../components/Sidebar.astro";
-import DashboardChart from "../../components/DashboardChart.astro";
-export const prerender = true;
+import MainLayout from '../../layouts/MainLayout.astro';
+import Sidebar from '../../components/Sidebar.astro';
+import SensorBox from '../../components/SensorBox.astro';
+import DashboardChart from '../../components/DashboardChart.astro';
+
+const sensors = [
+  { title: 'Sıcaklık', value: '23.5', unit: '°C', icon: 'fa-thermometer-half' },
+  { title: 'TDS', value: '450', unit: 'ppm', icon: 'fa-flask' },
+  { title: 'Bulanıklık', value: '2.1', unit: 'NTU', icon: 'fa-tint' },
+  { title: 'İletkenlik', value: '850', unit: 'µS/cm', icon: 'fa-bolt' }
+];
 ---
 
-<MainLayout title="AEA | Canlı Sensör Paneli">
-  <div style="display:flex;height:100vh;overflow:hidden">
-    <Sidebar />
-    <section class="main" style="flex:1;display:flex;flex-direction:column">
-      <div class="top-bar">
-        <span id="clock">--:--</span>
-        <div class="polling-control">
-          <label>Güncelleme Hızı:</label>
-          <select id="pollingRate">
-            <option value="5000">5 saniye</option>
-            <option value="10000">10 saniye</option>
-            <option value="30000">30 saniye</option>
-          </select>
+<MainLayout title="AEA Dashboard">
+  <div id="app" style="display: none;">
+    <div class="dashboard-layout">
+      <Sidebar />
+      
+      <main class="dashboard-content">
+        <header class="dashboard-header">
+          <h1>Su Kalitesi İzleme Paneli</h1>
+          <div class="header-actions">
+            <span id="lastUpdate">Son Güncelleme: --:--:--</span>
+            <button class="refresh-btn">
+              <i class="fas fa-sync-alt"></i> Yenile
+            </button>
+            <button class="logout-btn" id="logoutBtn">
+              <i class="fas fa-sign-out-alt"></i> Çıkış
+            </button>
+          </div>
+        </header>
+
+        <div class="sensor-grid">
+          {sensors.map(sensor => (
+            <SensorBox {...sensor} />
+          ))}
         </div>
-      </div>
-      <div class="content" style="flex:1;display:flex;overflow:hidden">
-        <div class="map-wrap"><div id="map"></div></div>
-        <div class="chart-wrap">
-          <DashboardChart client:load />
+
+        <div class="charts-grid">
+          <DashboardChart 
+            title="Sıcaklık Değişimi" 
+            chartId="temperatureChart"
+            description="Son 24 saat" 
+          />
+          <DashboardChart 
+            title="TDS Değişimi" 
+            chartId="tdsChart"
+            description="Son 24 saat" 
+          />
+          <DashboardChart 
+            title="Bulanıklık Değişimi" 
+            chartId="turbidityChart"
+            description="Son 24 saat" 
+          />
+          <DashboardChart 
+            title="İletkenlik Değişimi" 
+            chartId="conductivityChart"
+            description="Son 24 saat" 
+          />
         </div>
-      </div>
-    </section>
+      </main>
+    </div>
   </div>
 </MainLayout>
+
+<script>
+  import { initDashboard } from '../../scripts/home.js';
+  import { requireAuth, logout } from '../../scripts/authUtils';
+
+  // Check authentication on page load
+  if (requireAuth()) {
+    // Show the app only if authenticated
+    document.getElementById('app').style.display = 'block';
+    
+    // Initialize dashboard
+    initDashboard();
+
+    // Add logout handler
+    document.getElementById('logoutBtn')?.addEventListener('click', logout);
+  }
+</script>
+
+<style>
+  .dashboard-layout {
+    display: flex;
+    min-height: 100vh;
+  }
+
+  .dashboard-content {
+    flex: 1;
+    padding: 2rem;
+    margin-left: 250px;
+    background: var(--gray);
+  }
+
+  .dashboard-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 2rem;
+  }
+
+  .header-actions {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+  }
+
+  #lastUpdate {
+    color: var(--text-light);
+  }
+
+  .refresh-btn, .logout-btn {
+    background: var(--primary);
+    color: white;
+    border: none;
+    padding: 0.5rem 1rem;
+    border-radius: 6px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    transition: background 0.3s ease;
+  }
+
+  .refresh-btn:hover {
+    background: var(--primary-dark);
+  }
+
+  .logout-btn {
+    background: var(--danger);
+  }
+
+  .logout-btn:hover {
+    background: var(--danger-dark);
+  }
+
+  .sensor-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+    gap: 1.5rem;
+    margin-bottom: 2rem;
+  }
+
+  .charts-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(500px, 1fr));
+    gap: 2rem;
+  }
+
+  @media (max-width: 768px) {
+    .dashboard-content {
+      margin-left: 0;
+      padding: 1rem;
+    }
+
+    .charts-grid {
+      grid-template-columns: 1fr;
+    }
+  }
+</style>

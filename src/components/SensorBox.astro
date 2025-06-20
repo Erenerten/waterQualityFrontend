@@ -1,12 +1,68 @@
 ---
 // SensorBox.astro
-const { sensor, label, unit, id } = Astro.props;
+interface Props {
+  title: string;
+  value: string;
+  unit: string;
+  icon: string;
+}
+
+const { title, value, unit, icon } = Astro.props;
+const id = title.toLowerCase().replace(/ /g, '-');
 ---
-<div class={"sensor-box" + (sensor === 'temperature' ? ' active' : '')} data-sensor={sensor}>
-  <div class="sensor-header">
-    <h4>{label}</h4>
-    <span class="sensor-status" id={`stat-${id}`}>—</span>
+
+<div class="sensor-box">
+  <div class="sensor-icon">
+    <i class={`fas ${icon}`}></i>
   </div>
-  <div class="sensor-value" id={`val-${id}`}>-- <span class="sensor-unit">{unit}</span></div>
-  <div class="sensor-time" id={`time-${id}`}>30 dakika ortalaması</div>
+  <div class="sensor-info">
+    <h3>{title}</h3>
+    <p class="value" id={id}>{value}{unit}</p>
+  </div>
 </div>
+
+<style>
+  .sensor-box {
+    background: white;
+    padding: 1.5rem;
+    border-radius: 12px;
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+    display: flex;
+    gap: 1rem;
+    align-items: center;
+    transition: transform 0.3s ease;
+  }
+
+  .sensor-box:hover {
+    transform: translateY(-5px);
+  }
+
+  .sensor-icon {
+    width: 50px;
+    height: 50px;
+    background: var(--primary-light);
+    border-radius: 12px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: var(--primary);
+    font-size: 1.5rem;
+  }
+
+  .sensor-info {
+    flex: 1;
+  }
+
+  .sensor-info h3 {
+    font-size: 0.9rem;
+    color: var(--text-light);
+    margin-bottom: 0.3rem;
+  }
+
+  .value {
+    font-size: 1.4rem;
+    font-weight: 600;
+    color: var(--dark);
+    margin: 0;
+  }
+</style>

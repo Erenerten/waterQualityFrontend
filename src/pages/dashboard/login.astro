@@ -1,59 +1,233 @@
 ---
-import MainLayout from "../../layouts/MainLayout.astro";
+import MainLayout from '../../layouts/MainLayout.astro';
 export const prerender = true;
 ---
-<MainLayout title="AEA">
-  <slot name="head">
-    <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width,initial-scale=1.0" />
-    <title>Giriş | AEA</title>
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600&display=swap" rel="stylesheet">
-    <style>
-      :root{
-        --primary:#004f98; --accent:#2196f3;
-        --light:#ffffff;  --dark:#14213d;  --text:#333;
-      }
-      *{margin:0;padding:0;box-sizing:border-box;font-family:'Poppins',sans-serif}
-      body,html{height:100%;overflow:hidden}
-      .center-wrapper{display:flex;align-items:center;justify-content:center;height:100%}
-      .login-box{width:100%;max-width:400px;padding:40px;background:rgba(255,255,255,.9);border-radius:12px;box-shadow:0 8px 20px rgba(0,0,0,.15)}
-      .login-box h2{margin-bottom:30px;font-weight:600;color:var(--dark);text-align:center}
-      .form-group{margin-bottom:20px}
-      .form-group label{display:block;margin-bottom:8px;color:var(--text)}
-      .form-group input{width:100%;padding:12px 15px;border:1px solid #ddd;border-radius:6px;outline:none;transition:border .3s}
-      .form-group input:focus{border-color:var(--accent)}
-      .btn-login{width:100%;padding:12px;border:none;border-radius:6px;background:var(--accent);color:#fff;font-size:1rem;cursor:pointer;transition:background .3s}
-      .video-bg {position: fixed;top: 0;left: 0;width: 100%;height: 100%;object-fit: cover;z-index: -1;}
-      .btn-login:hover{background:var(--primary)}
-      .login-footer{margin-top:20px;text-align:center;font-size:.9rem}
-      .login-footer a{color:var(--accent);text-decoration:none}
-      .login-footer a:hover{text-decoration:underline}
-    </style>
-  </slot>
-  <video autoplay muted loop class="video-bg">
-    <source src="/videos/hero.mp4" type="video/mp4">
-    Your browser does not support the video tag.
-  </video>
-  <div class="center-wrapper">
+
+<MainLayout title="AEA - Giriş">
+  <div class="login-container">
     <div class="login-box">
-      <h2>AEA&nbsp;Giriş</h2>
-      <form id="login-form">
+      <img src="/images/logo.png" alt="AEA Logo" class="logo">
+      <h1>Hoş Geldiniz</h1>
+      <div id="error-message" class="error-message"></div>
+      <form class="login-form" id="loginForm">
         <div class="form-group">
-          <label for="username">Kullanıcı Adı</label>
-          <input id="username" name="username" required />
+          <label for="username">
+            <i class="fas fa-user"></i>
+          </label>
+          <input 
+            type="text" 
+            id="username" 
+            name="username" 
+            placeholder="Kullanıcı Adı"
+            required
+          >
         </div>
+        
         <div class="form-group">
-          <label for="password">Şifre</label>
-          <input type="password" id="password" name="password" required />
+          <label for="password">
+            <i class="fas fa-lock"></i>
+          </label>
+          <input 
+            type="password" 
+            id="password" 
+            name="password" 
+            placeholder="Şifre"
+            required
+          >
         </div>
-        <button class="btn-login" type="submit">Giriş</button>
+        
+        <button type="submit" class="login-btn">
+          <i class="fas fa-sign-in-alt"></i> Giriş Yap
+        </button>
       </form>
-      <div class="login-footer">
-        <p>Hesabınız yok mu? <a href="#">Kayıt Ol</a></p>
+      
+      <div class="links">
+        <a href="#" class="forgot-password">Şifremi Unuttum</a>
+        <a href="/" class="back-home">Ana Sayfa</a>
       </div>
     </div>
   </div>
-  <script src="/scripts/login.js"></script>
 </MainLayout>
+
+<style>
+  :root{
+    --primary:#004f98; --accent:#2196f3;
+    --light:#ffffff;  --dark:#14213d;  --text:#333;
+    --primary-light: #007bff;
+    --primary-dark: #0056b3;
+    --gray: #f8f9fa;
+    --gray-dark: #343a40;
+    --text-light: #6c757d;
+    --danger: #dc3545;
+  }
+
+  *{margin:0;padding:0;box-sizing:border-box;font-family:'Poppins',sans-serif}
+  body,html{height:100%;overflow:hidden}
+  .center-wrapper{display:flex;align-items:center;justify-content:center;height:100%}
+  .login-container {
+    min-height: 100vh;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: linear-gradient(135deg, var(--primary-light) 0%, var(--gray) 100%);
+    padding: 2rem;
+  }
+
+  .login-box {
+    background: white;
+    padding: 3rem 2rem;
+    border-radius: 16px;
+    box-shadow: 0 8px 30px rgba(0, 0, 0, 0.1);
+    width: 100%;
+    max-width: 400px;
+    text-align: center;
+  }
+
+  .logo {
+    width: 80px;
+    height: auto;
+    margin-bottom: 1.5rem;
+  }
+
+  h1 {
+    color: var(--dark);
+    margin-bottom: 2rem;
+    font-size: 2rem;
+  }
+
+  .login-form {
+    display: flex;
+    flex-direction: column;
+    gap: 1.5rem;
+  }
+
+  .form-group {
+    position: relative;
+  }
+
+  .form-group label {
+    position: absolute;
+    left: 1rem;
+    top: 50%;
+    transform: translateY(-50%);
+    color: var(--text-light);
+  }
+
+  .form-group input {
+    width: 100%;
+    padding: 1rem 1rem 1rem 3rem;
+    border: 1px solid var(--gray-dark);
+    border-radius: 8px;
+    font-size: 1rem;
+    transition: all 0.3s ease;
+  }
+
+  .form-group input:focus {
+    outline: none;
+    border-color: var(--primary);
+    box-shadow: 0 0 0 3px var(--primary-light);
+  }
+
+  .login-btn {
+    background: var(--primary);
+    color: white;
+    border: none;
+    padding: 1rem;
+    border-radius: 8px;
+    font-size: 1rem;
+    cursor: pointer;
+    transition: background 0.3s ease;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.5rem;
+  }
+
+  .login-btn:hover {
+    background: var(--primary-dark);
+  }
+
+  .links {
+    margin-top: 2rem;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    font-size: 0.9rem;
+  }
+
+  .links a {
+    color: var(--primary);
+    text-decoration: none;
+    transition: color 0.3s ease;
+  }
+
+  .links a:hover {
+    color: var(--primary-dark);
+  }
+
+  .error-message {
+    color: var(--danger);
+    margin-bottom: 1rem;
+    padding: 0.5rem;
+    border-radius: 4px;
+    display: none;
+  }
+
+  .error-message.show {
+    display: block;
+    animation: shake 0.5s ease-in-out;
+  }
+
+  @keyframes shake {
+    0%, 100% { transform: translateX(0); }
+    25% { transform: translateX(-10px); }
+    75% { transform: translateX(10px); }
+  }
+
+  @media (max-width: 480px) {
+    .login-box {
+      padding: 2rem 1.5rem;
+    }
+
+    h1 {
+      font-size: 1.8rem;
+    }
+  }
+</style>
+
+<script>
+  import { login } from '../../scripts/authUtils';
+  
+  const loginForm = document.getElementById('loginForm');
+  const errorMessage = document.getElementById('error-message');
+
+  function showError(message) {
+    if (errorMessage) {
+      errorMessage.textContent = message;
+      errorMessage.classList.add('show');
+      setTimeout(() => {
+        errorMessage.classList.remove('show');
+      }, 5000);
+    }
+  }
+
+  loginForm?.addEventListener('submit', async (e) => {
+    e.preventDefault();
+    
+    const username = document.getElementById('username') as HTMLInputElement;
+    const password = document.getElementById('password') as HTMLInputElement;
+    
+    try {
+      const success = await login(username.value, password.value);
+      
+      if (success) {
+        window.location.href = '/dashboard';
+      } else {
+        showError('Giriş başarısız. Lütfen bilgilerinizi kontrol edin.');
+      }
+    } catch (error) {
+      console.error('Login error:', error);
+      showError('Bir hata oluştu. Lütfen tekrar deneyin.');
+    }
+  });
+</script>

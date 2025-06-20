@@ -1,17 +1,31 @@
 ---
-/* Put page-level <head> defaults and <nav> here */
-import "../styles/global.css";
+import '../styles/global.css';
+
+interface Props {
+  title: string;
+  description?: string;
+}
+
+const { title, description = "AEA - Su Kalitesi İzleme Çözümleri" } = Astro.props;
 ---
+
 <!DOCTYPE html>
 <html lang="tr">
-<head>
-  <meta charset="utf-8" />
-  <title>{Astro.props.title || 'AEA'}</title>
-  <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <!-- any other common meta / links -->
-  <slot name="head" />     <!-- page-specific head bits -->
-</head>
-<body>
-  <slot />                 <!-- page body -->
-</body>
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>{title}</title>
+    <meta name="description" content={description}>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&family=Playfair+Display:wght@400;500;600&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="icon" type="image/png" href="/images/favico.png">
+    <script is:inline src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <slot name="head" />
+  </head>
+  <body>
+    <slot />
+    <script is:inline src="/scripts/home.js"></script>
+  </body>
 </html>
