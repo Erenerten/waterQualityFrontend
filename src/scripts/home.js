@@ -1,64 +1,59 @@
-import {
-  createChart,
-  updateChart,
-  initDataPolling,
-  getSensorUnit,
-  generateMockSensorData
-} from './dashboardUtils';
+// Chart management and data utilities
+import Chart from 'chart.js/auto';
 
-let charts = {};
+// Poll interval for data refresh
+let pollInterval = null;
 
+// Initialize dashboard functionality
 export function initDashboard() {
-  // Initialize charts
-  charts = {
-    temperature: createChart('temperatureChart', 'Sıcaklık (°C)', '#FF6B6B'),
-    tds: createChart('tdsChart', 'TDS (ppm)', '#4ECDC4'),
-    turbidity: createChart('turbidityChart', 'Bulanıklık (NTU)', '#45B7D1'),
-    conductivity: createChart('conductivityChart', 'İletkenlik (µS/cm)', '#96CEB4')
-  };
+  try {
+    // Auth check
+    const token = localStorage.getItem('token');
+    if (!token) {
+      window.location.href = '/dashboard/login.html';
+      return false;
+    }
 
-  // Initialize data polling
-  initDataPolling(updateSensorData);
+    // Initialize mobile menu
+    const burger = document.querySelector('.burger');
+    const nav = document.querySelector('.nav-links');
+    
+    if (burger && nav) {
+      burger.addEventListener('click', () => {
+        nav.classList.toggle('active');
+        burger.classList.toggle('toggle');
+      });
+    }
 
-  // Add refresh button handler
-  const refreshBtn = document.querySelector('.refresh-btn');
-  if (refreshBtn) {
-    refreshBtn.addEventListener('click', () => {
-      updateSensorData(generateMockSensorData());
-    });
+    // Initialize clock
+    const clockEl = document.getElementById('clock');
+    if (clockEl) {
+      updateClock();
+      setInterval(updateClock, 1000);
+    }
+
+    return true;
+  } catch (error) {
+    console.error('Dashboard initialization error:', error);
+    return false;
   }
+}
 
-  // Initialize mobile menu
-  const burger = document.querySelector('.burger');
-  const nav = document.querySelector('.nav-links');
-  
-  if (burger && nav) {
-    burger.addEventListener('click', () => {
-      nav.classList.toggle('active');
-      burger.classList.toggle('toggle');
+// Update clock display
+function updateClock() {
+  const clock = document.getElementById('clock');
+  if (clock) {
+    clock.textContent = new Date().toLocaleTimeString('tr-TR', {
+      hour: '2-digit',
+      minute: '2-digit'
     });
   }
 }
 
-function updateSensorData(data) {
-  const now = new Date();
-  const lastUpdate = document.getElementById('lastUpdate');
-  if (lastUpdate) {
-    lastUpdate.textContent = `Son Güncelleme: ${now.toLocaleTimeString()}`;
-  }
-
-  // Update sensor boxes
-  for (const [key, value] of Object.entries(data)) {
-    const element = document.getElementById(key);
-    if (element) {
-      element.textContent = `${value}${getSensorUnit(key)}`;
-    }
-  }
-
-  // Update charts
-  for (const [key, value] of Object.entries(data)) {
-    if (charts[key]) {
-      updateChart(charts[key], value);
-    }
+// Cleanup function
+export function cleanup() {
+  if (pollInterval) {
+    clearInterval(pollInterval);
+    pollInterval = null;
   }
 }

@@ -24,7 +24,7 @@ export async function login(username, password) {
 
 export function logout() {
   localStorage.removeItem('token');
-  window.location.href = '/dashboard/login';
+  window.location.href = '/dashboard/login.html';
 }
 
 export function isAuthenticated() {
@@ -37,7 +37,7 @@ export function getAuthToken() {
 
 export function requireAuth() {
   if (!isAuthenticated()) {
-    window.location.href = '/dashboard/login';
+    window.location.href = '/dashboard/login.html';
     return false;
   }
   return true;

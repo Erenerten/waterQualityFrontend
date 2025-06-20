@@ -2,161 +2,221 @@
 import MainLayout from '../../layouts/MainLayout.astro';
 import Sidebar from '../../components/Sidebar.astro';
 import SensorBox from '../../components/SensorBox.astro';
-import DashboardChart from '../../components/DashboardChart.astro';
 
-const sensors = [
-  { title: 'Sıcaklık', value: '23.5', unit: '°C', icon: 'fa-thermometer-half' },
-  { title: 'TDS', value: '450', unit: 'ppm', icon: 'fa-flask' },
-  { title: 'Bulanıklık', value: '2.1', unit: 'NTU', icon: 'fa-tint' },
-  { title: 'İletkenlik', value: '850', unit: 'µS/cm', icon: 'fa-bolt' }
-];
+const sensorTypes = ['temperature', 'turbidity', 'tds'];
 ---
 
-<MainLayout title="AEA Dashboard">
-  <div id="app" style="display: none;">
-    <div class="dashboard-layout">
-      <Sidebar />
-      
-      <main class="dashboard-content">
-        <header class="dashboard-header">
-          <h1>Su Kalitesi İzleme Paneli</h1>
-          <div class="header-actions">
-            <span id="lastUpdate">Son Güncelleme: --:--:--</span>
-            <button class="refresh-btn">
-              <i class="fas fa-sync-alt"></i> Yenile
-            </button>
-            <button class="logout-btn" id="logoutBtn">
-              <i class="fas fa-sign-out-alt"></i> Çıkış
-            </button>
+<MainLayout title="SuKaliteX | Canlı Sensör Paneli">
+  <div class="layout">
+    <aside class="sidebar">
+      <div class="logo">
+        <img src="/images/logo.png" alt="logo">
+        <span>SuKaliteX</span>
+      </div>
+
+      {sensorTypes.map(type => (
+        <div class={`sensor-box ${type === 'temperature' ? 'active' : ''}`} data-sensor={type}>
+          <div class="sensor-header">
+            <h4>{type === 'temperature' ? 'Su Sıcaklığı' : 
+                type === 'turbidity' ? 'Bulanıklık' : 'TDS / İletkenlik'}</h4>
+            <span class="sensor-status" id={`stat-${type}`}>—</span>
           </div>
-        </header>
+          <div class="sensor-value" id={`val-${type}`}>
+            -- <span class="sensor-unit">{
+              type === 'temperature' ? '°C' : 
+              type === 'turbidity' ? 'NTU' : 'ppm'
+            }</span>
+          </div>
+          <div class="sensor-time" id={`time-${type}`}>30 dakika ortalaması</div>
+        </div>
+      ))}
+    </aside>
 
-        <div class="sensor-grid">
-          {sensors.map(sensor => (
-            <SensorBox {...sensor} />
-          ))}
+    <section class="main">
+      <div class="top-bar">
+        <span id="clock">--:--</span>
+      </div>
+
+      <div class="content">
+        <div class="map-wrap">
+          <div id="map"></div>
         </div>
 
-        <div class="charts-grid">
-          <DashboardChart 
-            title="Sıcaklık Değişimi" 
-            chartId="temperatureChart"
-            description="Son 24 saat" 
-          />
-          <DashboardChart 
-            title="TDS Değişimi" 
-            chartId="tdsChart"
-            description="Son 24 saat" 
-          />
-          <DashboardChart 
-            title="Bulanıklık Değişimi" 
-            chartId="turbidityChart"
-            description="Son 24 saat" 
-          />
-          <DashboardChart 
-            title="İletkenlik Değişimi" 
-            chartId="conductivityChart"
-            description="Son 24 saat" 
-          />
+        <div class="chart-wrap">
+          <div class="chart-title" id="chartTitle">Su Sıcaklığı (son 10 dakika)</div>
+          <div class="chart-box">
+            <canvas id="sensorChart"></canvas>
+          </div>
+
+          <div class="slider-wrap">
+            <input type="range" id="timeSlider" min="0" max="7" value="0">
+            <div class="slider-label" id="sliderLabel">Son 10 dakika</div>
+          </div>
         </div>
-      </main>
-    </div>
+      </div>
+    </section>
   </div>
 </MainLayout>
 
-<script>
-  import { initDashboard } from '../../scripts/home.js';
-  import { requireAuth, logout } from '../../scripts/authUtils';
-
-  // Check authentication on page load
-  if (requireAuth()) {
-    // Show the app only if authenticated
-    document.getElementById('app').style.display = 'block';
-    
-    // Initialize dashboard
-    initDashboard();
-
-    // Add logout handler
-    document.getElementById('logoutBtn')?.addEventListener('click', logout);
-  }
-</script>
-
 <style>
-  .dashboard-layout {
-    display: flex;
-    min-height: 100vh;
-  }
+  :root{--dark:#0a2342;--gray:#f8fafc;--text:#223;--accent:#00b4d8;
+        --success:#2ecc71;--warning:#f39c12;--danger:#e74c3c}
+  *{margin:0;padding:0;box-sizing:border-box}
+  body{font-family:Poppins,sans-serif;background:var(--gray);color:var(--text);
+       display:flex;height:100vh;overflow:hidden}
 
-  .dashboard-content {
-    flex: 1;
-    padding: 2rem;
-    margin-left: 250px;
-    background: var(--gray);
-  }
+  .layout{display:flex;width:100%;height:100vh}
 
-  .dashboard-header {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    margin-bottom: 2rem;
-  }
+  /* sidebar */
+  .sidebar{width:250px;background:var(--dark);color:#fff;padding:20px 16px;
+           display:flex;flex-direction:column;gap:18px}
+  .logo{display:flex;align-items:center;font-weight:600;font-size:1.3rem}
+  .logo img{height:52px;margin-right:10px}
+  .sensor-box{background:rgba(255,255,255,.08);padding:14px;border-radius:10px;
+              border-left:3px solid var(--accent);cursor:pointer;transition:.2s}
+  .sensor-box.active{border-left-color:#fff}
+  .sensor-value{font-size:1.25rem;font-weight:600;margin:4px 0}
+  .sensor-unit{font-size:.75rem;opacity:.8}
+  .sensor-status{font-size:.65rem;padding:2px 6px;border-radius:14px;background:var(--success)}
+  .sensor-time{font-size:.7rem;opacity:.7;margin-top:4px}
 
-  .header-actions {
-    display: flex;
-    align-items: center;
-    gap: 1rem;
-  }
-
-  #lastUpdate {
-    color: var(--text-light);
-  }
-
-  .refresh-btn, .logout-btn {
-    background: var(--primary);
-    color: white;
-    border: none;
-    padding: 0.5rem 1rem;
-    border-radius: 6px;
-    cursor: pointer;
-    display: flex;
-    align-items: center;
-    gap: 0.5rem;
-    transition: background 0.3s ease;
-  }
-
-  .refresh-btn:hover {
-    background: var(--primary-dark);
-  }
-
-  .logout-btn {
-    background: var(--danger);
-  }
-
-  .logout-btn:hover {
-    background: var(--danger-dark);
-  }
-
-  .sensor-grid {
-    display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
-    gap: 1.5rem;
-    margin-bottom: 2rem;
-  }
-
-  .charts-grid {
-    display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(500px, 1fr));
-    gap: 2rem;
-  }
-
-  @media (max-width: 768px) {
-    .dashboard-content {
-      margin-left: 0;
-      padding: 1rem;
-    }
-
-    .charts-grid {
-      grid-template-columns: 1fr;
-    }
-  }
+  /* main */
+  .main{flex:1;display:flex;flex-direction:column}
+  .top-bar{padding:10px 20px;background:#fff;box-shadow:0 2px 5px rgba(0,0,0,.05);
+           display:flex;justify-content:space-between}
+  .content{flex:1;display:flex;overflow:hidden}
+  .map-wrap{flex:1.1;min-width:360px}
+  #map{width:100%;height:100%}
+  .chart-wrap{flex:1;padding:18px 20px;background:#fff;display:flex;flex-direction:column}
+  .chart-title{font-size:1.1rem;margin-bottom:8px}
+  .chart-box{flex:1;position:relative;min-height:240px}
+  #sensorChart{flex:1}
+  /* slider */
+  .slider-wrap{margin-top:18px;display:flex;flex-direction:column;gap:8px}
+  .slider-wrap input{width:100%}
+  .slider-label{text-align:center;font-size:.9rem;color:#555}
 </style>
+
+<script>
+  import { META, createChart, updateChart, calculate30MinAverage, fetchSensorData } from '../../scripts/dashboardUtils';
+  import type { Sensor, SensorType, TimeWindow } from '../../scripts/types';
+
+  // Auth guard
+  const TOKEN = localStorage.getItem('token');
+  if (!TOKEN) location.href = '/dashboard/login.html';
+
+  // Update clock
+  setInterval(() => {
+    const clockEl = document.getElementById('clock');
+    if (clockEl) {
+      clockEl.textContent = new Date().toLocaleTimeString('tr-TR', {hour:'2-digit', minute:'2-digit'});
+    }
+  }, 1000);
+
+  // Initialize map after ensuring Leaflet is loaded
+  declare const L: any; // Leaflet global
+  const map = L.map('map').setView([41.03,28.89], 15);
+  L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',
+    {attribution:'© OpenStreetMap'}).addTo(map);
+  L.marker([41.03,28.89]).addTo(map).bindPopup('Ölçüm Noktası');
+
+  // Initialize chart
+  const chart = createChart('sensorChart');
+
+  // Time windows setup
+  const labels = [
+    'Son 10 dakika','Son 30 dakika','Son 1 saat','Son 4 saat',
+    'Son 1 gün','Son 3 gün','Son 1 hafta','Tüm veri'
+  ] as const;
+  const minutes: TimeWindow[] = [10,30,60,240,1440,4320,10080,Infinity];
+
+  // Setup time slider
+  const slider = document.getElementById('timeSlider') as HTMLInputElement | null;
+  const sliderLabel = document.getElementById('sliderLabel');
+  let currentTimeWindow = minutes[0];
+
+  slider?.addEventListener('input', () => {
+    const value = Number(slider.value);
+    if (sliderLabel) {
+      sliderLabel.textContent = labels[value];
+    }
+    currentTimeWindow = minutes[value];
+    const chartTitle = document.getElementById('chartTitle');
+    if (chartTitle && META[activeSensor]) {
+      chartTitle.textContent = `${META[activeSensor].title} (${labels[value]})`;
+    }
+    refresh();
+  });
+
+  // Handle sensor selection
+  let activeSensor: SensorType = 'temperature';
+  document.querySelectorAll('.sensor-box').forEach(box => {
+    box.addEventListener('click', () => {
+      const sensorType = box.getAttribute('data-sensor') as SensorType;
+      if (!sensorType || !META[sensorType]) return;
+
+      document.querySelectorAll('.sensor-box').forEach(b => b.classList.remove('active'));
+      box.classList.add('active');
+      activeSensor = sensorType;
+
+      const chartTitle = document.getElementById('chartTitle');
+      const sliderValue = slider?.value ? Number(slider.value) : 0;
+      if (chartTitle) {
+        chartTitle.textContent = `${META[sensorType].title} (${labels[sliderValue]})`;
+      }
+      refresh();
+    });
+  });
+
+  // Fetch and update data
+  let sensorData: Sensor[] = [];
+  async function refresh() {
+    try {
+      sensorData = await fetchSensorData();
+
+      // Update sensor boxes
+      Object.keys(META).forEach(type => {
+        const sensorType = type as SensorType;
+        if (!META[sensorType]) return;
+
+        const avgData = calculate30MinAverage(sensorData, sensorType);
+        if (!avgData) return;
+
+        const value = avgData.average;
+        if (!Number.isFinite(value)) return;
+
+        // Update value
+        const valueEl = document.getElementById(`val-${type}`);
+        if (valueEl) {
+          valueEl.innerHTML = `${value.toFixed(1)} <span class="sensor-unit">${META[sensorType].unit}</span>`;
+        }
+
+        // Update status
+        const [txt, cls] = META[sensorType].status(value);
+        const statusEl = document.getElementById(`stat-${type}`);
+        if (statusEl) {
+          statusEl.textContent = txt;
+          statusEl.style.background = `var(--${cls})`;
+        }
+
+        // Update timestamp
+        const timeEl = document.getElementById(`time-${type}`);
+        if (timeEl) {
+          timeEl.textContent = `30 dakika ortalaması (${new Date(avgData.timestamp)
+            .toLocaleTimeString('tr-TR', {hour:'2-digit', minute:'2-digit'})})`;
+        }
+      });
+
+      // Update chart
+      const filteredData = sensorData.filter(r => r.type === activeSensor);
+      updateChart(chart, filteredData, currentTimeWindow);
+
+    } catch (err) {
+      console.error('Refresh error:', err);
+    }
+  }
+
+  // Initial load and polling
+  refresh();
+  setInterval(refresh, 5000);
+</script>

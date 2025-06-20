@@ -1,26 +1,30 @@
-// Chart management and data utilities
 import Chart from 'chart.js/auto';
+import type { Sensor, SensorType, SensorMeta, SensorAverage, TimeWindow } from './types';
 
-export const META = {
+export const META: Record<SensorType, SensorMeta> = {
   temperature: {
     unit: '°C',
     title: 'Su Sıcaklığı',
-    status: v => v > 26 ? ['Tehlikeli', 'danger'] : v > 24 ? ['Yüksek', 'warning'] : ['Normal', 'success']
+    status: (v: number): [string, string] =>
+      v > 26 ? ['Tehlikeli', 'danger'] : v > 24 ? ['Yüksek', 'warning'] : ['Normal', 'success']
   },
   turbidity: {
     unit: 'NTU',
     title: 'Bulanıklık',
-    status: v => v > 5 ? ['Yüksek', 'warning'] : ['Normal', 'success']
+    status: (v: number): [string, string] =>
+      v > 5 ? ['Yüksek', 'warning'] : ['Normal', 'success']
   },
   tds: {
     unit: 'ppm',
     title: 'TDS / İletkenlik',
-    status: v => v > 1000 ? ['Yüksek', 'warning'] : ['Normal', 'success']
+    status: (v: number): [string, string] =>
+      v > 1000 ? ['Yüksek', 'warning'] : ['Normal', 'success']
   }
 };
 
-export const createChart = (canvasId, label, color = '#0066cc') => {
-  const ctx = document.getElementById(canvasId)?.getContext('2d');
+export const createChart = (canvasId: string, color = '#0066cc'): Chart | null => {
+  const canvas = document.getElementById(canvasId) as HTMLCanvasElement | null;
+  const ctx = canvas?.getContext('2d');
   if (!ctx) return null;
   
   return new Chart(ctx, {
@@ -49,7 +53,7 @@ export const createChart = (canvasId, label, color = '#0066cc') => {
   });
 };
 
-export const updateChart = (chart, data, timeWindow) => {
+export const updateChart = (chart: Chart | null, data: Sensor[], timeWindow: TimeWindow): void => {
   if (!chart) return;
   
   const now = Date.now();
@@ -57,19 +61,17 @@ export const updateChart = (chart, data, timeWindow) => {
   
   const filteredData = data
     .filter(r => new Date(r.timestamp).getTime() >= cutoff)
-    .sort((a, b) => new Date(a.timestamp) - new Date(b.timestamp));
+    .sort((a, b) => new Date(a.timestamp).getTime() - new Date(b.timestamp).getTime());
   
   chart.data.labels = filteredData.map(r => 
     new Date(r.timestamp).toLocaleTimeString('tr-TR', {hour12: false})
   );
-  chart.data.datasets[0].data = filteredData.map(r => 
-    typeof r.value === 'number' ? r.value : parseFloat(String(r.value).replace(',', '.'))
-  );
+  chart.data.datasets[0].data = filteredData.map(r => r.value);
   
   chart.update();
 };
 
-export const calculate30MinAverage = (data, sensorType) => {
+export const calculate30MinAverage = (data: Sensor[], sensorType: SensorType): SensorAverage | null => {
   const now = Date.now();
   const thirtyMinutesAgo = now - 30 * 60 * 1000;
   
@@ -77,7 +79,7 @@ export const calculate30MinAverage = (data, sensorType) => {
     .filter(r => r.type === sensorType && r.value != null && 
             new Date(r.timestamp).getTime() >= thirtyMinutesAgo)
     .map(r => ({
-      value: typeof r.value === 'number' ? r.value : parseFloat(String(r.value).replace(',', '.')),
+      value: r.value,
       timestamp: new Date(r.timestamp).getTime()
     }));
   
@@ -90,7 +92,7 @@ export const calculate30MinAverage = (data, sensorType) => {
   return { average, timestamp: latestTimestamp };
 };
 
-export const fetchSensorData = async () => {
+export const fetchSensorData = async (): Promise<Sensor[]> => {
   const token = localStorage.getItem('token');
   if (!token) throw new Error('No auth token');
 
