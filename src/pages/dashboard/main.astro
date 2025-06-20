@@ -1,0 +1,252 @@
+---
+import MainLayout from '../../layouts/MainLayout.astro';
+import type { Sensor, SensorAverage } from '../../scripts/types';
+export const prerender = false;
+---
+
+<MainLayout title="AEA - Sıcaklık İzleme">
+  <div class="dashboard">
+    <h1>Sıcaklık İzleme Paneli</h1>
+    
+    <div class="chart-container">
+      <canvas id="temperatureChart"></canvas>
+    </div>
+
+    <div class="slider-container">
+      <input type="range" id="timeSlider" min="0" max="6" value="0">
+      <div id="sliderLabel">Son 10 dakika</div>
+    </div>
+
+    <div class="current-temp">
+      <h3>Güncel Sıcaklık</h3>
+      <div id="temperature-value">-- °C</div>
+      <div id="temperature-status">--</div>
+      <div id="last-updated">Son güncelleme: --:--</div>
+    </div>
+  </div>
+</MainLayout>
+
+<style>
+.dashboard {
+  max-width: 1200px;
+  margin: 2rem auto;
+  padding: 0 1rem;
+}
+
+h1 {
+  color: var(--dark);
+  margin-bottom: 2rem;
+  text-align: center;
+}
+
+.chart-container {
+  background: white;
+  padding: 1.5rem;
+  border-radius: 12px;
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+  margin-bottom: 1.5rem;
+  height: 400px;
+}
+
+.slider-container {
+  text-align: center;
+  margin: 1.5rem 0;
+}
+
+#timeSlider {
+  width: 100%;
+  max-width: 500px;
+  margin: 0.5rem 0;
+}
+
+#sliderLabel {
+  color: var(--text);
+  font-size: 0.9rem;
+}
+
+.current-temp {
+  background: white;
+  padding: 1.5rem;
+  border-radius: 12px;
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+  text-align: center;
+}
+
+#temperature-value {
+  font-size: 2rem;
+  font-weight: bold;
+  color: var(--primary);
+  margin: 0.5rem 0;
+}
+
+#temperature-status {
+  display: inline-block;
+  padding: 0.25rem 1rem;
+  border-radius: 1rem;
+  font-size: 0.9rem;
+  margin: 0.5rem 0;
+}
+
+#last-updated {
+  font-size: 0.8rem;
+  color: var(--text-light);
+}
+</style>
+
+<script>
+import Chart from 'chart.js/auto';
+import type { ChartConfiguration } from 'chart.js';
+import type { Sensor, SensorAverage } from '../../scripts/types';
+
+const TOKEN = localStorage.getItem('token');
+if (!TOKEN) {
+  window.location.href = '/dashboard/login';
+}
+
+// Time windows in minutes
+const timeWindows = [10, 30, 60, 240, 1440, 4320, 10080];
+const timeLabels = [
+  'Son 10 dakika',
+  'Son 30 dakika', 
+  'Son 1 saat',
+  'Son 4 saat',
+  'Son 1 gün',
+  'Son 3 gün',
+  'Son 1 hafta'
+];
+
+// Initialize chart
+const ctx = document.getElementById('temperatureChart') as HTMLCanvasElement;
+const chartConfig: ChartConfiguration = {
+  type: 'line',
+  data: {
+    labels: [],
+    datasets: [{
+      label: 'Sıcaklık (°C)',
+      data: [],
+      borderColor: '#0066cc',
+      tension: 0.4
+    }]
+  },
+  options: {
+    responsive: true,
+    maintainAspectRatio: false,
+    plugins: {
+      legend: { display: false }
+    },
+    scales: {
+      y: {
+        beginAtZero: false,
+        title: {
+          display: true,
+          text: 'Sıcaklık (°C)'
+        }
+      }
+    }
+  }
+};
+
+const chart = new Chart(ctx, chartConfig);
+
+// Time slider handler
+const slider = document.getElementById('timeSlider') as HTMLInputElement;
+const sliderLabel = document.getElementById('sliderLabel');
+
+slider?.addEventListener('input', (e: Event) => {
+  const target = e.target as HTMLInputElement;
+  const idx = Number(target.value);
+  if (sliderLabel) {
+    sliderLabel.textContent = timeLabels[idx];
+  }
+  refresh();
+});
+
+function getStatus(temp: number): [string, string] {
+  if (temp > 26) return ['Tehlikeli', 'danger'];
+  if (temp > 24) return ['Yüksek', 'warning'];
+  return ['Normal', 'success'];
+}
+
+function calculate30MinAverage(data: Sensor[]) {
+  const now = Date.now();
+  const cutoff = now - 30 * 60 * 1000;
+  
+  const recentData = data
+    .filter(r => r.type === 'temperature' && r.value != null &&
+            new Date(r.timestamp).getTime() >= cutoff)
+    .map(r => ({
+      value: typeof r.value === 'number' ? r.value : parseFloat(String(r.value)),
+      timestamp: new Date(r.timestamp).getTime()
+    }));
+  
+  if (recentData.length === 0) return null;
+  
+  const sum = recentData.reduce((acc: number, curr) => acc + curr.value, 0);
+  const avg = sum / recentData.length;
+  const latest = Math.max(...recentData.map(r => r.timestamp));
+  
+  return { average: avg, timestamp: latest };
+}
+
+async function refresh() {
+  try {
+    const res = await fetch('/api/sensor-data', {
+      headers: { Authorization: 'Bearer ' + TOKEN }
+    });
+
+    if (!res.ok) throw new Error('HTTP ' + res.status);
+    const rows = (await res.json()) as Sensor[];
+
+    // Update current temperature display
+    const avgData = calculate30MinAverage(rows);
+    if (avgData) {
+      const tempValue = document.getElementById('temperature-value');
+      const tempStatus = document.getElementById('temperature-status');
+      const lastUpdated = document.getElementById('last-updated');
+      
+      const value = avgData.average.toFixed(1);
+      const [status, cls] = getStatus(avgData.average);
+      const time = new Date(avgData.timestamp).toLocaleTimeString('tr-TR', {
+        hour: '2-digit',
+        minute: '2-digit'
+      });
+
+      if (tempValue) tempValue.textContent = `${value} °C`;
+      if (tempStatus) {
+        tempStatus.textContent = status;
+        tempStatus.className = `status-${cls}`;
+      }
+      if (lastUpdated) lastUpdated.textContent = `Son güncelleme: ${time}`;
+    }
+
+    // Update chart based on selected time window
+    const sliderValue = Number(slider?.value || 0);
+    const windowMinutes = timeWindows[sliderValue];
+    const now = Date.now();
+    const cutoff = now - windowMinutes * 60 * 1000;
+
+    const data = rows
+      .filter(r => r.type === 'temperature' && r.value != null &&
+              new Date(r.timestamp).getTime() >= cutoff)
+      .sort((a, b) => new Date(a.timestamp).getTime() - new Date(b.timestamp).getTime());
+
+    chart.data.labels = data.map(r => 
+      new Date(r.timestamp).toLocaleTimeString('tr-TR', {hour12: false})
+    );
+    chart.data.datasets[0].data = data.map(r => 
+      typeof r.value === 'number' ? r.value : parseFloat(String(r.value))
+    );
+    chart.update();
+
+  } catch (err: unknown) {
+    console.error('Refresh error:', err);
+    if (err instanceof Error && err.message.includes('403')) {
+      window.location.href = '/dashboard/login';
+    }
+  }
+}
+
+// Initial load and polling
+refresh();
+setInterval(refresh, 5000);
+</script>

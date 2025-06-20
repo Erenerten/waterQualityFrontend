@@ -7,6 +7,15 @@ export default defineConfig({
   build: {
     assets: 'assets'
   },
+  server: {
+    proxy: {
+      '/api': {
+        target: 'https://ehmsukalitesi.online',
+        changeOrigin: true,
+        secure: true
+      }
+    }
+  },
   vite: {
     ssr: {
       noExternal: ['chart.js']
