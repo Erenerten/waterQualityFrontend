@@ -95,6 +95,12 @@ const sensorTypes = ['temperature', 'turbidity', 'tds'];
   .slider-wrap{margin-top:18px;display:flex;flex-direction:column;gap:8px}
   .slider-wrap input{width:100%}
   .slider-label{text-align:center;font-size:.9rem;color:#555}
+  .error-message {
+    color: var(--danger);
+    font-weight: bold;
+    text-align: center;
+    margin: 10px 0;
+  }
 </style>
 
 <script>
@@ -174,6 +180,10 @@ const sensorTypes = ['temperature', 'turbidity', 'tds'];
     try {
       sensorData = await fetchSensorData();
 
+      // Remove any error messages
+      const errorEl = document.querySelector('.error-message');
+      if (errorEl) errorEl.remove();
+
       // Update sensor boxes
       Object.keys(META).forEach(type => {
         const sensorType = type as SensorType;
@@ -213,6 +223,15 @@ const sensorTypes = ['temperature', 'turbidity', 'tds'];
 
     } catch (err) {
       console.error('Refresh error:', err);
+      
+      // Show error message to user
+      let errorEl = document.querySelector('.error-message');
+      if (!errorEl) {
+        errorEl = document.createElement('div');
+        errorEl.className = 'error-message';
+        document.querySelector('.top-bar')?.appendChild(errorEl);
+      }
+      errorEl.textContent = 'Veri yenileme hatası. Tekrar deneniyor...';
     }
   }
 

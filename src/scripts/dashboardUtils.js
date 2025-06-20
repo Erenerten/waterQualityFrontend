@@ -92,12 +92,41 @@ export const calculate30MinAverage = (data, sensorType) => {
 
 export const fetchSensorData = async () => {
   const token = localStorage.getItem('token');
-  if (!token) throw new Error('No auth token');
+  if (!token) {
+    localStorage.removeItem('token'); // Clear invalid token
+    window.location.href = '/dashboard/login';
+    throw new Error('No auth token');
+  }
 
-  const res = await fetch('/api/sensor-data', {
-    headers: { Authorization: `Bearer ${token}` }
-  });
-  
-  if (!res.ok) throw new Error(`HTTP ${res.status}`);
-  return res.json();
+  try {
+    const res = await fetch('https://www.ehmsukalitesi.online/api/sensor-data', {
+      method: 'GET',
+      headers: {
+        'Authorization': `Bearer ${token}`,
+        'Content-Type': 'application/json',
+        'Accept': 'application/json'
+      },
+      credentials: 'include'
+    });
+    
+    if (res.status === 403) {
+      // Token expired or invalid
+      localStorage.removeItem('token');
+      window.location.href = '/dashboard/login';
+      throw new Error('Authentication failed');
+    }
+    
+    if (!res.ok) {
+      throw new Error(`HTTP ${res.status}`);
+    }
+    
+    return await res.json();
+  } catch (error) {
+    console.error('Fetch error:', error);
+    // Only redirect if it's an auth error
+    if (error.message.includes('Authentication failed')) {
+      window.location.href = '/dashboard/login';
+    }
+    throw error;
+  }
 };
