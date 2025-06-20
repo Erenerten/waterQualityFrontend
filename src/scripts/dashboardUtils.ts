@@ -170,7 +170,8 @@ export const createChart = (canvasId: string, sensorType: SensorType): Chart | n
           }
         }
       }
-    });
+    }
+  });
 };
 
 export const updateChart = (chart: Chart, data: SensorData[], timeWindow: number): void => {
