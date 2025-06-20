@@ -6,6 +6,7 @@ export const prerender = false;
 declare global {
   interface Window {
     L: any;
+    Chart: any;
   }
 }
 ---
@@ -227,11 +228,11 @@ body {
 </style>
 
 <script>
-import type { Chart as ChartType, ChartConfiguration } from 'chart.js';
-import Chart from 'chart.js/auto';
+// Type definitions
+type SensorType = 'temperature' | 'turbidity' | 'tds';
 
 interface SensorData {
-  type: 'temperature' | 'turbidity' | 'tds';
+  type: SensorType;
   value: number;
   timestamp: string;
 }
@@ -243,21 +244,24 @@ interface SensorMeta {
 }
 
 type SensorMetadata = {
-  [K in SensorData['type']]: SensorMeta;
-};
+  [K in SensorType]: SensorMeta;
+}
+
+interface ChartContext {
+  parsed: { y: number };
+  raw: { timestamp: string };
+}
 
 /* ─────────── auth guard & helpers ─────────── */
 const TOKEN = localStorage.getItem('token');
 if (!TOKEN) location.href = '/dashboard/login';
 
 setInterval(() => {
-  const clockEl = document.getElementById('clock');
-  if (clockEl) {
-    clockEl.textContent = new Date().toLocaleTimeString('tr-TR', {
-      hour: '2-digit',
-      minute: '2-digit'
-    });
-  }
+  const clock = document.getElementById('clock');
+  if (clock) clock.textContent = new Date().toLocaleTimeString('tr-TR', {
+    hour:'2-digit',
+    minute:'2-digit'
+  });
 }, 1000);
 
 const toNum = (x: string | number): number => 
@@ -274,9 +278,10 @@ if (mapEl) {
 }
 
 /* ─────────── chart ─────────── */
-const chartCanvas = document.getElementById('sensorChart') as HTMLCanvasElement;
-const ctx = chartCanvas?.getContext('2d');
-const chart: ChartType = new Chart(ctx!, {
+const canvas = document.getElementById('sensorChart') as HTMLCanvasElement;
+const ctx = canvas?.getContext('2d');
+const Chart = window.Chart;
+const chart = new Chart(ctx, {
   type: 'line',
   data: {
     labels: [],
@@ -290,7 +295,20 @@ const chart: ChartType = new Chart(ctx!, {
     }]
   },
   options: {
-    plugins: {legend: {display: false}},
+    responsive: true,
+    maintainAspectRatio: false,
+    plugins: {
+      legend: {display: false},
+      tooltip: {
+        callbacks: {
+          label: function(context: ChartContext) {
+            const value = context.parsed.y;
+            const timestamp = context.raw.timestamp;
+            return `${value} ${META[active].unit} (${new Date(timestamp).toLocaleString('tr-TR')})`;
+          }
+        }
+      }
+    },
     scales: {x: {grid: {display: false}}}
   }
 });
@@ -328,18 +346,18 @@ slider?.addEventListener('input', () => {
   if (sliderLabel && slider) {
     sliderLabel.textContent = labels[slider.valueAsNumber];
     const chartTitle = document.getElementById('chartTitle');
-    if (chartTitle && META[active as keyof typeof META]) {
-      chartTitle.textContent = `${META[active as keyof typeof META].title} (${labels[slider.valueAsNumber]})`;
+    if (chartTitle) {
+      chartTitle.textContent = `${META[active].title} (${labels[slider.valueAsNumber]})`;
     }
     refresh();
   }
 });
 
 /* ─────────── active sensor ─────────── */
-let active: keyof typeof META = 'temperature';
+let active: SensorType = 'temperature';
 document.querySelectorAll('.sensor-box').forEach((box: Element) => {
   box.addEventListener('click', () => {
-    const sensorType = (box as HTMLElement).dataset.sensor as keyof typeof META;
+    const sensorType = (box as HTMLElement).dataset.sensor as SensorType;
     if (sensorType) {
       document.querySelectorAll('.sensor-box').forEach(b => b.classList.remove('active'));
       box.classList.add('active');
@@ -354,7 +372,7 @@ document.querySelectorAll('.sensor-box').forEach((box: Element) => {
 });
 
 /* ─────────── calculate 30-minute average ─────────── */
-function calculate30MinAverage(rows: SensorData[], sensorType: keyof typeof META) {
+function calculate30MinAverage(rows: SensorData[], sensorType: SensorType) {
   const now = Date.now();
   const thirtyMinutesAgo = now - 30 * 60 * 1000;
   
@@ -381,14 +399,13 @@ function calculate30MinAverage(rows: SensorData[], sensorType: keyof typeof META
 /* ─────────── fetch & redraw ─────────── */
 async function refresh() {
   try {
-    const res = await fetch('/api/sensor-data', {
-      headers: {Authorization: `Bearer ${TOKEN}`}
-    });
-    if (!res.ok) throw new Error(`HTTP ${res.status}`);
+    const res = await fetch('/api/sensor-data',
+      {headers: {Authorization: `Bearer ${TOKEN}`}});
+    if (!res.ok) throw new Error('HTTP '+res.status);
     const rows: SensorData[] = await res.json();
 
     /* update sidebar tiles with 30-minute averages */
-    (Object.keys(META) as Array<keyof typeof META>).forEach(key => {
+    (Object.keys(META) as SensorType[]).forEach(key => {
       const avgData = calculate30MinAverage(rows, key);
       if (!avgData) return;
       
@@ -402,7 +419,7 @@ async function refresh() {
       }
         
       // Update status
-      const [txt, cls] = META[key].status(v);
+      const [txt,cls] = META[key].status(v);
       const st = document.getElementById(`stat-${key}`);
       if (st) {
         st.textContent = txt;
@@ -427,11 +444,14 @@ async function refresh() {
       const data = rows
         .filter(r => r.type === active && r.value != null &&
           new Date(r.timestamp).getTime() >= cutoff)
-        .sort((a,b) => new Date(a.timestamp).getTime() - new Date(b.timestamp).getTime());
+        .sort((a, b) => new Date(a.timestamp).getTime() - new Date(b.timestamp).getTime());
 
       chart.data.labels = data.map(r =>
         new Date(r.timestamp).toLocaleTimeString('tr-TR',{hour12:false}));
-      chart.data.datasets[0].data = data.map(r => toNum(r.value));
+      chart.data.datasets[0].data = data.map(r => ({
+        y: toNum(r.value),
+        timestamp: r.timestamp
+      }));
       chart.update();
     }
 
