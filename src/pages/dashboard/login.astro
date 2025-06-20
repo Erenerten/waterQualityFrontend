@@ -220,7 +220,7 @@ export const prerender = false;
       const success = await login(username.value, password.value);
       
       if (success) {
-        window.location.href = '/dashboard/dashboard.html';
+        window.location.href = '/dashboard/dashboard';
       } else {
         showError('Giriş başarısız. Lütfen bilgilerinizi kontrol edin.');
       }

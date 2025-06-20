@@ -6,7 +6,7 @@ import SensorBox from '../../components/SensorBox.astro';
 const sensorTypes = ['temperature', 'turbidity', 'tds'];
 ---
 
-<MainLayout title="SuKaliteX | Canlı Sensör Paneli">
+<MainLayout title="AEA | Canlı Sensör Paneli">
   <div class="layout">
     <aside class="sidebar">
       <div class="logo">
@@ -103,7 +103,7 @@ const sensorTypes = ['temperature', 'turbidity', 'tds'];
 
   // Auth guard
   const TOKEN = localStorage.getItem('token');
-  if (!TOKEN) location.href = '/dashboard/login.html';
+  if (!TOKEN) location.href = '/dashboard/login';
 
   // Update clock
   setInterval(() => {
