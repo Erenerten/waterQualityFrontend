@@ -1,3 +1,6 @@
+// Import shared utilities from public script
+import { createChart, updateChart } from '../script.js';
+
 // Mobile Menu Toggle
 const burger = document.querySelector('.burger');
 const nav = document.querySelector('.nav-links');
@@ -99,43 +102,12 @@ window.addEventListener('scroll', () => {
     }
 });
 
-// Sensör verileri için grafik oluşturma
-const createChart = (canvasId, label, color) => {
-    const ctx = document.getElementById(canvasId).getContext('2d');
-    return new Chart(ctx, {
-        type: 'line',
-        data: {
-            labels: [],
-            datasets: [{
-                label: label,
-                data: [],
-                borderColor: color,
-                tension: 0.4,
-                fill: false
-            }]
-        },
-        options: {
-            responsive: true,
-            maintainAspectRatio: false,
-            scales: {
-                y: {
-                    beginAtZero: true
-                }
-            },
-            animation: {
-                duration: 0
-            }
-        }
-    });
-};
-
-// Grafikleri oluştur
+// Initialize dashboard charts
 const temperatureChart = createChart('temperatureChart', 'Sıcaklık (°C)', '#FF6B6B');
 const tdsChart = createChart('tdsChart', 'TDS (ppm)', '#4ECDC4');
 const turbidityChart = createChart('turbidityChart', 'Bulanıklık (NTU)', '#45B7D1');
 const conductivityChart = createChart('conductivityChart', 'İletkenlik (µS/cm)', '#96CEB4');
 
-// Sensör verilerini güncelleme fonksiyonu
 function updateSensorData() {
     // Simüle edilmiş sensör verileri (gerçek verilerle değiştirilecek)
     const now = new Date();
@@ -162,28 +134,9 @@ function updateSensorData() {
     updateChart(conductivityChart, conductivity);
 }
 
-// Grafik güncelleme fonksiyonu
-function updateChart(chart, value) {
-    const now = new Date();
-    const time = now.toLocaleTimeString();
-    
-    chart.data.labels.push(time);
-    chart.data.datasets[0].data.push(value);
-    
-    // Son 10 veriyi göster
-    if (chart.data.labels.length > 10) {
-        chart.data.labels.shift();
-        chart.data.datasets[0].data.shift();
-    }
-    
-    chart.update();
-}
-
-// Her 5 saniyede bir verileri güncelle
+// Start polling for updates
 setInterval(updateSensorData, 5000);
-
-// Sayfa yüklendiğinde ilk verileri göster
-updateSensorData();
+updateSensorData(); // Initial update
 
 // Modal ve tıklanma sayacı
 document.addEventListener('DOMContentLoaded', function() {

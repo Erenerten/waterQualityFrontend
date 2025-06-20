@@ -1,7 +1,7 @@
 import {
   createChart,
   updateChart,
-  initWebSocket,
+  initDataPolling,
   getSensorUnit,
   generateMockSensorData
 } from './dashboardUtils';
@@ -17,8 +17,8 @@ export function initDashboard() {
     conductivity: createChart('conductivityChart', 'İletkenlik (µS/cm)', '#96CEB4')
   };
 
-  // Initialize WebSocket connection with data handler
-  initWebSocket(updateSensorData);
+  // Initialize data polling
+  initDataPolling(updateSensorData);
 
   // Add refresh button handler
   const refreshBtn = document.querySelector('.refresh-btn');

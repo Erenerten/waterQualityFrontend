@@ -64,33 +64,32 @@ export const updateChart = (chart, value) => {
   chart.update();
 };
 
-// WebSocket handling
-export const initWebSocket = (onDataReceived) => {
-  const socket = new WebSocket('ws://154.53.180.35/ws');
+// Polling setup instead of WebSocket
+export const initDataPolling = (onDataReceived, interval = 5000) => {
+  // Initial data fetch
+  fetchLatestData(onDataReceived);
   
-  socket.onopen = () => {
-    console.log('WebSocket connected');
-  };
+  // Setup polling
+  const pollId = setInterval(() => {
+    fetchLatestData(onDataReceived);
+  }, interval);
   
-  socket.onmessage = (event) => {
-    try {
-      const data = JSON.parse(event.data);
-      onDataReceived(data);
-    } catch (e) {
-      console.error('WebSocket message error:', e);
-    }
-  };
-  
-  socket.onerror = (error) => {
-    console.error('WebSocket error:', error);
-  };
-  
-  socket.onclose = () => {
-    console.log('WebSocket disconnected. Reconnecting...');
-    setTimeout(() => initWebSocket(onDataReceived), 5000);
-  };
-  
-  return socket;
+  return pollId;
+};
+
+const fetchLatestData = async (onDataReceived) => {
+  try {
+    // For now, use mock data since we don't have a real API endpoint
+    const mockData = generateMockSensorData();
+    onDataReceived(mockData);
+    
+    // When you have a real API endpoint, use this:
+    // const response = await fetch('http://154.53.180.35/api/sensor-data');
+    // const data = await response.json();
+    // onDataReceived(data);
+  } catch (e) {
+    console.error('Data fetch error:', e);
+  }
 };
 
 // Sensor data utilities

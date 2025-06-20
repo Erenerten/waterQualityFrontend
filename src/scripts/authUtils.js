@@ -1,8 +1,7 @@
-const API_BASE = 'http://154.53.180.35';
-
+// Use relative paths for API endpoints
 export async function login(username, password) {
   try {
-    const response = await fetch(`${API_BASE}/api/auth/login`, {
+    const response = await fetch('/api/auth/login', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
