@@ -1,0 +1,696 @@
+<!-- public/dashboard/dashboard.html -->
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1.0">
+  <title>AEA | Canlı Sensör Paneli</title>
+  <meta http-equiv="Cache-Control" content="no-store">
+
+  <!-- libs -->
+  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;600&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css">
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+
+  <style>
+    :root{--dark:#0a2342;--gray:#f8fafc;--text:#223;--accent:#00b4d8;
+          --success:#2ecc71;--warning:#f39c12;--danger:#e74c3c}
+    *{margin:0;padding:0;box-sizing:border-box}
+    body{font-family:Poppins,sans-serif;background:var(--gray);color:var(--text);
+         display:flex;height:100vh;overflow:hidden}
+
+    /* sidebar */
+    .sidebar{width:250px;background:var(--dark);color:#fff;padding:20px 16px;
+             display:flex;flex-direction:column;gap:18px}
+    .logo{display:flex;align-items:center;font-weight:600;font-size:1.3rem}
+    .logo img{height:52px;margin-right:10px}
+    .sensor-box{background:rgba(255,255,255,.08);padding:14px;border-radius:10px;
+                border-left:3px solid var(--accent);cursor:pointer;transition:.2s}
+    .sensor-box.active{border-left-color:#fff}
+    .sensor-value{font-size:1.25rem;font-weight:600;margin:4px 0}
+    .sensor-unit{font-size:.75rem;opacity:.8}
+    .sensor-status{font-size:.65rem;padding:2px 6px;border-radius:14px;background:var(--success)}
+    .sensor-time{font-size:.7rem;opacity:.7;margin-top:4px}
+
+    /* main */
+    .main{flex:1;display:flex;flex-direction:column}
+    .top-bar{padding:10px 20px;background:#fff;box-shadow:0 2px 5px rgba(0,0,0,.05);
+             display:flex;justify-content:space-between}
+    .content{flex:1;display:flex;overflow:hidden}
+    .map-wrap{flex:1.1;min-width:360px}
+    #map{width:100%;height:100%}
+    .chart-wrap{flex:1;padding:18px 20px;background:#fff;display:flex;flex-direction:column}
+    .chart-header{display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:8px}
+    .chart-title{font-size:1.1rem}
+    .date-filter{display:flex;flex-direction:column;gap:8px}
+    .filter-toggle{display:flex;align-items:center;gap:12px}
+    .date-inputs{display:flex;align-items:center;gap:8px}
+    .date-input{padding:6px;border:1px solid #ddd;border-radius:4px;font-family:inherit}
+    .filter-btn{padding:6px 12px;border:none;border-radius:4px;background:var(--accent);
+                color:#fff;cursor:pointer;font-family:inherit}
+    .filter-btn.secondary{background:#6c757d}
+    .filter-btn:hover{opacity:0.9}
+    .chart-box{flex:1;position:relative;min-height:240px}
+    #sensorChart{flex:1}
+    /* slider */
+    .slider-wrap{margin-top:18px;display:flex;flex-direction:column;gap:8px}
+    .slider-wrap input{width:100%}
+    .slider-label{text-align:center;font-size:.9rem;color:#555}    /* date filter */
+    .date-filter{
+      display:flex;
+      flex-direction:column;
+      gap:12px;
+      padding:16px 0;
+      border-top:1px solid #eee;
+      margin-top:auto;
+    }    .filter-toggle{
+      display:flex;
+      align-items:center;
+      gap:16px;
+      flex-wrap:wrap;
+    }
+    .filter-toggle label {
+      display: flex;
+      align-items: center;
+      gap: 4px;
+      white-space: nowrap;
+    }
+    .date-inputs{
+      display:flex;
+      align-items:center;
+      gap:8px;
+      flex-wrap:wrap;
+    }
+    .date-input{
+      padding:8px;
+      border:1px solid #ddd;
+      border-radius:4px;
+      font-family:inherit;
+      flex:1;
+      min-width:200px;
+    }
+    .filter-btn{
+      padding:8px 16px;
+      border:none;
+      border-radius:4px;
+      cursor:pointer;
+      background:var(--accent);
+      color:#fff;
+      font-size:.9rem;
+      transition:.2s;
+      white-space:nowrap;
+    }
+    .filter-btn.secondary{background:#6c757d}
+    .filter-btn:hover{opacity:0.9}
+    
+    /* polling control */
+    .polling-control {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      font-size: 0.9rem;
+    }
+    .polling-control select {
+      padding: 4px 8px;
+      border: 1px solid #ddd;
+      border-radius: 4px;
+      font-family: inherit;
+      background: white;
+    }
+    
+    /* Make sure slider appears below date filter */
+    .slider-wrap{
+      border-top:1px solid #eee;
+      padding-top:16px;
+    }
+
+    .sensor-box[data-sensor="flow1"] .sensor-status.normal {
+      background-color: #9966FF;
+    }
+    .sensor-box[data-sensor="flow2"] .sensor-status.normal {
+      background-color: #FF9F40;
+    }
+
+    .sensor-box[data-sensor="flow1"],
+    .sensor-box[data-sensor="flow2"] {
+      border-left: 4px solid;
+    }
+
+    .sensor-box[data-sensor="flow1"] {
+      border-color: #9966FF;
+    }
+
+    .sensor-box[data-sensor="flow2"] {
+      border-color: #FF9F40;
+    }
+  </style>
+</head>
+
+<body>
+  <!-- ─── Sidebar ─────────────────────────────────────────── -->
+  <aside class="sidebar">
+    <div class="logo"><img src="/images/logo.png" alt="logo"><span>AEA</span></div>
+
+    <div class="sensor-box active" data-sensor="temperature">
+      <div class="sensor-header">
+        <h4>Su&nbsp;Sıcaklığı</h4>
+        <span class="sensor-status" id="stat-temperature">—</span>
+      </div>
+      <div class="sensor-value" id="val-temperature">-- <span class="sensor-unit">°C</span></div>
+      <div class="sensor-time" id="time-temperature">30 dakika ortalaması</div>
+    </div>
+
+    <div class="sensor-box" data-sensor="tds">
+      <div class="sensor-header">
+        <h4>TDS / İletkenlik</h4>
+        <span class="sensor-status" id="stat-tds">—</span>
+      </div>
+      <div class="sensor-value" id="val-tds">-- <span class="sensor-unit">ppm</span></div>
+      <div class="sensor-time" id="time-tds">30 dakika ortalaması</div>
+    </div>
+
+    <div class="sensor-box" data-sensor="flow-comparison">
+      <div class="sensor-header">
+        <h4>Akış Karşılaştırma</h4>
+        <span class="sensor-status" id="stat-flow-comparison">—</span>
+      </div>
+      <div class="sensor-value" id="val-flow-comparison">-- <span class="sensor-unit">m³/s</span></div>
+      <div class="sensor-time" id="time-flow-comparison">30 dakika ortalaması</div>
+    </div>
+  </aside>
+
+  <!-- ─── Main layout ─────────────────────────────────────── -->
+  <section class="main">
+    <div class="top-bar">
+      <span id="clock">--:--</span>
+      <div class="polling-control">
+        <label>Güncelleme Hızı:</label>
+        <select id="pollingRate">
+          <option value="5000">5 saniye</option>
+          <option value="10000">10 saniye</option>
+          <option value="30000">30 saniye</option>
+        </select>
+      </div>
+    </div>
+
+    <div class="content">
+      <div class="map-wrap"><div id="map"></div></div>
+      <div class="chart-wrap">
+        <div class="chart-header">
+          <div class="chart-title" id="chartTitle">Su Sıcaklığı (son 10 dakika)</div>
+        </div>
+        <div class="chart-box"><canvas id="sensorChart"></canvas></div>
+
+        <div class="date-filter">
+          <div class="filter-toggle">
+            <label>
+              <input type="checkbox" id="todayOnly"> Sadece Bugün
+            </label>
+            <label>
+              <input type="checkbox" id="lastHourOnly"> Son 1 Saat
+            </label>
+            <button id="toggleDateFilter" class="filter-btn">Tarih Filtresi</button>
+          </div>
+          <div id="dateFilterInputs" class="date-inputs" style="display: none;">
+            <input type="datetime-local" id="startDate" class="date-input">
+            <span>-</span>
+            <input type="datetime-local" id="endDate" class="date-input">
+            <button id="applyFilter" class="filter-btn">Uygula</button>
+            <button id="resetFilter" class="filter-btn secondary">Sıfırla</button>
+          </div>
+        </div>
+
+        <!-- slider -->
+        <div class="slider-wrap">
+          <input type="range" id="timeSlider" min="0" max="7" value="0">
+          <div class="slider-label" id="sliderLabel">Son 10 dakika</div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <script>
+    /* ─────────── auth guard & helpers ─────────── */
+    const TOKEN = localStorage.getItem('token');
+    if (!TOKEN) location.href = '/dashboard/login.html';
+
+    setInterval(() => {
+      document.getElementById('clock').textContent =
+        new Date().toLocaleTimeString('tr-TR', {
+          hour: '2-digit',
+          minute: '2-digit',
+          hour12: false,
+          timeZone: 'Europe/Istanbul'
+        });
+    }, 1000);
+
+    const toNum = x => typeof x === 'number' ? x :
+      parseFloat(String(x).replace(',', '.'));
+
+    /* ─────────── date helpers ─────────── */
+    // FIX #1 – keep wall-clock time, include ms
+    function formatDateForAPI(d){
+      const pad = n=>String(n).padStart(2,'0');
+      return d.getFullYear()+'-'+pad(d.getMonth()+1)+'-'+pad(d.getDate())+
+             'T'+pad(d.getHours())+':'+pad(d.getMinutes())+':'+pad(d.getSeconds())+
+             '.'+String(d.getMilliseconds()).padStart(3,'0');
+    }
+    // unchanged
+    function toLocalISOString(date) {
+      const tzOffset = -date.getTimezoneOffset();
+      const diff = tzOffset >= 0 ? '+' : '-';
+      const pad = n => `${Math.floor(Math.abs(n))}`.padStart(2, '0');
+      return date.getFullYear() +
+        '-' + pad(date.getMonth() + 1) +
+        '-' + pad(date.getDate()) +
+        'T' + pad(date.getHours()) +
+        ':' + pad(date.getMinutes()) +
+        ':' + pad(date.getSeconds()) +
+        diff + pad(tzOffset / 60) +
+        ':' + pad(tzOffset % 60);
+    }
+
+    /* ─────────── map ─────────── */
+    const map = L.map('map').setView([41.03, 28.89], 15);
+    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',
+      { attribution: '© OpenStreetMap' }).addTo(map);
+    L.marker([41.03, 28.89]).addTo(map).bindPopup('Ölçüm Noktası');
+
+    /* ─────────── chart ─────────── */
+    const ctx = document.getElementById('sensorChart').getContext('2d');
+    const chart = new Chart(ctx, {
+      type: 'line',
+      data: {
+        labels: [],
+        datasets: [{
+          data: [],
+          borderColor: '#0066cc',
+          backgroundColor: 'rgba(0, 102, 204, 0.1)',
+          borderWidth: 2,
+          tension: 0.25,
+          fill: true,
+          pointRadius: 2
+        }]
+      },
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        plugins: {
+          legend: { display: false },
+          tooltip: {
+            mode: 'index',
+            intersect: false
+          }
+        },
+        scales: {
+          x: {
+            grid: { display: false },
+            ticks: {
+              maxRotation: 45,
+              minRotation: 45
+            }
+          },
+          y: {
+            beginAtZero: false,
+            grid: {
+              color: 'rgba(0, 0, 0, 0.05)'
+            }
+          }
+        },
+        interaction: {
+          mode: 'nearest',
+          axis: 'x',
+          intersect: false
+        }
+      }
+    });
+
+    /* ─────────── sensor meta ─────────── */
+    const META = {
+      temperature: {
+        label: "Sıcaklık",
+        unit: "°C",
+        color: "#FF6384",
+        backgroundColor: "rgba(255, 99, 132, 0.2)",
+        warningThreshold: 30,
+        criticalThreshold: 35,
+        status: (v) => {
+          if (v >= 35) return ['Kritik', 'danger'];
+          if (v >= 30) return ['Uyarı', 'warning'];
+          return ['Normal', 'success'];
+        }
+      },
+      tds: {
+        label: "TDS",
+        unit: "ppm",
+        color: "#4BC0C0",
+        backgroundColor: "rgba(75, 192, 192, 0.2)",
+        warningThreshold: 500,
+        criticalThreshold: 1000,
+        status: (v) => {
+          if (v >= 1000) return ['Kritik', 'danger'];
+          if (v >= 500) return ['Uyarı', 'warning'];
+          return ['Normal', 'success'];
+        }
+      },
+      flowComparison: {
+        label: "Akış Karşılaştırma",
+        unit: "m³/s",
+        color1: "#9966FF",
+        color2: "#FF9F40",
+        colorDiff: "#e74c3c",
+        backgroundColor1: "rgba(153, 102, 255, 0.1)",
+        backgroundColor2: "rgba(255, 159, 64, 0.1)",
+        backgroundColorDiff: "rgba(231, 76, 60, 0.08)",
+        status: (v) => {
+          if (Math.abs(v) > 1) return ['FARK VAR', 'danger'];
+          return ['Normal', 'success'];
+        }
+      }
+    };
+
+    /* ─────────── time-range slider ─────────── */
+    const slider = document.getElementById('timeSlider');
+    const sliderLabel = document.getElementById('sliderLabel');
+    const labels = [
+      'Son 10 dakika', 'Son 30 dakika', 'Son 1 saat', 'Son 4 saat',
+      'Son 1 gün', 'Son 3 gün', 'Son 1 hafta', 'Tüm veri'
+    ];
+    const minutes = [10, 30, 60, 240, 1440, 4320, 10080, Infinity];
+    slider.addEventListener('input', () => {
+      sliderLabel.textContent = labels[slider.value];
+      updateChartTitle();
+      refresh();
+    });
+
+    const VALID_SENSORS = ['temperature', 'tds', 'flow-comparison'];
+    let active = 'temperature';
+
+    function updateChartTitle(timeLabel) {
+      const title = active === 'flow-comparison' ? META.flowComparison.label : META[active]?.label || META.temperature.label;
+      document.getElementById('chartTitle').textContent = `${title} (${timeLabel || labels[slider.value]})`; // FIX #7
+    }
+
+    document.querySelectorAll('.sensor-box').forEach(box => {
+      box.addEventListener('click', () => {
+        document.querySelectorAll('.sensor-box').forEach(b => b.classList.remove('active'));
+        box.classList.add('active');
+        let sensor = box.dataset.sensor;
+        if (!VALID_SENSORS.includes(sensor)) sensor = 'temperature';
+        active = sensor;
+        updateChartTitle();
+        refresh();
+      });
+    });
+
+    async function fetchSensorData(type,startDate,endDate){
+      let url=`/api/sensor-data/filter?type=${encodeURIComponent(type)}`;          // FIX #5
+      if(startDate && endDate){
+        url += `&startDate=${encodeURIComponent(formatDateForAPI(startDate))}`+   // FIX #2/#5
+               `&endDate=${encodeURIComponent(formatDateForAPI(endDate))}`;
+      }
+      const res = await fetch(url,{headers:{Authorization:'Bearer '+TOKEN}});
+      if(!res.ok) throw new Error('HTTP '+res.status);
+      return res.json();
+    }
+
+    async function refresh(){
+      try{
+        if(!VALID_SENSORS.includes(active)) active='temperature';
+
+        /* — figure out date window (unchanged logic, but titleDate default fix) — */
+        const dateFilterVisible = document.getElementById('dateFilterInputs').style.display!=='none';
+        const todayOnly=document.getElementById('todayOnly').checked;
+        const lastHourOnly=document.getElementById('lastHourOnly').checked;
+        const customDateFilter=dateFilterVisible&&document.getElementById('startDate').value&&document.getElementById('endDate').value;
+        let startDate,endDate,useFilter=false,titleDate=labels[slider.value];
+
+        if(todayOnly){
+          const now=new Date();
+          startDate=new Date(now); startDate.setHours(0,0,0,0);
+          endDate=new Date(now);   endDate.setHours(23,59,59,999);
+          useFilter=true; titleDate='Bugün';
+        }else if(lastHourOnly){
+          endDate=new Date(); endDate.setMilliseconds(999);
+          startDate=new Date(endDate.getTime()-60*60*1000);
+          useFilter=true; titleDate='Son 1 Saat';
+        }else if(customDateFilter){
+          startDate=parseLocalDateTime(document.getElementById('startDate').value);
+          endDate=parseLocalDateTime(document.getElementById('endDate').value);
+          if(endDate) endDate.setMilliseconds(999);
+          useFilter=true;
+          const f=d=>d.toLocaleDateString('tr-TR',{timeZone:'Europe/Istanbul'});
+          titleDate=`${f(startDate)} - ${f(endDate)}`;
+        }else{
+          const now=new Date();
+          const winMin=minutes[slider.value];
+          if(winMin!==Infinity){
+            endDate=now; endDate.setMilliseconds(999);
+            startDate=new Date(now.getTime()-winMin*60*1000);
+            useFilter=true;
+          }
+        }
+
+        /* — UI toggles (unchanged) — */
+
+        updateChartTitle(titleDate);
+
+        /* — data fetch — */
+        if(active==='flow-comparison'){
+          const [flow1,flow2,temp,tds] = await Promise.all([                 // FIX #3
+            fetchSensorData('flow1',startDate,endDate),
+            fetchSensorData('flow2',startDate,endDate),
+            fetchSensorData('temperature',startDate,endDate),
+            fetchSensorData('tds',startDate,endDate)
+          ]);
+          processFlowComparison(flow1,flow2,titleDate);
+          updateSidebarValues([...temp,...tds]);                             // uses merged array
+          return;
+        }else{
+          const data=await fetchSensorData(active,startDate,endDate);
+          const sideData = (active==='temperature'||active==='tds') ? data
+                         : [...await fetchSensorData('temperature',startDate,endDate),
+                            ...await fetchSensorData('tds',startDate,endDate)];
+          updateSidebarValues(sideData);
+          updateChart(data,active,titleDate);
+        }
+      }catch(e){console.error('Refresh error:',e);}
+    }
+
+    // Helper to parse yyyy-MM-ddTHH:mm as local time (not UTC)
+    function parseLocalDateTime(val) {
+      if (!val) return null;
+      // val is in 'yyyy-MM-ddTHH:mm' format
+      const [datePart, timePart] = val.split('T');
+      const [year, month, day] = datePart.split('-').map(Number);
+      const [hour, minute] = timePart.split(':').map(Number);
+      return new Date(year, month - 1, day, hour, minute, 0, 0);
+    }
+
+    function processFlowComparison(flow1Data, flow2Data, timeLabel) {
+      const filteredFlow1 = flow1Data.filter(r => r.value != null).sort((a, b) => new Date(a.timestamp) - new Date(b.timestamp));
+      const filteredFlow2 = flow2Data.filter(r => r.value != null).sort((a, b) => new Date(a.timestamp) - new Date(b.timestamp));
+      const labelsArr = [], flow1Vals = [], flow2Vals = [], diffVals = [];
+      let j = 0;
+      for (let i = 0; i < filteredFlow1.length; i++) {
+        const t1 = new Date(filteredFlow1[i].timestamp).getTime();
+        let closestFlow2Index = j;
+        let minDiff = Math.abs(new Date(filteredFlow2[j]?.timestamp).getTime() - t1);
+        for (let k = j + 1; k < filteredFlow2.length; k++) {
+          const currentDiff = Math.abs(new Date(filteredFlow2[k].timestamp).getTime() - t1);
+          if (currentDiff < minDiff) { minDiff = currentDiff; closestFlow2Index = k; } else { break; }
+        }
+        if (minDiff <= 5 * 60 * 1000 && filteredFlow2[closestFlow2Index]) {
+          const flow1Val = toNum(filteredFlow1[i].value);
+          const flow2Val = toNum(filteredFlow2[closestFlow2Index].value);
+          labelsArr.push(new Date(filteredFlow1[i].timestamp).toLocaleTimeString('tr-TR', { hour: '2-digit', minute: '2-digit', hour12: false, timeZone: 'Europe/Istanbul' }));
+          flow1Vals.push(flow1Val);
+          flow2Vals.push(flow2Val);
+          diffVals.push(flow1Val - flow2Val);
+          j = closestFlow2Index + 1;
+        }
+      }
+      chart.data.labels = labelsArr;
+      chart.data.datasets = [
+        { label: 'Flow 1', data: flow1Vals, borderColor: META.flowComparison.color1, backgroundColor: META.flowComparison.backgroundColor1, borderWidth: 2, tension: 0.25, fill: false, pointRadius: 3 },
+        { label: 'Flow 2', data: flow2Vals, borderColor: META.flowComparison.color2, backgroundColor: META.flowComparison.backgroundColor2, borderWidth: 2, tension: 0.25, fill: false, pointRadius: 3 },
+        { label: 'Fark (Flow1 - Flow2)', data: diffVals, borderColor: META.flowComparison.colorDiff, backgroundColor: META.flowComparison.backgroundColorDiff, borderWidth: 2, tension: 0.25, fill: false, pointRadius: 3 }
+      ];
+      chart.options.plugins.legend = { display: true };
+      chart.update();
+      if (diffVals.length > 0) {
+        const lastDiff = diffVals[diffVals.length - 1];
+        document.getElementById('val-flow-comparison').innerHTML = `${lastDiff.toFixed(2)} <span class="sensor-unit">${META.flowComparison.unit}</span>`;
+        const [statusText, statusClass] = META.flowComparison.status(lastDiff);
+        const statusElement = document.getElementById('stat-flow-comparison');
+        statusElement.textContent = statusText;
+        statusElement.style.background = `var(--${statusClass})`;
+        document.getElementById('time-flow-comparison').textContent = `Son: ${labelsArr[labelsArr.length - 1]}`;
+      }
+      // 30-min average for flow-comparison
+      const now = Date.now();
+      const thirtyMinutesAgo = now - 30 * 60 * 1000;
+      const recentDiffs = diffVals.filter((_, i) => {
+        const timestamp = new Date(filteredFlow1[i].timestamp).getTime();
+        return timestamp >= thirtyMinutesAgo;
+      });
+      if (recentDiffs.length > 0) {
+        const avgDiff = recentDiffs.reduce((sum, val) => sum + val, 0) / recentDiffs.length;
+        document.getElementById('val-flow-comparison').innerHTML = `${avgDiff.toFixed(2)} <span class="sensor-unit">${META.flowComparison.unit}</span>`;
+        document.getElementById('time-flow-comparison').textContent = '30 dakika ortalaması';
+      }
+    }
+
+    function calculate30MinAverage(rows, sensorType) {
+      const now = Date.now();
+      const thirtyMinutesAgo = now - 30 * 60 * 1000;
+      // Filter data for the specific sensor type and last 30 minutes
+      const recentData = rows
+        .filter(r => r.type === sensorType && r.value != null && new Date(r.timestamp).getTime() >= thirtyMinutesAgo)
+        .map(r => ({ value: toNum(r.value), timestamp: new Date(r.timestamp).getTime() }));
+      if (recentData.length === 0) return null;
+      // Calculate average
+      const sum = recentData.reduce((acc, curr) => acc + curr.value, 0);
+      const average = sum / recentData.length;
+      // Find the most recent timestamp
+      const latestTimestamp = Math.max(...recentData.map(r => r.timestamp));
+      return {
+        average: average,
+        timestamp: latestTimestamp
+      };
+    }
+
+    function updateSidebarValues(data) {
+      ['temperature', 'tds'].forEach(key => {
+        const avgData = calculate30MinAverage(data, key);
+        if (!avgData) return;
+        const v = avgData.average;
+        if (!Number.isFinite(v)) return;
+        document.getElementById('val-' + key).innerHTML = `${v.toFixed(1)} <span class="sensor-unit">${META[key].unit}</span>`;
+        const [txt, cls] = META[key].status(v);
+        const st = document.getElementById('stat-' + key);
+        st.textContent = txt;
+        st.style.background = `var(--${cls})`;
+        const timeElement = document.getElementById('time-' + key);
+        timeElement.textContent = `30 dakika ortalaması (${new Date(avgData.timestamp).toLocaleTimeString('tr-TR', { hour: '2-digit', minute: '2-digit', hour12: false, timeZone: 'Europe/Istanbul' })})`;
+      });
+    }
+
+    function updateChart(data, sensorType, timeRange) {
+      // Sort by timestamp ascending (oldest first)
+      data = data.slice().sort((a, b) => new Date(a.timestamp) - new Date(b.timestamp));
+      // Prepare both time and date labels
+      const timestamps = data.map(r => {
+        const date = new Date(r.timestamp);
+        return date.toLocaleTimeString('tr-TR', { hour: '2-digit', minute: '2-digit', hour12: false, timeZone: 'Europe/Istanbul' });
+      });
+      const dateLabels = data.map(r => {
+        const date = new Date(r.timestamp);
+        return date.toLocaleDateString('tr-TR', { year: 'numeric', month: '2-digit', day: '2-digit', timeZone: 'Europe/Istanbul' });
+      });
+      const values = data.map(r => toNum(r.value));
+      chart.data.labels = timestamps;
+      chart.data.datasets = [{
+        label: META[sensorType]?.label || 'Sensör',
+        data: values,
+        borderColor: META[sensorType]?.color || '#0066cc',
+        backgroundColor: META[sensorType]?.backgroundColor || 'rgba(0, 102, 204, 0.1)',
+        borderWidth: 2,
+        tension: 0.25,
+        fill: true,
+        pointRadius: 2
+      }];
+      chart.options.plugins.legend = { display: false };
+      // FIX: Show date in tooltip and X axis
+      chart.options.plugins.tooltip = {
+        callbacks: {
+          title: function(context) {
+            const idx = context[0].dataIndex;
+            return dateLabels[idx] + ' ' + timestamps[idx];
+          }
+        }
+      };
+      chart.options.scales.x = {
+        ...chart.options.scales.x,
+        ticks: {
+          callback: function(val, idx) {
+            // Show both date and time on X axis
+            return dateLabels[idx] + '\n' + timestamps[idx];
+          },
+          maxRotation: 45,
+          minRotation: 45
+        }
+      };
+      chart.update();
+      document.getElementById('chartTitle').textContent = `${META[sensorType]?.label || 'Sensör'} (${timeRange})`;
+    }
+
+    // Initial refresh
+    refresh();
+    let refreshInterval = setInterval(refresh, 5000);
+
+    /* ─────────── polling rate control ─────────── */
+    document.getElementById('pollingRate').addEventListener('change', (e) => {
+      clearInterval(refreshInterval);
+      const rate = parseInt(e.target.value);
+      refreshInterval = setInterval(refresh, rate);
+      refresh(); // Immediate refresh on rate change
+    });
+
+    /* ─────────── date filter handlers ─────────── */
+    document.getElementById('toggleDateFilter').addEventListener('click', () => {
+      const inputs = document.getElementById('dateFilterInputs');
+      inputs.style.display = inputs.style.display === 'none' ? 'flex' : 'none';
+      if (inputs.style.display === 'flex') {
+        document.getElementById('todayOnly').checked = false;
+        document.getElementById('lastHourOnly').checked = false;
+      }
+    });
+
+    document.getElementById('todayOnly').addEventListener('change', (e) => {
+      if (e.target.checked) {
+        document.getElementById('dateFilterInputs').style.display = 'none';
+        document.getElementById('lastHourOnly').checked = false;
+      }
+      refresh();
+    });
+
+    document.getElementById('lastHourOnly').addEventListener('change', (e) => {
+      if (e.target.checked) {
+        document.getElementById('dateFilterInputs').style.display = 'none';
+        document.getElementById('todayOnly').checked = false;
+      }
+      refresh();
+    });
+
+    document.getElementById('applyFilter').addEventListener('click', refresh);
+
+    document.getElementById('resetFilter').addEventListener('click', () => {
+      document.getElementById('startDate').value = '';
+      document.getElementById('endDate').value = '';
+      document.getElementById('todayOnly').checked = false;
+      document.getElementById('lastHourOnly').checked = false;
+      document.getElementById('dateFilterInputs').style.display = 'none';
+      refresh();
+    });
+
+    /* Initialize date inputs with default range */
+    function formatDateTimeLocal(date) {
+      const year = date.getFullYear();
+      const month = String(date.getMonth() + 1).padStart(2, '0');
+      const day = String(date.getDate()).padStart(2, '0');
+      const hours = String(date.getHours()).padStart(2, '0');
+      const minutes = String(date.getMinutes()).padStart(2, '0');
+      return `${year}-${month}-${day}T${hours}:${minutes}`;
+    }
+
+    const now = new Date();
+    const yesterday = new Date(now);
+    yesterday.setDate(yesterday.getDate() - 1);
+    document.getElementById('startDate').value = formatDateTimeLocal(yesterday);
+    document.getElementById('endDate').value = formatDateTimeLocal(now);
+  </script>
+</body>
+</html>

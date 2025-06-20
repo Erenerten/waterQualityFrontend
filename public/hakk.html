@@ -1,0 +1,33 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Hakkımızda</title>
+  <style>
+    /* Sayfayı ortalamak ve mobil-uyumlu yapmak için küçük stil */
+    body{
+      margin:0;
+      display:flex;
+      justify-content:center;
+      align-items:center;
+      min-height:100vh;
+      background:#111;
+    }
+    video{
+      max-width:100%;
+      height:auto;
+      border-radius:12px;
+    }
+  </style>
+</head>
+<body>
+
+  <!-- Video yalnızca bu etikette -->
+  <video src="videos/kovboy.mp4" controls preload="metadata"
+         playsinline><!-- iOS için -->
+    Tarayıcınız video öğesini desteklemiyor.
+  </video>
+
+</body>
+</html>
