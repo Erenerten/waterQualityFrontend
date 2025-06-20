@@ -95,7 +95,7 @@ const sensorTypes = ['temperature', 'turbidity', 'tds'];
   .slider-wrap{margin-top:18px;display:flex;flex-direction:column;gap:8px}
   .slider-wrap input{width:100%}
   .slider-label{text-align:center;font-size:.9rem;color:#555}
-  .error-message {
+.error-message {
     color: var(--danger);
     font-weight: bold;
     text-align: center;
@@ -223,7 +223,7 @@ const sensorTypes = ['temperature', 'turbidity', 'tds'];
 
     } catch (err) {
       console.error('Refresh error:', err);
-      
+
       // Show error message to user
       let errorEl = document.querySelector('.error-message');
       if (!errorEl) {
