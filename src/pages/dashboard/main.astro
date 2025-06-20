@@ -96,10 +96,18 @@ h1 {
 <script>
 import Chart from 'chart.js/auto';
 import type { ChartConfiguration } from 'chart.js';
-import type { Sensor, SensorAverage } from '../../scripts/types';
+import type { Sensor } from '../../scripts/types';
+import { isAuthenticated, getAuthToken } from '../../scripts/authUtils';
 
-const TOKEN = localStorage.getItem('token');
-if (!TOKEN) {
+// Check authentication immediately
+if (!isAuthenticated()) {
+  window.location.href = '/dashboard/login';
+}
+
+// Get token and verify format
+const TOKEN = getAuthToken();
+if (!TOKEN || TOKEN.split('.').length !== 3) {
+  localStorage.removeItem('token');
   window.location.href = '/dashboard/login';
 }
 
@@ -191,8 +199,19 @@ function calculate30MinAverage(data: Sensor[]) {
 async function refresh() {
   try {
     const res = await fetch('/api/sensor-data', {
-      headers: { Authorization: 'Bearer ' + TOKEN }
+      headers: { 
+        'Authorization': `Bearer ${TOKEN}`,
+        'Accept': 'application/json',
+        'Content-Type': 'application/json'
+      }
     });
+
+    // Handle unauthorized access
+    if (res.status === 401 || res.status === 403) {
+      localStorage.removeItem('token');
+      window.location.href = '/dashboard/login';
+      return;
+    }
 
     if (!res.ok) throw new Error('HTTP ' + res.status);
     const rows = (await res.json()) as Sensor[];
@@ -240,7 +259,8 @@ async function refresh() {
 
   } catch (err: unknown) {
     console.error('Refresh error:', err);
-    if (err instanceof Error && err.message.includes('403')) {
+    if (err instanceof Error && (err.message.includes('401') || err.message.includes('403'))) {
+      localStorage.removeItem('token');
       window.location.href = '/dashboard/login';
     }
   }

@@ -14,7 +14,14 @@ export async function login(username, password) {
     }
 
     const data = await response.json();
-    localStorage.setItem('token', data.token);
+    // Server returns JWT in { jwt: "token" } format
+    const token = data.jwt;
+    
+    if (!token || typeof token !== 'string' || token.split('.').length !== 3) {
+      throw new Error('Invalid token format');
+    }
+
+    localStorage.setItem('token', token);
     return true;
   } catch (error) {
     console.error('Login error:', error);
@@ -24,11 +31,12 @@ export async function login(username, password) {
 
 export function logout() {
   localStorage.removeItem('token');
-  window.location.href = '/dashboard/login.html';
+  window.location.href = '/dashboard/login';
 }
 
 export function isAuthenticated() {
-  return !!localStorage.getItem('token');
+  const token = localStorage.getItem('token');
+  return token && token.split('.').length === 3;
 }
 
 export function getAuthToken() {
@@ -37,7 +45,7 @@ export function getAuthToken() {
 
 export function requireAuth() {
   if (!isAuthenticated()) {
-    window.location.href = '/dashboard/login.html';
+    window.location.href = '/dashboard/login';
     return false;
   }
   return true;
