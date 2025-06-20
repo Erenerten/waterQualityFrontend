@@ -10,7 +10,7 @@ export function initDashboard() {
     // Auth check
     const token = localStorage.getItem('token');
     if (!token) {
-      window.location.href = '/dashboard/login.html';
+      window.location.href = '/dashboard/login';
       return false;
     }
 

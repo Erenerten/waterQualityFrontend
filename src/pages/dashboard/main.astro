@@ -273,7 +273,11 @@ document.querySelectorAll('.sensor-box').forEach(box => {
 // Data refresh function
 async function refresh() {
   try {
-    const data = await fetchSensorData();
+    const timeWindow = timeMinutes[slider?.valueAsNumber || 0];
+    const now = new Date();
+    const startDate = timeWindow === Infinity ? undefined : new Date(now.getTime() - timeWindow * 60 * 1000);
+    
+    const data = await fetchSensorData(activeSensor, startDate, now);
     
     // Update sensor boxes
     (Object.keys(META) as SensorType[]).forEach(sensorType => {
@@ -309,9 +313,8 @@ async function refresh() {
     });
     
     // Update chart
-    if (chart && slider) {
-      const timeWindow = timeMinutes[slider.valueAsNumber];
-      updateChart(chart, data.filter((d: SensorData) => d.type === activeSensor), timeWindow);
+    if (chart) {
+      updateChart(chart, data, timeWindow);
     }
     
   } catch (error) {

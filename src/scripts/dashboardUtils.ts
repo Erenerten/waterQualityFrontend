@@ -142,7 +142,11 @@ export const calculate30MinAverage = (data: SensorData[], sensorType: SensorType
   return { average, timestamp: latestTimestamp };
 };
 
-export const fetchSensorData = async (): Promise<SensorData[]> => {
+export const fetchSensorData = async (
+  type?: SensorType,
+  startDate?: Date,
+  endDate?: Date
+): Promise<SensorData[]> => {
   const token = localStorage.getItem('token');
   if (!token) {
     localStorage.removeItem('token');
@@ -151,7 +155,16 @@ export const fetchSensorData = async (): Promise<SensorData[]> => {
   }
 
   try {
-    const res = await fetch('/api/sensor-data', {
+    const params = new URLSearchParams();
+    if (type) params.append('type', type);
+    if (startDate) params.append('startDate', startDate.toISOString());
+    if (endDate) params.append('endDate', endDate.toISOString());
+
+    const url = type ? 
+      `/api/sensor-data/filter?${params.toString()}` : 
+      '/api/sensor-data';
+
+    const res = await fetch(url, {
       headers: {
         'Authorization': `Bearer ${token}`,
         'Content-Type': 'application/json'
